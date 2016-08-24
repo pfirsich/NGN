@@ -1,0 +1,10 @@
+* Mesh soweit fertig machen, dass man es benutzen könnte
+    * Mesh-Konstruktoren und vllt. ein paar getter/setter
+    * IndexData-Klasse
+    * setIndices
+* Meshes testen (mit Daten aus WallSurfGame, in WallSurfGame)
+* boxMesh implementieren
+* File-Loading fürs Mesh
+* Object splitten -> Transforms, HasId, ...
+* Renderer, Window, Camera, Transforms testen (mit funktionierendem Mesh)
+* Rudimentäre Materials einbauen, die einfach nur ein paar Shader halten und so, dabei Shader und Texture-Class integrieren.

@@ -1,0 +1,136 @@
+ein geerbtes object für LOD, dass mehrere meshes und materials nimmt, oder gleich mehrere objects (damit man shadows und so pro lod definieren kann), dann aber transformationen ignorieren
+
+material-klasse - hält properties + maps, blending, depthTest, alphaTest, visible, backfaceculling
+ShaderMaterial, MeshLambertMaterial
+
+light-klasse (Object-derived) - color
+PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight
+light.shadow = new PCFShadowMap(), VarianceShadowMap()
+darin kann man dann mapsizes und camera und sowas alles festlegen, die instanzieren zuerst ihre eigene camera, die dann entweder PerspectiveCamera oder OrthographicCamera ist, oder DualParaboloidCamera oder sowas
+
+state-changes in Texture und Shader-class optimieren 
+bei textures separat tracken in welche unit gebindet wurde/wird
+Mehr weirde types unterstüzen in Textures
+
+transforms
+die camera-klasse soll man eigentlich nicht rendern können, ebenso soll sie auch kein mesh haben und keine children
+object aufsplitten in Transforms (->camera), HasId (->camera), Renderable (bekommt children und render-methode und hash), Tagged (->camera)
+http://en.cppreference.com/w/cpp/language/cast_operator - cast zu glm::mat4
+
+------
+
+http://stackoverflow.com/questions/573025/which-3d-model-format-should-i-be-using
+only support collada for importing (support it well), but write proprietary files - ngns (ngn scene)
+
+loading:
+http://www.assimp.org/main_doc.html
+https://github.com/assimp/assimp/tree/master/samples/SimpleOpenGL/
+https://sourceforge.net/p/assimp/discussion/817653/thread/af6dc74c/
+http://learnopengl.com/#!Model-Loading/Mesh
+http://www.nexcius.net/2014/04/13/loading-meshes-using-assimp-in-opengl/
+
+
+--------------------------------------
+vertex attribute locations
+http://stackoverflow.com/questions/4635913/explicit-vs-automatic-attribute-location-binding-for-opengl-shaders
+
+http://gamedev.stackexchange.com/questions/57957/game-engine-design-ubershader-shader-management-design
+
+## glGetUniformLocation und automatic attribute location assignment
+Laut https://www.opengl.org/wiki/Vertex_Shader können die locations bei jedem linken anders sein.
+Deshalb muss man für jede Mesh/Shader-Kombination einen eigenen VAO haben, eigentlich recht  lightweight, also nicht so schlimm, aber bei zwei versch. objekten muss man den schon jeden Frame neu erzeugen, in dem Fall ist das dann eher kacke.
+Statt einer map[programID] ist es wohl besser einen vector zu haben, weil man ja immer so super wenige elemente hat. i.d.R halt 0 und höchstens 5 oder so.
+
+## glBindAttribLocation
+
+## numeric locations, set in GLSL and in the vertex format
+Man muss einfach immer von Hand darauf aufpassen, dass die indizes stimmen
+
+## layout-qualifier injection
+Wenn ein Shader erstellt wird, werden alle Input-Attribute geparst und zu jedem Namen eine location assigned/gequeried und gespeichert, dann in den GLSL-Code injected oder mit glBindAttribLocation gebindet.
+Wird ein VertexFormat erstellt, passiert das gleiche.
+
+## hybrid
+eine feste konvention für position, textur-koordinate, usw. haben, die vorgebaut ist (diesbezüglich wie die option davor), aber custom attribute fallen zurück auf glGetUniformLocation-Kram oder auf händisches assignment. beim händischen assignment gefällt mir nicht, dass die vertex-attribute keine namen mehr haben, sondern indizes vom type whatever (nicht richtig int)
+
+vielleicht erstmal mit der ersten Methode fahren und dann später eine GLSL-Erweiterung schreiben, in der man 
+!attribute type=vec3: position
+!include: myfile.glsl
+!include: myfile // works as well
+!include: ngn.toLinearDepth // for helper functions
+!uniform 
+!glsl vertex:
+void main() {
+}
+!glsl fragment:
+
+#line benutzen vor allem was man einfügt, damit es stimmt
+
+vielleicht versch. versionen für shader code zulassen, sodass man version-kompatiblen code schreiben kann (also für ogl2 oder 3 oder whatever)
+
+ein material ist dann eine kombination aus so einem shader-programm und einem haufen uniforms?
+
+parameter können einfach nur gesetzt sein, können aber auch eine value haben, die auch von anführungszeichen umgeben sein darf. inhalt des directives geht immer bis zum eof oder bis zum nächsten directive, das letzte newline wird ausgenommen
+
+muss auch keine angst darum haben uniforms in beide shader zu kacken (werden sowieso wegoptimiert):
+https://www.opengl.org/wiki/GLSL_:_common_mistakes
+
+http://gamedev.stackexchange.com/questions/58515/engine-rendering-pipeline-making-shaders-generic
+
+diese sprache kann auch für fullscreeneffekte verwendet werden
+!pass: highpass
+!glsl-fragment
+
+!pass: 
+!uniform type=pass: highpass
+
+daraus kann man dann einen graphen bauen und alles mit render-targets regeln und so
+
+siehe auch hier: https://github.com/spite/Wagner
+
+-------------- scene file format
+4 Bytes: NGNS # Magic
+1 ui8: Major Version
+1 ui8: Minor Version
+[
+    8 ui64: Chunk ID
+    4 ui32: Total size // Total size and payload size so unknown chunks can be skipped
+    4 ui32: Payload size
+    ... : Payload
+    [
+        Child
+    ]
+    [
+        Child
+    ]
+]
+
+class MeshChunk {
+
+};
+
+class LightChunk {
+
+};
+
+class KeyValueChunk {
+    std::map<std::string, std::string> values;
+    KeyValueChunk(const NGNSChunk& chunk);
+};
+
+class NGNSChunk {
+    uint64_t getId() const;
+    uint32_t getPayloadSize() const;
+    void* getPayloadData();
+    std::vector<NGNSChunk> getChildren();
+};
+
+class NGNSFile {
+    NGNSFile(const void* buffer);
+    NGNSFile(const char* filename);
+    std::pair<int, int> getVersion() const;
+    NGNSChunk getRootChunk() {}
+
+};
+
+-- editor: schlomo
