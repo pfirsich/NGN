@@ -75,10 +75,38 @@ Ohne hin soll das ganze Vertex Format auf 4-Byte-Vielfache aligned werden
 * Vertex layouts should be padded automatically (4-byte per attribute and therefore multiples of 4 in total)
 
 -------------------------------------------------------------------
+
+# Implementation Details
+* VBOWrapper owns the data in it, since there is probably no use to keep it without the VBO.
+    - One constructor that doesn't allocate anything
+    - One constructor that allocates space for the data
+    - Onc constructor that takes ownership of data passed to it
+* mVertexData and mIndexData - The Mesh class has ownership of the objects stored here, seldom it is needed to share VertexData or IndexData objects between meshes. Either you want differennt IndexData with same VertexData, which I cannot think of any use for, or you want different combinations of VertexData, which is also not needed often (or should be needed).
+
+-------------------------------------------------------------------
+Why there is no struct/type associated with a VertexFormat.
+On the one hand packed stuff or types with weird conversions might be tricky (and some work to implement).
+Also you can not just put all the attributes in a struct and hope for them to be contiguous in memory (and without extra stuff or padding) especially not if you derive from a VertexFormat Baseclass that has virtual methods (because of the vtable).
+You would have to keep book for every attribute somewhere else anyways.
+That would leave the possibilty of doing something like this:
+MyVertexStruct* vertex = vertexData["inPosition"];
+with MyVertexStruct being a type that maps the vertex format.
+Problem: boxMesh, sphereMesh etc. would have to take a template argument, that still would not help them much, since they mostly want to access attributes by hints (e.g. AttributeType::POSITION, etc.). You would need the system already in place anyways.
+
+-------------------------------------------------------------------
 Notes for later:
 Instancing can be implemented by putting the instance data into a separate VertexData object with usage DYNAMIC or STREAM and repeated calls to upload() (even after Mesh.compile)
 Also there is a need for seeting a divisor for an attribute and to set the number of instances of a mesh (Mesh.setInstances(n)).
 
+-------------------------------------------------------------------
+Materials make some problems: 
+* For one some Materials might make certain Vertex formats necessary, while others (even other Materials, but of the same MaterialType!!) need different vertex formats. Some might need tangents, some might not.
+* Dynamically changing Materials might cause serious issues this way, since different vertex layouts might be required. Either the vertex data will be rebuilt or the  engines just whines loudly and it doesn't work. I think rebuilding and whining a lot is very good, since this is something you don't want to do often anyways. Also there should be mechanisms in place to generate a VertexBuffer format that is compatible with a given number of Materials and the current renderer.
+* Also sometimes a depth-only pass can be rendered a lot more efficiently if no unnecessary vertex attributes are transmitted (e.g. normals are not needed).For that it might be worth it to store separate VBOs with only that data. 
+* If I keep my system of recompiling VAOs, I will just not AttribPointer the attributes that were removed. -> Custom Shader for Depth-Prepass (position and texCoord for alpha test)
 
+-------------------------------------------------------------------
+Geometry-inbetween.
+Also better if you want to do post-processing of geometry (e.g. normalize)
 
 

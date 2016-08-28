@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cstdio>
 #include <string>
 #include <vector>
 #include <iostream>
+#include <memory>
 
 namespace ngn {
     /*
@@ -26,60 +26,63 @@ namespace ngn {
 
     //TODO: Thread safety
 
-    const unsigned LOGLVL_DEBUG = 0;
-    const unsigned LOGLVL_INFO = 1;
-    const unsigned LOGLVL_WARNING = 2;
-    const unsigned LOGLVL_ERROR = 3;
-    const unsigned LOGLVL_CRITICAL = 4;
+    enum class LogLevel : unsigned {
+        // These are named weirdly, because DEBUG and ERROR are common defines
+        LVL_DEBUG = 0,
+        LVL_INFO = 1,
+        LVL_WARNING = 2,
+        LVL_ERROR = 3,
+        LVL_CRITICAL = 4
+    };
 
-    extern const char* levelMap[5];
+    extern const char* levelNameMap[5];
 
     class LoggingHandler {
     private:
-        unsigned mLogLevel;
+        LogLevel mLogLevel;
     public:
-        LoggingHandler() : mLogLevel(LOGLVL_DEBUG) {}
+        LoggingHandler() : mLogLevel(LogLevel::LVL_DEBUG) {}
         virtual ~LoggingHandler() {}
 
-        void setLogLevel(unsigned level) {mLogLevel = level;}
-        unsigned getLogLevel() const {return mLogLevel;}
+        void setLogLevel(LogLevel level) {mLogLevel = level;}
+        LogLevel getLogLevel() const {return mLogLevel;}
 
-        virtual void log(unsigned level, const char* str) = 0;
+        virtual void log(LogLevel level, const char* str) = 0;
     };
 
     class FileLoggingHandler : public LoggingHandler {
     private:
         std::string filename;
     public:
-        FileLoggingHandler(const char* filename, unsigned level = LOGLVL_DEBUG) : filename(filename) {
+        FileLoggingHandler(const char* filename, LogLevel level = LogLevel::LVL_DEBUG) : filename(filename) {
             setLogLevel(level);
         }
         ~FileLoggingHandler() {}
 
-        void log(unsigned level, const char* str);
+        void log(LogLevel level, const char* str);
     };
 
     class ConsoleLoggingHandler : public LoggingHandler {
     public:
-        ConsoleLoggingHandler(unsigned level = LOGLVL_DEBUG) {setLogLevel(level);}
+        ConsoleLoggingHandler(LogLevel level = LogLevel::LVL_DEBUG) {setLogLevel(level);}
         ~ConsoleLoggingHandler() {}
 
-        void log(unsigned level, const char* str) {
+        void log(LogLevel level, const char* str) {
             std::cout << str << std::endl;
         }
     };
 
-    extern std::vector<LoggingHandler*> loggingHandlers;
+    extern std::vector<std::unique_ptr<LoggingHandler> > loggingHandlers;
     extern std::string loggingFormat;
 
     void setupDefaultLogging();
 
-    void log(unsigned level, const char* filename, int line, const char* format, ...);
+    void log(LogLevel level, const char* filename, int line, const char* format, ...);
 
     // http://stackoverflow.com/questions/5588855/standard-alternative-to-gccs-va-args-trick
-    #define LOG_DEBUG(_msg, ...) ngn::log(ngn::LOGLVL_DEBUG, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
-    #define LOG_INFO(_msg, ...) ngn::log(ngn::LOGLVL_INFO, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
-    #define LOG_WARNING(_msg, ...) ngn::log(ngn::LOGLVL_WARNING, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
-    #define LOG_ERROR(_msg, ...) ngn::log(ngn::LOGLVL_ERROR, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
-    #define LOG_CRITICAL(_msg, ...) ngn::log(ngn::LOGLVL_CRITICAL, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
+    #define LOG_DEBUG(_msg, ...) ngn::log(ngn::LogLevel::LVL_DEBUG, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
+    #define LOG_INFO(_msg, ...) ngn::log(ngn::LogLevel::LVL_INFO, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
+    #define LOG_WARNING(_msg, ...) ngn::log(ngn::LogLevel::LVL_WARNING, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
+    #define LOG_ERROR(_msg, ...) ngn::log(ngn::LogLevel::LVL_ERROR, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
+    #define LOG_CRITICAL(_msg, ...) ngn::log(ngn::LogLevel::LVL_CRITICAL, __FILE__, __LINE__, _msg, ##__VA_ARGS__)
 }

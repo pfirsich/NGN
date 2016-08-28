@@ -1,22 +1,23 @@
-#include "log.hpp"
 #include <ctime>
 #include <map>
 #include <cstdarg>
 #include <cstdio>
 
+#include "log.hpp"
+
 namespace ngn {
-    const char* levelMap[5] = {
+    const char* levelNameMap[5] = {
         "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
     };
 
-    std::vector<LoggingHandler*> loggingHandlers;
+    std::vector<std::unique_ptr<LoggingHandler> > loggingHandlers;
     std::string loggingFormat("{levelname} [{y}.{m}.{d} {H}:{M}:{S}] [{filename}:{line}] - {message}");
 
     void setupDefaultLogging() {
         #ifdef DEBUG
-        loggingHandlers.push_back(new ConsoleLoggingHandler());
+        loggingHandlers.emplace_back(new ConsoleLoggingHandler());
         #endif
-        loggingHandlers.push_back(new FileLoggingHandler("log.txt", LOGLVL_INFO));
+        loggingHandlers.emplace_back(new FileLoggingHandler("log.txt", LogLevel::LVL_INFO));
     }
 
     std::string formatString(const std::string& format, const std::map<std::string, std::string>& argMap) {
@@ -60,9 +61,10 @@ namespace ngn {
         return ret;
     }
 
-    void log(unsigned level, const char* filename, int line, const char* format, ...) {
+    void log(LogLevel level, const char* filename, int line, const char* format, ...) {
         std::map<std::string, std::string> formatArguments;
-        formatArguments["levelname"] = level < 5 ? levelMap[level] : std::to_string(level);
+        unsigned intLevel = static_cast<unsigned>(level);
+        formatArguments["levelname"] = intLevel < 5 ? levelNameMap[intLevel] : std::to_string(intLevel);
         formatArguments["filename"] = filename;
         formatArguments["line"] = std::to_string(line);
 
@@ -90,14 +92,14 @@ namespace ngn {
 
         std::string logLine = formatString(loggingFormat, formatArguments);
 
-        for(auto handler : loggingHandlers) {
-            if(level >= handler->getLogLevel()) {
+        for(auto& handler : loggingHandlers) {
+            if(static_cast<unsigned>(level) >= static_cast<unsigned>(handler->getLogLevel())) {
                 handler->log(level, logLine.c_str());
             }
         }
     }
 
-    void FileLoggingHandler::log(unsigned level, const char* str) {
+    void FileLoggingHandler::log(LogLevel level, const char* str) {
         // TODO: do something here
     }
 }

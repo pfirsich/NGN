@@ -1,0 +1,41 @@
+It seems that ASSIMP does not import any metadata from any file format, so that we cannot use custom properties in Blender and import them in ASSIMP.
+Also Blender doesn't export custom properties in any format (except .blend)
+
+The obvious way out is to write a custom exporter.
+
+We need a binary file format for fast model loading anyway (for scene loading in general probably), so maybe we can teach that format to hold metadata as well.
+
+https://www.blender.org/api/blender_python_api_2_65_5/info_tutorial_addon.html - Addon tutorial
+http://brucesutherland.blogspot.de/2012/05/blender-262-writing-export-script.html
+https://www.blender.org/manual/data_system/custom_properties.html
+https://www.blender.org/api/blender_python_api_current/info_quickstart.html#custom-properties
+
+https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/Advanced_Tutorials/Python_Scripting/Export_scripts
+
+https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/Advanced_Tutorials/Python_Scripting/Object,_Action,_Settings
+
+https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/Advanced_Tutorials/Python_Scripting/Addon_Custom_Property
+
+https://www.youtube.com/watch?v=2j75AM1Mttc - Creating Custom Toolbar Panel0
+
+example of someone who did it already:
+http://www.moddb.com/groups/blenderheads/news/kravall-level-editor
+Model-Library (Asset-Folder-Referenz), super-files für einzelne game-objects ("templates")
+Export-Path + Quick-Export-Button + Keyboardshortcut
+Navigation-Meshes, Event-Areas, Trigger
+
+https://jhocking.itch.io/dropper-for-blender
+Already exports name, position, rotation, scale, custom properties - Enough for most gamejam games!
+
+https://blenderartists.org/forum/showthread.php?239528-Blender-Level-Editor&p=2194445&viewfull=1#post2194445 - That guy did it as well
+Asset library as a list
+Far-Reaching editing features
+
+https://hub.jmonkeyengine.org/t/reinventing-blender-for-level-design/36443/2 - Ideas from here
+Tag some objects with a property (or special name), don't even use the geometry, just transforms etc.
+Empty objects are groups or represent single objects
+naming-conventions
+
+http://greweb.me/2012/04/blender-as-a-2d-game-map-editor-proof-of-concept/
+
+https://www.youtube.com/watch?v=gM1N6WUQ_gc That guy did it as well. Very long video though.

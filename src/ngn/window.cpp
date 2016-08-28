@@ -24,6 +24,12 @@ namespace ngn {
         }
     }
 
+    float getTime() {
+        static Uint64 start = SDL_GetPerformanceCounter();
+        static Uint64 freq = SDL_GetPerformanceFrequency();
+        return 1.0f * (SDL_GetPerformanceCounter() - start) / freq;
+    }
+
     void Window::create(const char* title, int width, int height, bool fullscreen, bool vsync, Uint32 createWindowFlags) {
         if(!firstCreation) {
             if(SDL_Init(SDL_INIT_VIDEO) < 0) {

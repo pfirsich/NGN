@@ -10,6 +10,9 @@
 namespace ngn {
     void checkGLError();
 
+    // These values are only meaningful relative to each other
+    float getTime();
+
     // If this can even be instantiated properly twice has never been tested.
     class Window {
     private:

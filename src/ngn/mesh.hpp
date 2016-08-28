@@ -7,84 +7,102 @@
 
 #include "mesh_vertexdata.hpp"
 #include "mesh_vertexaccessor.hpp"
+#include "shader.hpp"
+#include "log.hpp"
 
 namespace ngn {
-    ///////////////////////////////////////////////////////////////////////////
-
-    // without index data, this will use glDrawArrays
     class Mesh {
+    public:
+        enum class DrawMode : GLenum {
+            POINTS = GL_POINTS,
+            LINES = GL_LINES,
+            LINE_LOOP = GL_LINE_LOOP,
+            LINE_STRIP = GL_LINE_STRIP,
+            TRIANGLES = GL_TRIANGLES,
+            TRIANGLE_FAN = GL_TRIANGLE_FAN,
+            TRIANGLE_STRIP = GL_TRIANGLE_STRIP,
+        };
+
     private:
-        std::vector<std::pair<const ShaderProgram*, GLuint> > mVAOs;
-        std::vector<VertexData*> mVertexData;
-        IndexData* mIndexData;
+        static GLuint lastBoundVAO;
+
+        DrawMode mMode;
+        std::vector<std::pair<const ngn::ShaderProgram*, GLuint> > mVAOs;
+        std::vector<std::unique_ptr<VertexData> > mVertexData;
+        std::unique_ptr<IndexData> mIndexData;
 
         GLuint getVAO(const ShaderProgram* shader) {
-            for(auto pair : mVAOs) {
-                if(pair->first == shader) return pair->second;
+            for(auto& pair : mVAOs) {
+                if(pair.first == shader) return pair.second;
             }
             return 0;
         }
 
-        void setVao(const ShaderProgram* shader, GLuint vao) {
-            for(auto pair : mVAOs) {
-                if(pair->first == shader) {
-                    pair->second = vao;
+        void setVAO(const ShaderProgram* shader, GLuint vao) {
+            for(auto& pair : mVAOs) {
+                if(pair.first == shader) {
+                    pair.second = vao;
                     return;
                 }
             }
             mVAOs.push_back(std::make_pair(shader, vao));
         }
 
-        static GLuint lastBoundVAO;
-    public:
-
-        Mesh(const VertexData& vertexData);
-        Mesh(const VertexData& vertexData, const IndexData& indexData);
-
-        void addVertexData(const VertexData& vertexData) {
-            // This is not enough if someone changes the size of an already added VertexData object (not the last one)
-            if(mVertexData.size() > 0 && mVertexData.back().getNumVertices() != vertexData.getNumVertices()) {
-                LOG_ERROR("Multiple VertexData objects with different sizes in a single Mesh");
-            }
-            mVertexData.push_back(&vertexData);
+        static std::string attrIdToString(const char* name) {
+            return "name '" + std::string(name) + "'";
         }
-        void setIndices(const IndexData& indexData);
+        static std::string attrIdToString(AttributeType attrType) {
+            return "hint " + std::string(AttributeTypeNames[static_cast<int>(attrType)]);
+        }
 
-        void compile(const ShaderProgram* shader) {
-            assert(shader != nullptr);
+    public:
+        Mesh(DrawMode mode) : mMode(mode), mIndexData(nullptr) {}
 
-            GLuint vao = getVAO(shader);
-            if(vao == 0) glGenVertexArrays(1, &vao);
-            glBindVertexArray(vao);
+        // I'm not really sure what I want this to do
+        Mesh(const Mesh& other) = delete;
+        Mesh& operator=(const Mesh& other) = delete;
 
-            // Not sure if this should be in VertexFormat
-            for(auto vData : mVertexData) {
-                vData->bind();
-                uint8_t* offset = 0;
-                size_t stride = vData->getVertexFormat().getAttrCount() * 4;
-                for(auto attr : vData->getVertexFormat().getAttributes()) {
-                    auto location = static_cast<GLint>(shader->getAttributeLocation(attr.name));
-                    glEnableVertexAttribArray(location);
-                    glVertexAttribPointer(  location, attr.alignedNum, static_cast<GLenum>(attr.dataType),
-                                            attr.normalized, stride, reininterpret_cast<GLvoid*>(offset));
-                    offset += 4;
+        template <typename... Ts>
+        VertexData* addVertexData(Ts&&... args) {
+            std::unique_ptr<VertexData> vData(new VertexData(std::forward<Ts>(args)...));
+            // This is not enough if someone changes the size of an already added VertexData object (not the last one)
+            if(mVertexData.size() > 0 && mVertexData.back()->getNumVertices() != vData->getNumVertices()) {
+                LOG_ERROR("Multiple VertexData objects with different sizes in a single Mesh.");
+                return nullptr;
+            } else {
+                VertexData* ret = vData.get();
+                mVertexData.push_back(std::move(vData));
+                return ret;
+            }
+        }
+
+        // add might be confusing since every Mesh object can only hold a single instance of IndexData
+        // if another one is added, the old one is detached and free'd
+        template <typename... Ts>
+        IndexData* setIndexData(Ts&&... args) {
+            IndexData* iData = new IndexData(std::forward<Ts>(args)...);
+            mIndexData.reset(iData);
+            return iData;
+        }
+
+        template<typename T, typename argType>
+        VertexAttributeAccessor<T> getAccessor(argType id) {
+            VertexData* vData = nullptr;
+            for(size_t i = 0; i < mVertexData.size(); ++i) {
+                if(mVertexData[i]->getVertexFormat().hasAttribute(id)) {
+                    if(vData != nullptr)
+                        LOG_ERROR("A mesh seems to have multiple VertexData objects attached that share an attribute with %s",
+                            attrIdToString(id).c_str());
+                    vData = mVertexData[i].get();
                 }
             }
-
-            // for ARRAY_BUFFER only the calls to glEnableVertexAttribArray/glEnableVertexPointer are stored
-            // so unbind now.
-            mVertexData.back()->unbind();
-
-            if(mIndexData != nullptr) mIndexData->bind();
-
-            glBindVertexArray(0);
-
-            // VAO stores the last bound ELEMENT_BUFFER state, so as soon as the VAO is unbound, unbind the VBO
-            if(mIndexData != nullptr) mIndexData->unbind();
-
-            setVao(shader, vao);
+            return vData->getAccessor<T>(id);
         }
 
+        // non-const argument, because we call .bind()
+        void compile(ShaderProgram* shader);
+
+        // In the header because of the slim possibility that it might be inlined
         void draw() {
             GLuint vao = getVAO(ShaderProgram::currentShaderProgram);
             if(vao == 0) {
@@ -96,40 +114,36 @@ namespace ngn {
 
             // A lof of this can go wrong if someone compiles this Mesh without an index buffer attached, then attaches one and compiles it with another
             // shader, while both are in use
+            GLenum mode = static_cast<GLenum>(mMode);
             if(mIndexData != nullptr) {
-                glDrawElements(mMode, mIndexData->getNumIndices(), static_cast<GLenum>(mIndexData->getDataType()), nullptr);
+                glDrawElements(mode, mIndexData->getNumIndices(), static_cast<GLenum>(mIndexData->getDataType()), nullptr);
             } else {
                 // If someone had the great idea of having multiple VertexData objects attached and changing their size after attaching
                 // this might break
                 size_t size = 0;
-                if(mVertexData.size() > 0) size = mVertexData[0].getNumVertices();
-                glDrawArrays(mMode, 0, size);
+                if(mVertexData.size() > 0) size = mVertexData[0]->getNumVertices();
+                glDrawArrays(mode, 0, size);
             }
         }
     };
 
-    ///////////////////////////////////////////////////////////////////////////
+    Mesh* assimpMesh(const char* filename, const VertexFormat& format);
+    std::vector<Mesh*> assimpMeshes(const char* filename, const VertexFormat& format);
 
-    VertexFormat P3N3T2;
-    P3N3T2.add(VertexAttribute("inPosition", VertexAttribute::F32, 3, false, VertexAttribute::POSITION));
-    P3N3T2.add(VertexAttribute("inTexCoords", VertexAttribute::UI16, 2, true, VertexAttribute::TEXCOORD));
+    // width, height, depth along x, y, z, center is 0, 0, 0
+    Mesh* boxMesh(float width, float height, float depth, const VertexFormat& format);
 
-    VertexData vData = P3N3T2.allocate(36);
-    auto position = vData["inPosition"];
-    for(int i = 0; i < vData.getNumVertices(); ++i) {
-        // Die Template-Parameter inferren den returntype F32 * 3 -> vec3, muss man alles mit Template-Spezialisierung machen
-        position[i] = glm::vec3(0.0f, 0.0f, 0.0f);
-    }
+    // Stacks represents the number of elements on the y axis
+    Mesh* sphereMesh(float radius, int slices, int stacks, const VertexFormat& format);
 
     ///////////////////////////////////////////////////////////////////////////
     /*
-    boxMesh(int width, int height, int depth, int subdivison = 1, const VertexFormat& format = defaultFormat);
     circleMesh(int radius, int segments, const VertexFormat&format = defaultFormat);
     rectangleMesh(int width, int height, int subdivisionX = 1, int subdivisionY)
         .normalize to get a plain thats centered
         setPosition and lookAt to get a line + proper scaling
     cylinderMesh(radiusTop, radiusBottom) -> Cylinder
-    sphereMesh
+    subdivide(Mesh, iterations) // http://answers.unity3d.com/questions/259127/does-anyone-have-any-code-to-subdivide-a-mesh-and.html like this
     normalsMesh - generates normals from another VertexData - maybe GL_LINES or actual arrows?
     gridMesh
     frustumMesh - from camera/any perspective matrix, inverts is and converts ndc - corners

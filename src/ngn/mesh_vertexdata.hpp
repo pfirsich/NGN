@@ -4,65 +4,15 @@
 #include <vector>
 #include <cstring>
 #include <utility>
+#include <memory>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+#include "mesh_vertexattribute.hpp"
 #include "mesh_vertexaccessor.hpp"
 
 namespace ngn {
-    class VertexData;
-    class VertexAttributeAccessor;
-
-    enum class AttributeDataType : GLenum {
-        I8 = GL_BYTE,
-        UI8 = GL_UNSIGNED_BYTE
-        I16 = GL_SHORT,
-        UI16 = GL_UNSIGNED_SHORT,
-        I32 = GL_INT,
-        UI32 = GL_UNSIGNED_INT,
-        //F16 = GL_HALF_FLOAT,
-        F32 = GL_FLOAT,
-        //F64 = GL_DOUBLE,
-        I2_10_10_10 = GL_INT_2_10_10_10_REV,
-        UI2_10_10_10 = GL_UNSIGNED_INT_2_10_10_10_REV,
-    };
-
-    enum class AttributeType : GLenum {
-        POSITION,
-        NORMAL,
-        TEXCOORD,
-        TANGENT,
-        CUSTOM
-    };
-
-    struct VertexAttribute {
-        std::string name;
-        AttributeDataType dataType;
-        int num, alignedNum;
-        bool normalized;
-        AttributeType type;
-
-        VertexAttribute(const std::string& name, AttributeDataType dataType, int num, bool normalized, AttributeType type = AttributeType::CUSTOM) :
-                name(name), dataType(dataType), num(num), alignedNum(num), normalized(normalized), attrType(type) {
-            // Align to 4 Bytes
-            // https://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Attribute_sizes
-            switch(type) {
-                case AttributeType::I8:
-                case AttributeType::UI8:
-                    int overlap = num % 4;
-                    if(overlap > 0) alignedNum = num + (4 - overlap);
-                    break;
-                case AttributeType::I16:
-                case AttributeType::UI16:
-                    int overlap = (num * 2) % 4;
-                    if(overlap > 0) alignedNum = num + (4 - overlap) / 2;
-                    break;
-                // all others should already be multiples of 4
-            }
-        }
-    };
-
     enum class UsageHint : GLenum {
         STATIC = GL_STATIC_DRAW,
         STREAM = GL_STREAM_DRAW,
@@ -72,129 +22,141 @@ namespace ngn {
     struct VertexFormat {
     private:
         std::vector<VertexAttribute> mAttributes;
-        int mAttrCount;
+        std::vector<int> mAttributeOffsets;
+        int mStride;
+        int mAttributeCount;
 
     public:
-        const auto& getAttributes() const {return mAttributes;}
-        int getAttrCount() const {return mAttrCount;}
+        VertexFormat() : mStride(0), mAttributeCount(0) {}
 
-        void add(const VertexAttribute& _attr) {
-            mAttributes.push_back(_attr);
-            mAttrCount++;
-            // This is done, so I avoid copying attr twice, because I want to modify it
-            // VertexAttribute& attr = mAttributes.back();
+        const std::vector<VertexAttribute>& getAttributes() const {return mAttributes;}
+        int getAttributeCount() const {return mAttributeCount;}
+        int getStride() const {return mStride;}
+        int getAttributeOffset(int index) const {return mAttributeOffsets[index];}
+
+        template <typename... Ts>
+        void add(Ts&&... args) {
+            mAttributes.emplace_back(std::forward<Ts>(args)...);
+            mAttributeOffsets.push_back(mStride);
+            const VertexAttribute& attr = mAttributes.back();
+            mStride += getAttributeDataTypeSize(attr.dataType) * attr.alignedNum;
+            mAttributeCount++;
         }
 
-        VertexData allocate(int numVertices, UsageHint usage = UsageHint::STATIC) {
-            return VertexData(*this, numVertices, usage);
-        }
+        bool hasAttribute(AttributeType attrType) const;
+        bool hasAttribute(const char* name) const;
 
-        // Think about what these guys should return if they don't find an attribute!
-        // Maybe implement hasAttribute("name") and hasAttribute(AttributeType)
-        VertexAttributeAccessor getAccessor(const char* name, mData) {
+        // These return a VertexAttributeAccessor instance that represents an invalid state (doesn't read or write)
+        // if the attribute does not exist. use isValid()
+        template<typename T>
+        VertexAttributeAccessor<T> getAccessor(const char* name, void* data) const {
             // If we want the vector to be reorder-able and resizable, we have to look for the element every time
             // Also if the number of elements is small (which it mostly is), this is probably even faster than std::map
             for(std::size_t i = 0; i < mAttributes.size(); ++i) {
                 if(mAttributes[i].name == name) {
-                    return VertexAttributeAccessor(*this, i, mData);
+                    return VertexAttributeAccessor<T>(mAttributes[i], getStride(), getAttributeOffset(i), data);
                 }
             }
+            printf("There is no attribute with name '%s'!", name);
+            return VertexAttributeAccessor<T>();
         }
 
-        VertexAttributeAccessor getAccessor(AttributeType attrType) {
+        template<typename T>
+        VertexAttributeAccessor<T> getAccessor(AttributeType attrType, void* data) const {
             for(std::size_t i = 0; i < mAttributes.size(); ++i) {
                 if(mAttributes[i].type == attrType) {
-                    return VertexAttributeAccessor(*this, i, mData);
+                    return VertexAttributeAccessor<T>(mAttributes[i], getStride(), getAttributeOffset(i), data);
                 }
             }
+            printf("There is no attribute of type '%s', make sure to call hasAttribute!", AttributeTypeNames[static_cast<int>(attrType)]);
+            return VertexAttributeAccessor<T>();
         }
     };
 
     class VBOWrapper {
     protected:
+        GLenum mTarget;
         int mSize;
         UsageHint mUsage;
-        void* mData;
+        using VBODataType = uint8_t;
+        std::unique_ptr<VBODataType[]> mData; // Actually we don't care about the type, but we can't declare a std::unique_ptr<void>
+        // this is because void doesn't have a destructor, making that type incomplete
         GLuint mVBO;
         int mLastUploadedSize;
         bool mUploadedOnce;
 
     public:
-        VBOWrapper() : mSize(0), mUsage(UsageHint::STATIC), mData(nullptr), mVBO(0), mLastUploadedSize(0), mUploadedOnce(false) {}
+        VBOWrapper(GLenum target, void* data, size_t size, UsageHint usage) :
+                mTarget(target), mSize(size), mUsage(usage), mData(reinterpret_cast<VBODataType*>(data)),
+                mVBO(0), mLastUploadedSize(0), mUploadedOnce(false) {}
 
         ~VBOWrapper() {
             if(mVBO != 0) glDeleteBuffers(1, &mVBO);
         }
 
+        VBOWrapper(const VBOWrapper& other) = delete;
+        VBOWrapper& operator=(const VBOWrapper& other) = delete;
+
         // http://hacksoflife.blogspot.de/2015/06/glmapbuffer-no-longer-cool.html - Don't implement map()?
-        void upload() {
-            mUploadedOnce = true;
-            if(mVBO == 0) {
-                glGenVertexArrays(1, &mVBO);
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, mVBO);
-            if(mLastUploadedSize != mSize) {
-                glBufferData(GL_ARRAY_BUFFER, mSize, mData, mHint);
-                mLastUploadedSize = mSize;
-            } else {
-                glBufferSubData(GL_ARRAY_BUFFER, 0, mSize, mData);
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        void upload();
+
+        virtual void reallocate(size_t num, bool copyOld) = 0;
+
+        virtual void* getData() {
+            return mData.get();
+        }
+
+        // If you uploaded your data, you can call release to delete the local copy
+        void freeLocal() {
+            mData.reset();
         }
 
         void bind() {
             if(!mUploadedOnce) upload();
-            glBindBuffer(GL_ARRAY_BUFFER, mVBO);
+            glBindBuffer(mTarget, mVBO);
+        }
+
+        void unbind() const {
+            glBindBuffer(mTarget, 0);
         }
     };
 
-    // Think about who is supposed to own the memory in mData!!! - delete if necessary
+    // VertexData/IndexData represent the vertex data in it.
+    // That means that they have full ownership of the data, you may reallocate it or get access to the data they points to
+    // but never change the data they point to
+
     class VertexData : public VBOWrapper {
     private:
         const VertexFormat& mVertexFormat;
-        int mNumVertices;
+        size_t mNumVertices;
 
     public:
         VertexData(const VertexFormat& format, UsageHint usage = UsageHint::STATIC) :
-                mVertexFormat(format), mNumVertices(0), mUsage(usage) {}
+                VBOWrapper(GL_ARRAY_BUFFER, nullptr, 0, usage),
+                mVertexFormat(format), mNumVertices(0) {}
 
-        VertexData(const VertexFormat& format, int numVertices, UsageHint usage = UsageHint::STATIC) :
-                mVertexFormat(format), mUsage(usage) {
-            allocate(numVertices);
+        VertexData(const VertexFormat& format, size_t numVertices, UsageHint usage = UsageHint::STATIC) :
+                VBOWrapper(GL_ARRAY_BUFFER, nullptr, 0, usage),
+                mVertexFormat(format) {
+            reallocate(numVertices);
         }
 
-        VertexData(const VertexFormat& format, int numVertices, void* data, UsageHint usage = UsageHint::STATIC) :
-                mVertexFormat(format), mNumVertices(numVertices), mUsage(usage), mData(data) {
-            mSize = format.getAttrCount()*numVertices*4;
-        }
+        // This constructor will *take ownership* of the data pointed to by data
+        // If you are using a std::unique_ptr yourself, you therefore have to use std::move
+        VertexData(const VertexFormat& format, void* data, size_t numVertices, UsageHint usage = UsageHint::STATIC) :
+                VBOWrapper(GL_ARRAY_BUFFER, data, format.getStride()*numVertices, usage),
+                mVertexFormat(format), mNumVertices(numVertices) {}
 
-        void allocate(int numVertices, bool copyOld = false) {
-            int newSize = format.getAttrCount()*numVertices*4;
-            void* newData = reinterpret_cast<void*>(new uint8_t[newSize]); // every attribute aligned to 4 byte
-            if(copyOld) std::memcpy(newData, mData, mSize]);
-            mData = newData;
-            mNumVertices = numVertices;
-            mSize = newSize;
-        }
+        // If nothing has been allocated yet, also call this function
+        void reallocate(size_t numVertices, bool copyOld = false);
 
-        int getNumVertices() const {return mNumVertices;}
+        size_t getNumVertices() const {return mNumVertices;}
+        const VertexFormat& getVertexFormat() const {return mVertexFormat;}
 
-        const VertexFormat& getVertexFormat() const {
-            return mVertexFormat;
-        }
-
-        void setData(void* data, int numVertices) {
-            mNumVertices = numVertices;
-            mSize = format.getAttrCount()*mNumVertices*4;
-            mData = data;
-        }
-
-        VertexAttributeAccessor operator[](const char* name) {
-            return mVertexFormat.getAccessor(name, mData);
-        }
-
-        VertexAttributeAccessor operator[](AttributeType attrType) {
-            return mVertexFormat.getAccessor(name, attrType);
+        template<typename T, typename argType>
+        VertexAttributeAccessor<T> getAccessor(argType id) {
+            return mVertexFormat.getAccessor<T>(id, mData.get());
         }
 
         // geometry manipulation
@@ -205,10 +167,10 @@ namespace ngn {
         void calculateTangents();
 
         void normalize(bool rescale = false);
-        void transform(const glm:::mat4& transform);
+        void transform(const glm::mat4& transform);
         void merge(const VertexData& other, const glm::mat4& transform);
 
-        Mesh convertVertexFormat(const VertexFormat& format);
+        VertexData* convertVertexFormat(const VertexFormat& format);
 
         // pair of position and sizes
         std::pair<glm::vec3, glm::vec3> boundingBox();
@@ -216,19 +178,93 @@ namespace ngn {
         std::pair<glm::vec3, float> boundingSphere();
     };
 
-    class IndexData : public VBOWrapper {
-    public:
-        enum class DataType : GLenum {
-            UI8 = GL_UNSIGNED_BYTE,
-            UI16 = GL_UNSIGNED_SHORT,
-            UI32 = GL_UNSIGNED_INT
-        };
+    enum class IndexDataType : GLenum {
+        UI8 = GL_UNSIGNED_BYTE,
+        UI16 = GL_UNSIGNED_SHORT,
+        UI32 = GL_UNSIGNED_INT
+    };
 
+    int getIndexDataTypeSize(IndexDataType type);
+    IndexDataType getIndexDataType(size_t vertexCount);
+
+    class IndexDataAssigner {
     private:
-        DataType mDataType;
-        int mNumIndices;
+        void* mData;
+        size_t mIndex;
+        IndexDataType mDataType;
 
     public:
+        IndexDataAssigner(void* data, size_t index, IndexDataType dataType) : mData(data), mIndex(index), mDataType(dataType) {}
 
+        template<typename T>
+        const T& operator=(const T& val) {
+            switch(mDataType) {
+                case IndexDataType::UI8:
+                    *(reinterpret_cast< uint8_t*>(mData) + mIndex) = val;
+                    break;
+                case IndexDataType::UI16:
+                    *(reinterpret_cast<uint16_t*>(mData) + mIndex) = val;
+                    break;
+                case IndexDataType::UI32:
+                    *(reinterpret_cast<uint32_t*>(mData) + mIndex) = val;
+                    break;
+            }
+            return val;
+        }
+    };
+
+    class IndexData : public VBOWrapper {
+    private:
+        IndexDataType mDataType;
+        size_t mNumIndices;
+
+    public:
+        IndexData(IndexDataType dataType, UsageHint usage = UsageHint::STATIC) :
+                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, nullptr, 0, usage),
+                mDataType(dataType), mNumIndices(0) {}
+
+        IndexData(IndexDataType dataType, size_t num, UsageHint usage = UsageHint::STATIC) :
+                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, nullptr, 0, usage),
+                mDataType(dataType), mNumIndices(num) {
+            reallocate(num);
+        }
+
+        IndexData(uint8_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
+                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint8_t), usage),
+                mDataType(IndexDataType::UI8), mNumIndices(num) {}
+        IndexData(uint16_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
+                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint16_t), usage),
+                mDataType(IndexDataType::UI16), mNumIndices(num) {}
+        IndexData(uint32_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
+                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint32_t), usage),
+                mDataType(IndexDataType::UI32), mNumIndices(num) {}
+
+        size_t getNumIndices() const {return mNumIndices;}
+        IndexDataType getDataType() const {return mDataType;}
+
+        template<typename T>
+        T* getData() {
+            return reinterpret_cast<T*>(mData.get());
+        }
+
+        void reallocate(size_t numIndices, bool copyOld = false);
+
+        uint32_t operator[](size_t index) const {
+            switch(mDataType) {
+                case IndexDataType::UI8:
+                    return static_cast<uint32_t>(*(reinterpret_cast<uint8_t*>(mData.get()) + index));
+                    break;
+                case IndexDataType::UI16:
+                    return static_cast<uint32_t>(*(reinterpret_cast<uint16_t*>(mData.get()) + index));
+                    break;
+                case IndexDataType::UI32:
+                    return static_cast<uint32_t>(*(reinterpret_cast<uint32_t*>(mData.get()) + index));
+                    break;
+            }
+        }
+
+        IndexDataAssigner operator[](size_t index) {
+            return IndexDataAssigner(mData.get(), index, mDataType);
+        }
     };
 }

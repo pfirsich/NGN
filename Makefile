@@ -13,7 +13,8 @@ CFLAGS = -Wall -Isrc/ -Isrc/ngn -std=gnu++11
 EXECUTABLE = build/ngnTest
 LDFLAGS =
 
-SRC = src/main.cpp src/ngn/log.cpp src/ngn/window.cpp src/ngn/object.cpp src/ngn/renderer.cpp
+SRC = src/main.cpp src/ngn/log.cpp src/ngn/window.cpp src/ngn/mesh.cpp src/ngn/mesh_vertexaccessor.cpp \
+	  src/ngn/mesh_vertexattribute.cpp src/ngn/mesh_vertexdata.cpp src/ngn/shader.cpp src/ngn/transforms.cpp
 OBJ = $(SRC:%.cpp=%.o)
 
 # dependencies
@@ -27,6 +28,9 @@ CFLAGS += -Idependencies/glad/include
 LDFLAGS += -Ldependencies/glad/src -lglad
 # GLM
 CFLAGS += -Idependencies/glm
+# ASSIMP
+CFLAGS += -Idependencies/assimp/include
+LDFLAGS += -Ldependencies/assimp/lib -lassimp -lzlibstatic
 
 LDFLAGS += -lstdc++
 

@@ -1,0 +1,94 @@
+Low-Level:
+    ✔ Ins Mesh einbauen, dass man den Accessor holt. - Damit man POSITION aus mehreren Buffern holen kann. @done (27.08.16 01:55)
+    ✔ Den Flow des Mesh/Material-Flows einmal komplett aufschreiben @done (27.08.16 14:00)
+    ✔ Transforms @done (27.08.16 14:25)
+    ✔ Camera in wallsurfgame ersetzen und testen @done (28.08.16 02:19)
+    ✔ Window in wallsurfgame integrieren und dabei interessanten Kram aus core reinmergen @done (28.08.16 05:26)
+    ✔ log etwas aufräumen @done (28.08.16 06:01)
+    ✔ shader etwas aufräumen @done (28.08.16 05:35)
+    ✔ Alles ins ngn repo umziehen @done (28.08.16 06:14)
+    › Geometry einfügen
+    › Object implementieren (ohne Material, nur Mesh) + aufsplitten in HasId, Transforms, ...
+    › Renderer integrieren
+    › Uniform-Objects -> key-Value-store mit casterei und glUniform und so, noch nicht ganz sicher
+    › Materials
+    NGN ML
+
+    › Vertex Format
+    2_10_10_10 für Normals, 2›USHORT für TexCoord
+
+    › Assimp-Import flags optimieren
+    http://assimp.sourceforge.net/lib_html/postprocess_8h.html
+    › Assimp eine Scene (Object*) importieren lassen, statt eine Mesh-Liste.
+    http://assimp.sourceforge.net/lib_html/structai_node.html
+    http://assimp.sourceforge.net/lib_html/structai_mesh.html
+    https://github.com/assimp/assimp/blob/master/samples/SimpleOpenGL/Sample_SimpleOpenGL.c
+
+    › Input
+
+    › FBO-Object
+    https://open.gl/framebuffers
+
+Mid-Level:
+    › Skinning
+    › Instancing
+    › Post-Process Pipeline
+
+High-Level:
+    › Materials aus ASSIMP laden soweit möglich: http://learnopengl.com/#!Model-Loading/Model
+    › Performance Counters - Rebinds, Recompiles (Shaders and VAOs), Reuploads, Rendered Objects, Culled Objects, etc., Frametime, State Switchesf
+
+    Default Renderer:
+        › Derivative Mapping
+            http://johnwhigham.blogspot.de/2015/03/derivative-mapping.html
+            http://www.rorydriscoll.com/2012/01/11/derivative-maps/
+            http://polycount.com/discussion/91605/derivative-normal-maps-what-are-they
+            http://www.rorydriscoll.com/2012/01/15/derivative-maps-vs-normal-maps/
+            http://mmikkelsen3d.blogspot.de/2011/07/derivative-maps.html
+        › Normal Mapping
+            http://www.j3l7h.de/talks/2008-02-18_Care_and_Feeding_of_Normal_Vectors.pdf
+        › Environment Mapping
+        › Ambient Occlusion
+        › Distortion
+        › Shadow Mapping - Cascade? Variance?
+            http://graphicsrunner.blogspot.de/2008/07/dual-paraboloid-reflections.html
+            http://http.developer.nvidia.com/GPUGems/gpugems_ch14.html
+            http://gamedev.stackexchange.com/questions/81734/how-to-calculate-directional-light-frustum-from-camera-frustum
+            http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
+            https://msdn.microsoft.com/en-us/library/windows/desktop/ee416324(v=vs.85).aspx
+        › PBR
+            https://www.reddit.com/r/gamedev/comments/35plnt/physically_based_light_intensity/
+            http://www.marmoset.co/toolbag/learn/pbr-practice
+            https://seblagarde.wordpress.com/2011/08/17/feeding-a-physical-based-lighting-mode/
+            http://www.frostbite.com/wp-content/uploads/2014/11/course_notes_moving_frostbite_to_pbr.pdf
+            https://docs.unrealengine.com/latest/INT/Engine/Rendering/Materials/PhysicallyBased/
+        › Skybox
+            http://threejs.org/examples/webgl_shaders_sky.html
+        › Picking
+        › Deferred Shading
+            http://frictionalgames.blogspot.de/2010/12/bye-bye-pre-pass-lighting.html
+            http://www.john-chapman.net/content.php?id=13
+        › Bloom
+            Unreal Bloom - http://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
+        › HDR
+        › Parallax Mapping?
+        › Gamma Correction
+        › Text Rendering
+        › Particles
+        › Culling
+            http://docs.cryengine.com/display/SDKDOC4/Culling+Explained
+            Automatic Object Splitting
+            Frustum Culling
+            Portals
+            z pre pass
+        › Lighting
+            http://sunandblackcat.com/tipFullView.php?l=eng&topicid=31&topic=Advanced-GLSL-Lighting-Models
+            http://threejs.org/examples/webgl_lights_hemisphere.html
+            https://www.reddit.com/r/gamedev/comments/4iusfg/realtime_shading_with_area_light_sources_with/
+            https://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/ - spherical area lights, attenuation
+            http://www.gamedev.net/topic/640573-area-lights-forward-and-deferred/ Mehr Area lights
+            http://www.gamedev.net/topic/677849-area-lights-with-deferred-renderer/
+            http://www.gamedev.net/topic/552315-glsl-area-light-implementation/
+        › Anti-Aliasing
+            Temporal AA: http://threejs.org/examples/webgl_postprocessing_taa.html
+        › GodRays - http://threejs.org/examples/webgl_postprocessing_godrays.html

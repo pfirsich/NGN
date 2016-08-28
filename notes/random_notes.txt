@@ -1,3 +1,8 @@
+-------------- Fragen
+* Wer soll memory ownen (in der Mesh-Klasse), wer ownt VertexData, mData?
+* Wie kann man sich nicht selbst in template spezialisierungen ertränken?
+---------------------
+
 ein geerbtes object für LOD, dass mehrere meshes und materials nimmt, oder gleich mehrere objects (damit man shadows und so pro lod definieren kann), dann aber transformationen ignorieren
 
 material-klasse - hält properties + maps, blending, depthTest, alphaTest, visible, backfaceculling
@@ -19,16 +24,14 @@ http://en.cppreference.com/w/cpp/language/cast_operator - cast zu glm::mat4
 
 ------
 
+http://gamedev.stackexchange.com/questions/46424/try-catch-or-ifs-for-error-handling-in-c error handling
+
+------
+
 http://stackoverflow.com/questions/573025/which-3d-model-format-should-i-be-using
 only support collada for importing (support it well), but write proprietary files - ngns (ngn scene)
 
-loading:
-http://www.assimp.org/main_doc.html
-https://github.com/assimp/assimp/tree/master/samples/SimpleOpenGL/
-https://sourceforge.net/p/assimp/discussion/817653/thread/af6dc74c/
-http://learnopengl.com/#!Model-Loading/Mesh
-http://www.nexcius.net/2014/04/13/loading-meshes-using-assimp-in-opengl/
-
+Rather: Implement own format later (from/to COLLADA or Blender) and use ASSIMP for now
 
 --------------------------------------
 vertex attribute locations
@@ -40,6 +43,30 @@ http://gamedev.stackexchange.com/questions/57957/game-engine-design-ubershader-s
 Laut https://www.opengl.org/wiki/Vertex_Shader können die locations bei jedem linken anders sein.
 Deshalb muss man für jede Mesh/Shader-Kombination einen eigenen VAO haben, eigentlich recht  lightweight, also nicht so schlimm, aber bei zwei versch. objekten muss man den schon jeden Frame neu erzeugen, in dem Fall ist das dann eher kacke.
 Statt einer map[programID] ist es wohl besser einen vector zu haben, weil man ja immer so super wenige elemente hat. i.d.R halt 0 und höchstens 5 oder so.
+
+------------------------------------
+Für Instancing und und mehr Informationen vielleicht überlegen eine Zwischenabstraktion für ein Mesh-Material-Paar zu finden. z.B. Object und ObjectInstance (dieses objekt hält dann transformationen und so). 
+Oder ObjectTemplate dazwischen einfügen. Macht automatisches Instancing und bucketing einfacher.
+
+-----------------------------------------------
+
+Vielleicht eine Zwischenklasse Geometry einführen, die einfach alle Informationen zum Mesh speichert. Geometrys werden auch gebaut, gemerged, Kram wird dafür generiert. Und dann baut man daraus z.b. ein Mesh mit zwei VBOs, wobei einer dynamisch ist und einer static, oder man baut ein Mesh in dem  nur ein paar der Daten von Geometry sind (z.B. lässt man tangenten weg).
+
+VertexFormat ist dann nicht nur eine Liste mit Attributen, sondern eine Liste von Listen mit Attributen
+VertexFormat.addBuffer(STATIC);
+VertexFormat.getBuffers()[0].addAttribute(...); 
+
+Das will ich machen, damit ich eine Basis habe um dynamisch passende VAOs zu generieren, je nach belieben. Zumindest die Möglichkeit habe.
+
+Das ist auch gut, weil es eher unbearbeitete Daten abbildet und weniger domain specific ist. Bzw. eine weniger domain specific repräsentation vorliegt.
+
+Jetzt hat man einfach NUR noch MeshDaten (und Geometry ist vollkommen GL-agnostisch) und Material-Daten, die es eben auch sind.  Geometry bildet eher eine Mesh-Datei ab.
+
+Geometry + VertexFormat = Mesh
+Mesh + Material = Object
+
+Problem hierbei scheint mir zu sein, dass man nicht so schön Trees laden kann (z.B. aus ASSIMP)
+
 
 ## glBindAttribLocation
 
@@ -84,9 +111,75 @@ diese sprache kann auch für fullscreeneffekte verwendet werden
 !pass: 
 !uniform type=pass: highpass
 
+Every file should have to start with the first instruction !material or !postprocess
+
+ngnml - ngn markup language
+nesting ist obviously nicht möglich
+
+das geparste objekt ist std::vector<Section>
+Section = {std::string name, std::vector<std::pair<std::string, std::string> > attributes, std::string content}, content can be multi-line
+easy to, I guess.
+
 daraus kann man dann einen graphen bauen und alles mit render-targets regeln und so
 
 siehe auch hier: https://github.com/spite/Wagner
+
+Alternativ YAML - https://learnxinyminutes.com/docs/yaml/:
+https://github.com/TwoLivesLeft/Codea-Documentation/blob/master/Shaders.yaml
+https://docs.unity3d.com/Manual/YAMLSceneExample.html
+https://mapzen.com/documentation/tangram/yaml/ !
+https://github.com/jbeder/yaml-cpp
+postprocess:
+    passes:
+        highpass:
+            parameters:
+                # This is taken from a central config registry
+                threshold: !!config-variable bloomHighpassThresh
+                input: !!input # The input of the whole postprocess
+            shader:
+                uniforms:
+                    threshold: float
+                    input: sampler2D
+                glsl: |
+                    if(length(input) > threshold) {
+                        return input;
+                    } else {
+                        discard;
+                    }
+        blurh:
+            # Defines for the shader
+            defines:
+                HORIZONTAL: true
+            # Uniform values
+            parameters:
+                strength: 5
+                input: !!pass-output highpass
+            shader: !!include-file blur.yml 
+        blurv:
+            defines:
+                HORIZONTAL: false
+            parameters:
+                strength: 5
+                input: !!pass-output blurh
+            shader: !!include-file blur.yml 
+            output: !!screen
+
+Maybe a shader block has to be thought through better
+"Calling" a shader should have a fixed syntax (probably including defines, parameters = uniforms, etc.)
+
+------------------------------------------------
+Animation Blending und Morph (zwei Animationen auf versch. Teilen) - 
+http://threejs.org/examples/webgl_animation_skinning_blending.html
+http://threejs.org/examples/webgl_animation_skinning_morph.html
+
+------------------------------------------------
+VertexFormat Data-Driven angeben. In irgendwelchen Dateien (NGNML), die man in Objekt-Dateien (auch NGNML) referenzieren kann.
+
+------------------------------------------------
+Vermutlich möchte man Deferred Renderer und Forward Renderer zur gleichen Zeit benutzen. Letzteren für komplexe Materialien oder transparente Objekte. Die Frage ist: Wie kann man das supporten? Man kann einfach beide Renderer hintereinander aufrufen, aber man muss bestimmte Objekte abhängig vom Material auf bestimmte Renderer masken.
+
+------------------------------------------------
+Einfache, rudimentäre Collision Detection in 3D kann man super oft einfach mit raycasts machen!
 
 -------------- scene file format
 4 Bytes: NGNS # Magic
@@ -134,3 +227,51 @@ class NGNSFile {
 };
 
 -- editor: schlomo
+
+
+----------------------------------------- Old notes
+Early-Z nur für Pixel die mit high-quality-shading gerendert werden (manchmal sind das nur die < ~50m von der kamera entfernten pixel)
+occlusion queries kosten performance, wenn sowieso voll viel gerendert wird (z.b. wenn man sich ne stadt von oben anguckt), dann könnte man sie vielleicht disablen und auf was anderes fallbacken
+
+man will OQs (occlusion queries) mit einfacherer geometrie rendern (vllt. bounding volumes), dann etwas unconditional rendern (terrain oder so, viewmodel, irgendwie sowas, was nicht geculled wird, damit die graka zeit hat) und dann conditional render
+
+manche objekte will man als occluder rendern (ohne bounding volume), z.b. level geometrie, weil die konvexität das interessante ist, die will man weiterhin mit depth write rendern
+occludee-test-geometrie (bounding boxes) will man mit depth-write off rendern
+
+man will für depth-pre-passes front-to-back rendern, aber das sorting muss nicht 100% sein, sondern nur schnell
+
+frustum cull your scene
+sort visible objects coarsely front to back
+render z-prepass (no fragment shading, color masking turned on), maybe just large occluders - terrain, large buildings and stuff
+enable depth masking (disable z write and color write)
+render scene again with only bounding volumes
+write color and depth
+render unconditional stuff
+determine fragments that passed and render non-occluded objects
+
+in release mode kein glGetError in jedem frame (könnte super langsamm implementiert sein), ansonsten in debug einfach in jedem frame
+
+Gold links:
+https://www.opengl.org/wiki/OpenGL_Loading_Library
+https://www.opengl.org/wiki/History_of_OpenGL
+http://stackoverflow.com/questions/4635913/explicit-vs-automatic-attribute-location-binding-for-opengl-shaders
+https://www.opengl.org/wiki/Vertex_Specification_Best_Practices
+https://www.opengl.org/wiki/Common_Mistakes#The_Object_Oriented_Language_Problem
+http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/
+http://www.c-jump.com/bcc/common/Talk3/Math/GLM/GLM.html
+http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/
+
+Vertex-Shader outputtet in clip space, dann wird durch clip.w dividiert -> ndc (normalized device coordinates) -> window coordinates durch transformation, wie in den docs von glViewport aufgeführt.
+
+
+high-level-shit
+für vbo-streaming double buffering
+software-rendering für occlusion culling
+custom allocators überall
+
+RenderDoc!
+
+https://www.reddit.com/r/gamedev/comments/4xhrce/what_is_grainy_lod_loading_and_why_is_it_used/
+lod
+
+Vielleicht öfter mal Deferred und Forward Rendering mischen. Hair or Skin in Cryengine forward rendered, rest deferred

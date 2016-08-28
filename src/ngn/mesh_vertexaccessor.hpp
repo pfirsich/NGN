@@ -1,102 +1,112 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#define GLM_META_PROG_HELPERS // number of components etc. as static members
 
-#include "mesh_vertexdata.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "mesh_vertexattribute.hpp"
+
+/*template<typename elementType, int elements>
+struct GLMVecType {
+    typedef void type;
+};
+
+template<typename elementType> struct GLMVecType<typename elementType, 2> {
+    typedef glm::vec2<elementType> type;
+};
+
+template<typename elementType> struct GLMVecType<typename elementType, 3> {
+    typedef glm::vec3<elementType> type;
+};
+
+template<typename elementType> struct GLMVecType<typename elementType, 4> {
+    typedef glm::vec4<elementType> type;
+};*/
 
 namespace ngn {
-    class VertexAttributeAccessor;
-    class VertexFormat;
-    class VertexAttribute;
+    template<typename T>
+    class VertexAttributeAssigner;
+
+    template<typename T>
+    class VertexAttributeAccessor {
+    private:
+        const VertexAttribute* mAttribute; // Would probablyy use std::optional
+        const int mStride;
+        const int mAttributeOffset;
+        void* mData;
+
+    public:
+        // This represents an invalid state
+        VertexAttributeAccessor() : mAttribute(nullptr), mStride(0), mAttributeOffset(0), mData(nullptr) {}
+
+        VertexAttributeAccessor(const VertexAttribute& attr, int stride, int offset, void* data) :
+                mAttribute(&attr), mStride(stride), mAttributeOffset(offset), mData(data) {}
+
+        bool isValid() const {return mData != nullptr;}
+
+        // every attribute is aligned to 4 bytes
+        template<typename pT>
+        const pT* getPointer(int index) const {
+            return reinterpret_cast<pT*>(reinterpret_cast<uint8_t*>(mData) + mStride * index + mAttributeOffset);
+        }
+
+        template<typename pT>
+        pT* getPointer(int index) {
+            return reinterpret_cast<pT*>(reinterpret_cast<uint8_t*>(mData) + mStride * index + mAttributeOffset);
+        }
+
+        /*template<typename vecType>
+        vecType getVec(int index) const {
+            const typename vecType::value_type* data = getPointer<typename vecType::value_type>(index);
+            if(vecType::components == 2) {
+                return glm::make_vec2<typename vecType::value_type>(data);
+            } else if(vecType::components == 3) {
+                return glm::make_vec3<typename vecType::value_type>(data);
+            } else { // vecType::components >= 4
+                return glm::make_vec4<typename vecType::value_type>(data);
+            }
+        }*/
+
+        T getWrapped(int index) const;
+
+        void setWrapped(int index, const T& val);
+
+        T get(int index) const {
+            if(mData == nullptr) return T();
+            return getWrapped(index);
+        }
+
+        void set(int index, const T& val) {
+            if(mData == nullptr) return;
+            return setWrapped(index, val);
+        }
+
+        const T operator[](int index) const {
+            return get(index);
+        }
+
+        VertexAttributeAssigner<T> operator[](const int index);
+    };
 
     template<typename T>
     class VertexAttributeAssigner {
     private:
-        VertexAttributeAccessor& mAccessor;
-        const int mIndex;
+        VertexAttributeAccessor<T>& mAccessor;
+        int mIndex;
 
     public:
-        VertexAttributeAccessor(const VertexAttributeAccessor& accessor, int index) :
+        VertexAttributeAssigner(VertexAttributeAccessor<T>& accessor, int index) :
                 mAccessor(accessor), mIndex(index) {}
 
-        T& operator=(const T& val) {
-            mAccessor.set(index, val);
+        const T& operator=(const T& val) {
+            mAccessor.set(mIndex, val);
             return val;
         }
     };
 
-    class VertexAttributeAccessor {
-    private:
-        const VertexFormat& mFormat;
-        const int mAttributeIndex;
-        void* mData;
-
-        template<class T>
-        T* getPointer(int index) {
-            // every attribute is aligned to 4 bytes
-            return mData + mFormat.getAttrCount() * 4 * index + mAttributeIndex * 4;
-        }
-
-    public:
-        VertexAttributeAccessor(const VertexFormat& format, int attrIndex, void* data) :
-                mFormat(format), mAttributeIndex(attrIndex), mData(data) {}
-
-        template<typename T>
-        T get(int index);
-
-        template<typename T>
-        void set(int index, const T& val);
-
-        template<typename T>
-        const T operator[](int index) const {
-            return get<T>(index);
-        }
-
-        template<typename T>
-        T& operator[](const int index) {
-            return VertexAttributeAssigner(*this, index);
-        }
-    };
-
-    // Template specializations for attribute types
-
-    /*
-        Missing:
-        unnormalized integer types?? - convert to what? - probably glm::vec<uint8_t> etc.
-
-        I8, I16, I32, UI8, UI16, UI32 * 1, norm -> float
-        I8, I16, I32, UI8, UI16, UI32 * 2, norm -> vec2
-        I8, I16, I32, UI8, UI16, UI32 * 3, norm -> vec3
-        I8, I16, I32, UI8, UI16, UI32 * 4, norm -> vec4
-        UI2_10_10_10, norm -> vec4
-
-        high priority:
-        map types to itself
-        F32 * 1 -> float
-        F32 * 2 -> vec2
-        F32 * 4 -> vec4
-        I2_10_10_10 * 1 -> vec4 (2 most significant bits to w/alpha component - last component), norm -> vec4
-     */
-
-    template<>
-    glm::vec3 VertexAttributeAccessor::get<glm::vec3>(int index) const {
-        if(mAttribute.type == AttributeDataType::F32 && mAttribute.num == 3) {
-            const float* data = getPointer(index);
-            return glm::vec3(data[0], data[1], data[2]);
-        } else {
-            assert(true) // You seem to be using the wrong data type with this vertex attribute
-        }
-    }
-
-    template<>
-    void VertexAttributeAccessor::set<glm::vec3>(int index, const glm::vec3& val) {
-        if(mAttribute.type == AttributeDataType::F32 && mAttribute.num == 3) {
-            const float* data = getPointer(index);
-            data[0] = val.x;
-            data[1] = val.y;
-            data[2] = val.z;
-        } else {
-            assert(true) // You seem to be using the wrong data type with this vertex attribute
-        }
+    template<typename T>
+    VertexAttributeAssigner<T> VertexAttributeAccessor<T>::operator[](const int index) {
+        return VertexAttributeAssigner<T>(*this, index);
     }
 }
