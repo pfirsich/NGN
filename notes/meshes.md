@@ -104,9 +104,27 @@ Materials make some problems:
 * Dynamically changing Materials might cause serious issues this way, since different vertex layouts might be required. Either the vertex data will be rebuilt or the  engines just whines loudly and it doesn't work. I think rebuilding and whining a lot is very good, since this is something you don't want to do often anyways. Also there should be mechanisms in place to generate a VertexBuffer format that is compatible with a given number of Materials and the current renderer.
 * Also sometimes a depth-only pass can be rendered a lot more efficiently if no unnecessary vertex attributes are transmitted (e.g. normals are not needed).For that it might be worth it to store separate VBOs with only that data. 
 * If I keep my system of recompiling VAOs, I will just not AttribPointer the attributes that were removed. -> Custom Shader for Depth-Prepass (position and texCoord for alpha test)
+* Also a Mesh potentially containing buffers of different Vertex formats makes it very hard to generate proper mesh data for a given set of Materials. It is better if the VertexFormat contains information about all the Vertex buffers.
+Otherwise, just like accessing the vertex attributes checking compatibility with a material, we would have to ask the mesh and not the vertex format, which is just unintuitive. what for is it then? Also the VertexFormat can do sanity checks a lot better (e.g. only one attribute with the position hint etc.)
 
 -------------------------------------------------------------------
 Geometry-inbetween.
-Also better if you want to do post-processing of geometry (e.g. normalize)
+Also better if you want to do post-processing of geometry (e.g. normalize). It makes access easier and looks more intuitive. 
+(Making a mesh out of it, *after* you've processed)
+Also this geometry data maps to mesh files more closely.
 
+It gives me room to change stuff later. If there is a GL agnostic representation of the geometry, there are less domain-specifics in the description of the scene. It feels good that GL independent data can be saved GL independent.
 
+If this is present, there is a fully engine independent description of everything in the engine (the scene with transforms, materials that are essentially key-value-store and geometry)
+
+Accessing data is WAY easier, because all fields are predefined (with their types) custom fields are just contiguous stretches of memory that can be users liking. In the end the VBO has to be built from it, but for every type specified type there can be a specific conversion path, since the source data is fixed in type. For normalized integer attributes and packed data (e.g. 2_10_10_10) convenience types should be built. 
+
+At the moment you have to be very careful with loading geometry. You load a mesh with tangents and colors, but you don't need them, so you Make a mesh with a VertexFormat that doesn't have them, but later change the material which needs them again. There has to be alot of management, which is not necessary if they would have never been thrown away in the first place.
+
+VertexFormat + Geometry -> Mesh
+Mesh + Material -> Object
+
+Problem: It's not a pretty to load scene trees from files (like ASSIMP)
+Potentially this is not possible at all and there will not be a assimpGeometry(filename)-function but only assimpMeshGeometry(aiMesh*) function.
+
+Later a assimp scene loader will then create a scene tree

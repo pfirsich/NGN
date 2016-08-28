@@ -1,7 +1,12 @@
 -------------- Fragen
-* Wer soll memory ownen (in der Mesh-Klasse), wer ownt VertexData, mData?
 * Wie kann man sich nicht selbst in template spezialisierungen ertränken?
 ---------------------
+
+Beschissenerweise muss man für den Depth-Prepass den Vertex-Shader mit einem anderen Fragment Shader (nur für depth) koppeln.
+Außerdem will man nur bestimmte Vertex-Attribute binden
+https://www.opengl.org/discussion_boards/showthread.php/183862-Depth-pre-pass-does-OpenGL-still-execute-fragment-shader-if-color-mask-is-GL_FALSE
+
+Light-Attenuation 1D-Texture! Auch einfach für schnelleren Lookup
 
 ein geerbtes object für LOD, dass mehrere meshes und materials nimmt, oder gleich mehrere objects (damit man shadows und so pro lod definieren kann), dann aber transformationen ignorieren
 
@@ -39,6 +44,8 @@ http://stackoverflow.com/questions/4635913/explicit-vs-automatic-attribute-locat
 
 http://gamedev.stackexchange.com/questions/57957/game-engine-design-ubershader-shader-management-design
 
+Mittlerweile mag ich richtig, dass ich für jeden neuen Shader einen neuen VAO kompiliere. Einfach weil man dann bei missing attributes nichts extra durch die Gegend schickt (denke ich). Das sollte man aber Benchmarken!
+
 ## glGetUniformLocation und automatic attribute location assignment
 Laut https://www.opengl.org/wiki/Vertex_Shader können die locations bei jedem linken anders sein.
 Deshalb muss man für jede Mesh/Shader-Kombination einen eigenen VAO haben, eigentlich recht  lightweight, also nicht so schlimm, aber bei zwei versch. objekten muss man den schon jeden Frame neu erzeugen, in dem Fall ist das dann eher kacke.
@@ -49,24 +56,6 @@ Für Instancing und und mehr Informationen vielleicht überlegen eine Zwischenab
 Oder ObjectTemplate dazwischen einfügen. Macht automatisches Instancing und bucketing einfacher.
 
 -----------------------------------------------
-
-Vielleicht eine Zwischenklasse Geometry einführen, die einfach alle Informationen zum Mesh speichert. Geometrys werden auch gebaut, gemerged, Kram wird dafür generiert. Und dann baut man daraus z.b. ein Mesh mit zwei VBOs, wobei einer dynamisch ist und einer static, oder man baut ein Mesh in dem  nur ein paar der Daten von Geometry sind (z.B. lässt man tangenten weg).
-
-VertexFormat ist dann nicht nur eine Liste mit Attributen, sondern eine Liste von Listen mit Attributen
-VertexFormat.addBuffer(STATIC);
-VertexFormat.getBuffers()[0].addAttribute(...); 
-
-Das will ich machen, damit ich eine Basis habe um dynamisch passende VAOs zu generieren, je nach belieben. Zumindest die Möglichkeit habe.
-
-Das ist auch gut, weil es eher unbearbeitete Daten abbildet und weniger domain specific ist. Bzw. eine weniger domain specific repräsentation vorliegt.
-
-Jetzt hat man einfach NUR noch MeshDaten (und Geometry ist vollkommen GL-agnostisch) und Material-Daten, die es eben auch sind.  Geometry bildet eher eine Mesh-Datei ab.
-
-Geometry + VertexFormat = Mesh
-Mesh + Material = Object
-
-Problem hierbei scheint mir zu sein, dass man nicht so schön Trees laden kann (z.B. aus ASSIMP)
-
 
 ## glBindAttribLocation
 
