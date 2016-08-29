@@ -89,6 +89,15 @@ High-Level:
             http://www.gamedev.net/topic/640573-area-lights-forward-and-deferred/ Mehr Area lights
             http://www.gamedev.net/topic/677849-area-lights-with-deferred-renderer/
             http://www.gamedev.net/topic/552315-glsl-area-light-implementation/
+            › Area Lights
+            http://www.gamedev.net/topic/552315-glsl-area-light-implementation/
+            http://research.microsoft.com/en-us/um/people/johnsny/papers/arealights.pdf
+
+            Attenuation
+            http://gamedev.stackexchange.com/questions/51291/deferred-rendering-and-point-light-radius
+            http://www.gamedev.net/topic/474015-light-attenuation-for-deferred-shading/
+            Probably 1D attenuation texture!
+            https://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/ - GOOD SHIT
         › Anti-Aliasing
             Temporal AA: http://threejs.org/examples/webgl_postprocessing_taa.html
         › GodRays - http://threejs.org/examples/webgl_postprocessing_godrays.html

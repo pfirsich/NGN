@@ -84,3 +84,19 @@ Object* obj = new Object(box, mat);
 
 ### Shader building
 I think it would be a good idea if there was a slot-system for everything and it could be overridden. The Material base class just asks the current renderer for the default content of the slot and the material can override it.
+
+At the least a Material (a Material Type and a set of parameters) should correspond to a single shader. What I don't like is that you may modify the Material values on a per-instance basis, which might trigger recompiles or shader switches. Maybe you have to compile all combinations beforehand? Or debug output the recompile so that the user of the engine can put measures in place to compile the necessary versions ahead of time. 
+
+OR
+
+There is one Shader per MaterialType and proper default values (for example a default normal map - one pixel blue) are provided. For things like shininess both a texture and uniform value are passed to the shader where they are always multiplied. If no shininess texture is set, but rather a single value, the default texture is white. Or add them and bind no texture and add them (according to the spec fetch an unbound sampler will always result in (0, 0, 0, 1)). In that case there should be a file for a MaterialType and files for the Material. Doing it this way makes it easier to instance models, because the same Mesh and the same Material is guaranteed to make it possible to instance them, i.e. they reference the same model. In that case though Material properties have to be instanced as well, or all the properties have to hashed and instancing is only happening, when the uniforms are equal. This should be done one way or another anyways to minimize uniform uploads. Maybe Instancing should happen explicitly?
+
+You need multiple shader programs anyways, since you want to render different light types for example. And maybe another shader for depth prepass or something.
+
+Material just as MaterialTypes should be Objects, so they can fit easier into a data driven approach.
+
+Maybe optimize Uniform-Calls
+
+The Renderer should initialize a UniformBlock-Object that anyone involved (the SceneNode, the Camera, the Material, etc.) can add Uniforms to.
+
+In any case is a good idea to have Material-Descriptions only be a reference to a lighting model and an aggregation of parameters necessary for it.

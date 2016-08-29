@@ -93,10 +93,38 @@ MyVertexStruct* vertex = vertexData["inPosition"];
 with MyVertexStruct being a type that maps the vertex format.
 Problem: boxMesh, sphereMesh etc. would have to take a template argument, that still would not help them much, since they mostly want to access attributes by hints (e.g. AttributeType::POSITION, etc.). You would need the system already in place anyways.
 
+A way to do it
+```c
+struct MyVertexStruct {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec4<uint8_t> color;
+
+    static void init(cost) {
+        vFormat.addAttribute(VertexAttribute::HINT::POSITION, 3, VertexAttribute::TYPE::F32);
+        vFormat.addAttribute(...)
+    }
+    static ngn::VertexFormat vFormat;
+}
+```
+
+MyVertexStruct::init();
+Mesh.addVertexData(num, MyVertexStruct::vFormat, VertexData::USAGEHINT::STATIC)
+// returns reference to VertexData
+// auto data = VertexData.getData<MyVertexStruct> -> MyVertexStruct*
+data[0].position = ...;
+Mesh.addIndexData()
+
+Mehr nachdenken über: Meshes laden, 
+
 -------------------------------------------------------------------
 Notes for later:
 Instancing can be implemented by putting the instance data into a separate VertexData object with usage DYNAMIC or STREAM and repeated calls to upload() (even after Mesh.compile)
 Also there is a need for seeting a divisor for an attribute and to set the number of instances of a mesh (Mesh.setInstances(n)).
+
+-------------------------------------------------------------------
+Lessons learned
+VertexAttribute(hint, num, type, normalized = false) // normalize is rare, hint is the most important actually
 
 -------------------------------------------------------------------
 Materials make some problems: 
@@ -117,14 +145,67 @@ It gives me room to change stuff later. If there is a GL agnostic representation
 
 If this is present, there is a fully engine independent description of everything in the engine (the scene with transforms, materials that are essentially key-value-store and geometry)
 
-Accessing data is WAY easier, because all fields are predefined (with their types) custom fields are just contiguous stretches of memory that can be users liking. In the end the VBO has to be built from it, but for every type specified type there can be a specific conversion path, since the source data is fixed in type. For normalized integer attributes and packed data (e.g. 2_10_10_10) convenience types should be built. 
+Accessing data is WAY easier, because all fields are predefined (with their types) custom fields are just contiguous stretches of memory that can be users liking. In the end the VBO has to be built from it, but for every type specified type there can be a specific conversion path, since the source data is fixed in type. For normalized integer attributes and packed data (e.g. 2_10_10_10) convenience types should be built. Maybe not full types, but just a from and to function
+pack_2_10_10_10_REV_normalized(const glm::vec3&)
+unpack_2_10_10_10_REV_normalized(const glm::vec3&)
 
 At the moment you have to be very careful with loading geometry. You load a mesh with tangents and colors, but you don't need them, so you Make a mesh with a VertexFormat that doesn't have them, but later change the material which needs them again. There has to be alot of management, which is not necessary if they would have never been thrown away in the first place.
 
 VertexFormat + Geometry -> Mesh
 Mesh + Material -> Object
 
-Problem: It's not a pretty to load scene trees from files (like ASSIMP)
+A Mesh would probably still consist of VertexData and IndexData (btw. just allow multiple of those, because why not)-Objects.
+
+Problem #1: It's not a pretty to load scene trees from files (like ASSIMP)
 Potentially this is not possible at all and there will not be a assimpGeometry(filename)-function but only assimpMeshGeometry(aiMesh*) function.
 
-Later a assimp scene loader will then create a scene tree
+Later a assimp scene loader will then create a scene tree - that also makes more sense, since Materials are going to be loaded as well.
+
+But sometimes you just want a Mesh, a merged one. This is still kind of weird, since you would have to write a collapseSceneTree function or something, which is weird and a huge problem on its own.
+
+Problem #2: What about dynamic attributes?
+A Mesh probably needs a reference to the Geometry object. The Geometry object may be deleted, but if you want to use dynamic attributes, you would probably keep it, modify it and trigger a rebuild in the VertexData-Object in the Mesh. This is a lot of memory-copying though and might not be a good idea. It would be better if that manipulation could be done in place, like it is right now.
+
+# Scenarios to get right:
+* Load Mesh from file, with a given vertex format
+* boxMesh/sphereMesh etc.
+* build a custom vertex/(index) buffer with a custom vertex format and fill it
+* all of the above scenarios with one extra dynamic buffer
+* Load mesh from file and append custom data (dynamic or not)
+* Load mesh from file merge with boxMesh/sphereMesh and have dynamic data, some provided by yourself, some generated, also with differend size - for example for instancing
+* Just load a mesh, don't provide any other data
+* Load a mesh, provide a Material
+* Loaded a mesh and make an object that does not need tangents and then later change the material to one that needs tangents
+* Just load a mesh, without providing any other data, but normalize it and get the bounding box or something
+* Just load a mesh, without making any more decisions and merge it with another loaded mesh
+* Load a mesh and dynamically animate one attribute of it (one case: position, another case: custom)
+* Without creating an Object (and using a Renderer-Object), load a mesh and draw it with mesh->draw() (if that exists)
+
+Where can LOD fit into this? Where can Instancing fit into this? Where Skinning?
+
+https://docs.unity3d.com/Manual/GPUInstancing.html
+Automatic Instancing is very hard to detect and I don't really want to make design decisions that cripple parts of the engine just to make this detection possible. Maybe there should be an InstancedMesh-subclass, that somehow takes care of this? Maybe we can detect if a draw call is the last one for a specific mesh and ignore all the previous ones, while saving the necessary data for the last call? How would one add per-instance extra-data? For example even Material data? Probably by registering a certain uniform as "per-instance" and the InstancedMesh-class then extracts them from the uniform-list as well. In forward rendering multipass rendering either all light information has to be be per-instance data (which is impossible with different lights and a only one light per object, even if it was not multi-pass the per-instance vertex attributes would be huge - also lots of this would be easier if not vertex attributes, but uniform buffers would be used for this)
+Correction: Multipass forward rendering still works and would still profit from instancing (a lot).
+
+---------------- experiments
+```
+struct MyVertexStruct {
+    glm::vec3 position;
+    uint32_t texCoord;
+
+    static void setupBufferFormat(const VertexBufferFormat& format) {
+        format.
+        addAttribute(VertexAttribute::HINT::POSITION, 3, VertexAttribute::TYPE::F32).
+        addAttribute(VertexAttribute::HINT::TEXCOORD0, 2, VertexAttribute::TYPE::UI16, true);
+    }
+}
+```
+
+ngn::VertexFormat vFormat;
+MyVertexStruct::setupBufferFormat(vFormat.addBuffer(STATIC));
+vFormat.addBuffer(DYNAMIC).
+addAttribute(VertexAttribute::HINT::CUSTOM0, 1, VertexAttribute::TYPE::UI2_10_10_10_REV);
+
+ngn::Mesh* mesh = new ngn::Mesh()
+
+Always copy VertexFormat by value.

@@ -2,11 +2,13 @@
 * Wie kann man sich nicht selbst in template spezialisierungen ertränken?
 ---------------------
 
+Bei Object darauf achten (vllt. SceneNode nennen?), dass man render überschreiben kann und dann da eigene shenanigans machen kann. Auch drauf achten, dass man vielleicht trotzdem Materials benutzen kann. Vielleicht braucht man nen Material-Override?
+
 Beschissenerweise muss man für den Depth-Prepass den Vertex-Shader mit einem anderen Fragment Shader (nur für depth) koppeln.
 Außerdem will man nur bestimmte Vertex-Attribute binden
 https://www.opengl.org/discussion_boards/showthread.php/183862-Depth-pre-pass-does-OpenGL-still-execute-fragment-shader-if-color-mask-is-GL_FALSE
 
-Light-Attenuation 1D-Texture! Auch einfach für schnelleren Lookup
+Light-Attenuation 1D-Texture! Auch einfach für schnelleren Lookup und krasse Artist-Control
 
 ein geerbtes object für LOD, dass mehrere meshes und materials nimmt, oder gleich mehrere objects (damit man shadows und so pro lod definieren kann), dann aber transformationen ignorieren
 
@@ -26,6 +28,14 @@ transforms
 die camera-klasse soll man eigentlich nicht rendern können, ebenso soll sie auch kein mesh haben und keine children
 object aufsplitten in Transforms (->camera), HasId (->camera), Renderable (bekommt children und render-methode und hash), Tagged (->camera)
 http://en.cppreference.com/w/cpp/language/cast_operator - cast zu glm::mat4
+
+Tagged hat eine findChild-Methode und addTag/removeTag methode, findChild ist optional rekursiv
+findChild([](Tags tags){return tags.contains("dude") || tags.contains("peter");}); - sollte ne liste zurückgeben
+findChild(const char*) - gibt eigentlich nur das erste zurück?
+
+Mehr überlegen! Vielleicht will man trotzdem ids? Vielleicht will man trotzdem zusätzlich names?
+
+Vielleicht trotzdem Ids
 
 ------
 
@@ -55,7 +65,47 @@ Statt einer map[programID] ist es wohl besser einen vector zu haben, weil man ja
 Für Instancing und und mehr Informationen vielleicht überlegen eine Zwischenabstraktion für ein Mesh-Material-Paar zu finden. z.B. Object und ObjectInstance (dieses objekt hält dann transformationen und so). 
 Oder ObjectTemplate dazwischen einfügen. Macht automatisches Instancing und bucketing einfacher.
 
+Vielleicht nennt man das Mesh/Material-Paar "Model"? Vielleicht macht man es mandatory?
+
+Dann ist ein Mesh wirklich nur ein VAO und ein Model eine Referenz auf ein Mesh und ein Material.
+Ein Object oder SceneNode hat dann ein Model und Instanzen von allen Uniforms, die dazu gehören (das heißt alle Variablen fürs Material)
+
+Klarer wäre der Begriff "Model", wenn ein Model eine Hierarchie aus Mesh-Material paaren wäre (z.B. ein dude, der versch. Materials für sein Visier, sein T-Shirt und seine Haut hat.). Dann ist aber alles direkt super kompliziert. Im Prinzip sollte ein Model vielleicht ein Premade-SceneNode + Children sein? So nötig ist der Begriff Model ja auch nicht.
+
 -----------------------------------------------
+### Other Engines
+irrlicht.sourceforge.net/?page_id=291
+https://github.com/turbulenz/turbulenz_engine
+https://github.com/gameplay3d/GamePlay
+https://github.com/gameplay3d/GamePlay/wiki/Tutorial%3A-Spaceship
+https://github.com/panda3d/panda3d
+https://www.panda3d.org/documentation.php
+http://polycode.org/learn/scenes
+http://www.horde3d.org/
+http://www.horde3d.org/docs/html/_tutorial.html
+https://libcinder.org/docs/
+http://www.ogre3d.org/tikiwiki/tiki-index.php
+https://github.com/urho3d/Urho3D/wiki/First%20Project
+https://www.panda3d.org/documentation.php
+
+https://bkaradzic.github.io/bgfx/examples.html
+https://github.com/bkaradzic/bgfx/blob/master/examples/04-mesh/mesh.cpp
+https://github.com/bkaradzic/bgfx/blob/master/examples/02-metaballs/metaballs.cpp
+https://github.com/bkaradzic/bgfx/blob/master/examples/01-cubes/cubes.cpp
+-----------------------------------------------
+
+In Depth Pre-Pass strictly sort by depth, then in the full pass, don't sort by depth at all!
+
+Still do light culling per object and globally (if the camera can see it and its not occluded) even in Forward Rendering and make it configurable how many lights per shader execution should be handled (still an array of lights probably?). And then do some passes.
+
+http://aras-p.info/blog/2012/03/02/2012-theory-for-forward-rendering/
+http://www.gamedev.net/topic/657701-most-efficient-way-for-lighting-in-forward-rendering/
+
+
+https://www.opengl.org/discussion_boards/showthread.php/167939-Conditional-rendering
+
+Unity macht Vertex-Lighting vielleicht auf CPU? Weit entfernte Lichter werden durch SH approximiert.
+Nur Lichter, die nah und hell sind oder als "important" markiert werder per pixel (und dann je eins pro pass) berechnet.
 
 ## glBindAttribLocation
 
@@ -264,3 +314,6 @@ https://www.reddit.com/r/gamedev/comments/4xhrce/what_is_grainy_lod_loading_and_
 lod
 
 Vielleicht öfter mal Deferred und Forward Rendering mischen. Hair or Skin in Cryengine forward rendered, rest deferred
+
+
+Jedes GL command muss eigentlich in einem bestimmtem GL context passieren. Ich bin nicht sicher, ob man sich den Stress wirklich machen will. Vielleicht window zum singleton machen oder so?
