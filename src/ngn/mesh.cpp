@@ -16,7 +16,7 @@ namespace ngn {
         glBindVertexArray(vao);
 
         // Not sure if this should be in VertexFormat
-        for(auto& vData : mVertexData) {
+        for(auto& vData : mVertexBuffer) {
             vData->bind();
             const VertexFormat& format = vData->getVertexFormat();
             const std::vector<VertexAttribute>& attributes = format.getAttributes();
@@ -33,21 +33,21 @@ namespace ngn {
 
         // for ARRAY_BUFFER only the calls to glEnableVertexAttribArray/glEnableVertexPointer are stored
         // so unbind now.
-        mVertexData.back()->unbind();
+        mVertexBuffer.back()->unbind();
 
-        if(mIndexData != nullptr) mIndexData->bind();
+        if(mIndexBuffer != nullptr) mIndexBuffer->bind();
 
         glBindVertexArray(0);
 
         // VAO stores the last bound ELEMENT_BUFFER state, so as soon as the VAO is unbound, unbind the VBO
-        if(mIndexData != nullptr) mIndexData->unbind();
+        if(mIndexBuffer != nullptr) mIndexBuffer->unbind();
 
         setVAO(shader, vao);
     }
 
     Mesh* assimpMesh(aiMesh* mesh, const VertexFormat& format) {
         auto ngnMesh = new Mesh(Mesh::DrawMode::TRIANGLES);
-        ngnMesh->addVertexData(format, mesh->mNumVertices);
+        ngnMesh->addVertexBuffer(format, mesh->mNumVertices);
 
         if(mesh->HasPositions() && format.hasAttribute(AttributeType::POSITION)) {
             auto position = ngnMesh->getAccessor<glm::vec3>(AttributeType::POSITION);
@@ -74,7 +74,7 @@ namespace ngn {
         }
 
         if(mesh->HasFaces()) {
-            IndexData* iData = ngnMesh->setIndexData(getIndexDataType(mesh->mNumVertices), mesh->mNumFaces*3);
+            IndexBuffer* iData = ngnMesh->setIndexBuffer(getIndexBufferType(mesh->mNumVertices), mesh->mNumFaces*3);
             size_t index = 0;
             for(size_t i = 0; i < mesh->mNumFaces; ++i) {
                 (*iData)[index++] = mesh->mFaces[i].mIndices[0];
@@ -161,7 +161,7 @@ namespace ngn {
         glm::vec3 size = glm::vec3(width * 0.5f, height * 0.5f, depth * 0.5f);
 
         Mesh* mesh = new Mesh(Mesh::DrawMode::TRIANGLES);
-        VertexData* vData = mesh->addVertexData(format, 24);
+        VertexBuffer* vData = mesh->addVertexBuffer(format, 24);
 
         auto position = mesh->getAccessor<glm::vec3>(AttributeType::POSITION);
         auto normal = mesh->getAccessor<glm::vec3>(AttributeType::NORMAL);
@@ -182,7 +182,7 @@ namespace ngn {
             }
         }
 
-        IndexData* iData = mesh->setIndexData(IndexDataType::UI8, 36);
+        IndexBuffer* iData = mesh->setIndexBuffer(IndexBufferType::UI8, 36);
 
         uint8_t* indexBuffer = iData->getData<uint8_t>();
         for(int side = 0; side < 6; ++side) {
@@ -200,7 +200,7 @@ namespace ngn {
     Mesh* sphereMesh(float radius, int slices, int stacks, const VertexFormat& format) {
         assert(slices > 3 && stacks > 2);
         Mesh* mesh = new Mesh(Mesh::DrawMode::TRIANGLES);
-        mesh->addVertexData(format, slices*stacks);
+        mesh->addVertexBuffer(format, slices*stacks);
 
         auto position = mesh->getAccessor<glm::vec3>(AttributeType::POSITION);
         auto normal = mesh->getAccessor<glm::vec3>(AttributeType::NORMAL);
@@ -231,7 +231,7 @@ namespace ngn {
 
         int triangles = 2 * (slices - 1) * (stacks - 1);
 
-        IndexData* iData = mesh->setIndexData(IndexDataType::UI16, triangles * 3);
+        IndexBuffer* iData = mesh->setIndexBuffer(IndexBufferType::UI16, triangles * 3);
         uint16_t* indexBuffer = iData->getData<uint16_t>();
         index = 0;
         for(int stack = 0; stack < stacks - 1; ++stack) {

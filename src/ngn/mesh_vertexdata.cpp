@@ -15,7 +15,7 @@ namespace ngn {
         return false;
     }
 
-    void VBOWrapper::upload() {
+    void GLBuffer::upload() {
         mUploadedOnce = true;
         if(mVBO == 0) {
             glGenBuffers(1, &mVBO);
@@ -30,7 +30,7 @@ namespace ngn {
         glBindBuffer(mTarget, 0);
     }
 
-    void VertexData::reallocate(size_t numVertices, bool copyOld) {
+    void VertexBuffer::reallocate(size_t numVertices, bool copyOld) {
         size_t newSize = mVertexFormat.getStride()*numVertices;
         std::unique_ptr<VBODataType[]> newData(new VBODataType[newSize]);
         if(mData.get() != nullptr && copyOld) std::copy(mData.get(), mData.get() + mSize, newData.get());
@@ -39,30 +39,30 @@ namespace ngn {
         mSize = newSize;
     }
 
-    int getIndexDataTypeSize(IndexDataType type) {
+    int getIndexBufferTypeSize(IndexBufferType type) {
         switch(type) {
-            case IndexDataType::UI8:
+            case IndexBufferType::UI8:
                 return 1; break;
-            case IndexDataType::UI16:
+            case IndexBufferType::UI16:
                 return 2; break;
-            case IndexDataType::UI32:
+            case IndexBufferType::UI32:
                 return 4; break;
         }
         return 0; // This never happens, but g++ whines
     }
 
-    IndexDataType getIndexDataType(size_t vertexCount) {
+    IndexBufferType getIndexBufferType(size_t vertexCount) {
         if(vertexCount < (1 << 8)) {
-            return IndexDataType::UI8;
+            return IndexBufferType::UI8;
         } else if(vertexCount < (1 << 16)) {
-            return IndexDataType::UI16;
+            return IndexBufferType::UI16;
         } else { // If it's even bigger than 1 << 32, this result will be wrong, but there will be no correct answer and things are strange anyways
-            return IndexDataType::UI32;
+            return IndexBufferType::UI32;
         }
     }
 
-    void IndexData::reallocate(size_t numIndices, bool copyOld) {
-        size_t newSize = getIndexDataTypeSize(mDataType)*numIndices;
+    void IndexBuffer::reallocate(size_t numIndices, bool copyOld) {
+        size_t newSize = getIndexBufferTypeSize(mDataType)*numIndices;
         std::unique_ptr<VBODataType[]> newData(new VBODataType[newSize]);
         if(mData.get() != nullptr && copyOld) std::copy(mData.get(), mData.get() + mSize, newData.get());
         mData.reset(newData.release());

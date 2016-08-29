@@ -73,7 +73,7 @@ namespace ngn {
         }
     };
 
-    class VBOWrapper {
+    class GLBuffer {
     protected:
         GLenum mTarget;
         int mSize;
@@ -86,16 +86,16 @@ namespace ngn {
         bool mUploadedOnce;
 
     public:
-        VBOWrapper(GLenum target, void* data, size_t size, UsageHint usage) :
+        GLBuffer(GLenum target, void* data, size_t size, UsageHint usage) :
                 mTarget(target), mSize(size), mUsage(usage), mData(reinterpret_cast<VBODataType*>(data)),
                 mVBO(0), mLastUploadedSize(0), mUploadedOnce(false) {}
 
-        ~VBOWrapper() {
+        ~GLBuffer() {
             if(mVBO != 0) glDeleteBuffers(1, &mVBO);
         }
 
-        VBOWrapper(const VBOWrapper& other) = delete;
-        VBOWrapper& operator=(const VBOWrapper& other) = delete;
+        GLBuffer(const GLBuffer& other) = delete;
+        GLBuffer& operator=(const GLBuffer& other) = delete;
 
         // http://hacksoflife.blogspot.de/2015/06/glmapbuffer-no-longer-cool.html - Don't implement map()?
 
@@ -122,30 +122,30 @@ namespace ngn {
         }
     };
 
-    // VertexData/IndexData represent the vertex data in it.
+    // VertexBuffer/IndexBuffer represent the vertex data in it.
     // That means that they have full ownership of the data, you may reallocate it or get access to the data they points to
     // but never change the data they point to
 
-    class VertexData : public VBOWrapper {
+    class VertexBuffer : public GLBuffer {
     private:
         const VertexFormat& mVertexFormat;
         size_t mNumVertices;
 
     public:
-        VertexData(const VertexFormat& format, UsageHint usage = UsageHint::STATIC) :
-                VBOWrapper(GL_ARRAY_BUFFER, nullptr, 0, usage),
+        VertexBuffer(const VertexFormat& format, UsageHint usage = UsageHint::STATIC) :
+                GLBuffer(GL_ARRAY_BUFFER, nullptr, 0, usage),
                 mVertexFormat(format), mNumVertices(0) {}
 
-        VertexData(const VertexFormat& format, size_t numVertices, UsageHint usage = UsageHint::STATIC) :
-                VBOWrapper(GL_ARRAY_BUFFER, nullptr, 0, usage),
+        VertexBuffer(const VertexFormat& format, size_t numVertices, UsageHint usage = UsageHint::STATIC) :
+                GLBuffer(GL_ARRAY_BUFFER, nullptr, 0, usage),
                 mVertexFormat(format) {
             reallocate(numVertices);
         }
 
         // This constructor will *take ownership* of the data pointed to by data
         // If you are using a std::unique_ptr yourself, you therefore have to use std::move
-        VertexData(const VertexFormat& format, void* data, size_t numVertices, UsageHint usage = UsageHint::STATIC) :
-                VBOWrapper(GL_ARRAY_BUFFER, data, format.getStride()*numVertices, usage),
+        VertexBuffer(const VertexFormat& format, void* data, size_t numVertices, UsageHint usage = UsageHint::STATIC) :
+                GLBuffer(GL_ARRAY_BUFFER, data, format.getStride()*numVertices, usage),
                 mVertexFormat(format), mNumVertices(numVertices) {}
 
         // If nothing has been allocated yet, also call this function
@@ -168,9 +168,9 @@ namespace ngn {
 
         void normalize(bool rescale = false);
         void transform(const glm::mat4& transform);
-        void merge(const VertexData& other, const glm::mat4& transform);
+        void merge(const VertexBuffer& other, const glm::mat4& transform);
 
-        VertexData* convertVertexFormat(const VertexFormat& format);
+        VertexBuffer* convertVertexFormat(const VertexFormat& format);
 
         // pair of position and sizes
         std::pair<glm::vec3, glm::vec3> boundingBox();
@@ -178,34 +178,34 @@ namespace ngn {
         std::pair<glm::vec3, float> boundingSphere();
     };
 
-    enum class IndexDataType : GLenum {
+    enum class IndexBufferType : GLenum {
         UI8 = GL_UNSIGNED_BYTE,
         UI16 = GL_UNSIGNED_SHORT,
         UI32 = GL_UNSIGNED_INT
     };
 
-    int getIndexDataTypeSize(IndexDataType type);
-    IndexDataType getIndexDataType(size_t vertexCount);
+    int getIndexBufferTypeSize(IndexBufferType type);
+    IndexBufferType getIndexBufferType(size_t vertexCount);
 
-    class IndexDataAssigner {
+    class IndexBufferAssigner {
     private:
         void* mData;
         size_t mIndex;
-        IndexDataType mDataType;
+        IndexBufferType mDataType;
 
     public:
-        IndexDataAssigner(void* data, size_t index, IndexDataType dataType) : mData(data), mIndex(index), mDataType(dataType) {}
+        IndexBufferAssigner(void* data, size_t index, IndexBufferType dataType) : mData(data), mIndex(index), mDataType(dataType) {}
 
         template<typename T>
         const T& operator=(const T& val) {
             switch(mDataType) {
-                case IndexDataType::UI8:
+                case IndexBufferType::UI8:
                     *(reinterpret_cast< uint8_t*>(mData) + mIndex) = val;
                     break;
-                case IndexDataType::UI16:
+                case IndexBufferType::UI16:
                     *(reinterpret_cast<uint16_t*>(mData) + mIndex) = val;
                     break;
-                case IndexDataType::UI32:
+                case IndexBufferType::UI32:
                     *(reinterpret_cast<uint32_t*>(mData) + mIndex) = val;
                     break;
             }
@@ -213,34 +213,34 @@ namespace ngn {
         }
     };
 
-    class IndexData : public VBOWrapper {
+    class IndexBuffer : public GLBuffer {
     private:
-        IndexDataType mDataType;
+        IndexBufferType mDataType;
         size_t mNumIndices;
 
     public:
-        IndexData(IndexDataType dataType, UsageHint usage = UsageHint::STATIC) :
-                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, nullptr, 0, usage),
+        IndexBuffer(IndexBufferType dataType, UsageHint usage = UsageHint::STATIC) :
+                GLBuffer(GL_ELEMENT_ARRAY_BUFFER, nullptr, 0, usage),
                 mDataType(dataType), mNumIndices(0) {}
 
-        IndexData(IndexDataType dataType, size_t num, UsageHint usage = UsageHint::STATIC) :
-                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, nullptr, 0, usage),
+        IndexBuffer(IndexBufferType dataType, size_t num, UsageHint usage = UsageHint::STATIC) :
+                GLBuffer(GL_ELEMENT_ARRAY_BUFFER, nullptr, 0, usage),
                 mDataType(dataType), mNumIndices(num) {
             reallocate(num);
         }
 
-        IndexData(uint8_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
-                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint8_t), usage),
-                mDataType(IndexDataType::UI8), mNumIndices(num) {}
-        IndexData(uint16_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
-                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint16_t), usage),
-                mDataType(IndexDataType::UI16), mNumIndices(num) {}
-        IndexData(uint32_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
-                VBOWrapper(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint32_t), usage),
-                mDataType(IndexDataType::UI32), mNumIndices(num) {}
+        IndexBuffer(uint8_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
+                GLBuffer(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint8_t), usage),
+                mDataType(IndexBufferType::UI8), mNumIndices(num) {}
+        IndexBuffer(uint16_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
+                GLBuffer(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint16_t), usage),
+                mDataType(IndexBufferType::UI16), mNumIndices(num) {}
+        IndexBuffer(uint32_t* data, size_t num, UsageHint usage = UsageHint::STATIC) :
+                GLBuffer(GL_ELEMENT_ARRAY_BUFFER, data, num*sizeof(uint32_t), usage),
+                mDataType(IndexBufferType::UI32), mNumIndices(num) {}
 
         size_t getNumIndices() const {return mNumIndices;}
-        IndexDataType getDataType() const {return mDataType;}
+        IndexBufferType getDataType() const {return mDataType;}
 
         template<typename T>
         T* getData() {
@@ -251,20 +251,20 @@ namespace ngn {
 
         uint32_t operator[](size_t index) const {
             switch(mDataType) {
-                case IndexDataType::UI8:
+                case IndexBufferType::UI8:
                     return static_cast<uint32_t>(*(reinterpret_cast<uint8_t*>(mData.get()) + index));
                     break;
-                case IndexDataType::UI16:
+                case IndexBufferType::UI16:
                     return static_cast<uint32_t>(*(reinterpret_cast<uint16_t*>(mData.get()) + index));
                     break;
-                case IndexDataType::UI32:
+                case IndexBufferType::UI32:
                     return static_cast<uint32_t>(*(reinterpret_cast<uint32_t*>(mData.get()) + index));
                     break;
             }
         }
 
-        IndexDataAssigner operator[](size_t index) {
-            return IndexDataAssigner(mData.get(), index, mDataType);
+        IndexBufferAssigner operator[](size_t index) {
+            return IndexBufferAssigner(mData.get(), index, mDataType);
         }
     };
 }
