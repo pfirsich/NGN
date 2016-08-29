@@ -100,3 +100,34 @@ Maybe optimize Uniform-Calls
 The Renderer should initialize a UniformBlock-Object that anyone involved (the SceneNode, the Camera, the Material, etc.) can add Uniforms to.
 
 In any case is a good idea to have Material-Descriptions only be a reference to a lighting model and an aggregation of parameters necessary for it.
+
+Recompiles are actually really bad. Either whine a lot, when they happen, but do it. Or don't do it automatically, but explicitely?
+
+Maybe just throw away the idea of renderer agnostic materials? At least provide a path to just replace everything and document what is needed for it. Probably even implement that first!
+Maybe defining material types for a single renderer is fine as well?
+BOTH SHOULD EXIST
+
+material:
+    name: Wood
+    type: Phong
+    ...
+
+materialType:
+    name: Phong
+    renderers:
+        Forward:
+            renderstate:
+                depthTest: true
+            passes:
+                pointlight
+        Deferred:
+            passes:
+                gbuffer:
+                    ...
+                pointlight:
+                    glsl: &lightglsl |
+                        #define blabla
+                        !include "pointlight.glsl"
+                        getLightParams -> lightDirection, lightAttenuation...
+                spotlight:
+                    glsl: *lightglsl
