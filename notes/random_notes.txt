@@ -72,6 +72,9 @@ Ein Object oder SceneNode hat dann ein Model und Instanzen von allen Uniforms, d
 
 Klarer wäre der Begriff "Model", wenn ein Model eine Hierarchie aus Mesh-Material paaren wäre (z.B. ein dude, der versch. Materials für sein Visier, sein T-Shirt und seine Haut hat.). Dann ist aber alles direkt super kompliziert. Im Prinzip sollte ein Model vielleicht ein Premade-SceneNode + Children sein? So nötig ist der Begriff Model ja auch nicht.
 
+später gedacht:
+Model ist absolut unnötig und es gibt kaum Grund es einzuführen. Für so Tree-Prefabs kann man "einfach" SceneNode.Load und SceneNode.Save implementieren.
+
 -----------------------------------------------
 ### Other Engines
 irrlicht.sourceforge.net/?page_id=291

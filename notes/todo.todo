@@ -7,7 +7,6 @@ Low-Level:
     ✔ log etwas aufräumen @done (28.08.16 06:01)
     ✔ shader etwas aufräumen @done (28.08.16 05:35)
     ✔ Alles ins ngn repo umziehen @done (28.08.16 06:14)
-    › Geometry einfügen
     › Object implementieren (ohne Material, nur Mesh) + aufsplitten in HasId, Transforms, ...
     › Renderer integrieren
     › Uniform-Objects -> key-Value-store mit casterei und glUniform und so, noch nicht ganz sicher

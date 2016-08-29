@@ -219,3 +219,16 @@ Always copy VertexFormat by value.
 * Wenn man VertexFormat zu VertexBufferFormat und VertexFormat macht, dann kommt man an eine Stelle, an der man, z.B. für instancing, nicht einfach VertexFormat.allocate() machen kann, sondern für einzelne Buffer einzeln allozieren will (oder dafür einen komischen extra-mechanismus haben muss). Man muss also die Funktionalität, wie sie jetzt ist ohnehin bereitstellen. Das ganze ist dann nur ein helper für ein paar use-cases, die leider auch die häufigsten sind, der die Klassenhierarche irgendwie viel undurchsichtiger macht. Lässt man es weg, muss man halt damit leben, dass man hasAttribute einfach aufs Mesh macht. Das Mesh muss ein bisschen aufwändigere sanity checks machen. Wenn man ein VertexFormat generieren will, dann fällt mir kein Fall ein indem man die Daten in versch. VertxBuffern liegen haben will. Maximal bei dynamischen attributen, von denen man aber wissen sollte und man könnte die extra auffangen.
 * Wenn jedes Attribut ein Hint braucht, dann kann man die Namen weglassen und das enum auf ein int mappen, dass global die location bedeutet, sodass man immer konsistent glBindAttribLocation sinnvoll aufrufen kann und die connection mit den namen. Man braucht nur noch hints. Bei glAttribLocation braucht man eigentlich noch nen namen. Vielleicht will man an den Shader auch einen haufen #defines + #line 0 prependen, damit man sowas machen kann:
 layout(location = POSITION_ATTRIBUTE) vec3 position; (ausprobier, funktioniert)
+
+später:
+IndexBuffer sollten einsam bleiben. Man macht damit nur möglich, dass man Kram macht, der einfach schlechter ist. Das Material kann man ohnehin nicht wechseln, also ist ein IndexBuffer genau äquivalent zu mehreren, mal abgesehen davon, dass es effizienter ist nur einen zu haben!
+
+=> Fazit:
+Alles bleibt, wie es ist, bis auf ein paar Kleinigkeiten
+neu:
+* VertexFormat.removeAttribute
+* VertexFormat.require(std::vector<AttributeType>)
+* Mesh.supportsMaterial / hasAttributes
+* Rename IndexData and VertexData to IndexBuffer and VertexBuffer
+* VBOWrapper to GLBuffer
+* make sure that convertVertexFormat can be implemented as I think, maybe even do it already (naaah).
