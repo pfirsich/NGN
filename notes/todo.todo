@@ -7,14 +7,15 @@ Low-Level:
     ✔ log etwas aufräumen @done (28.08.16 06:01)
     ✔ shader etwas aufräumen @done (28.08.16 05:35)
     ✔ Alles ins ngn repo umziehen @done (28.08.16 06:14)
-    › Refactor Meshes
+    ✔ Refactor Meshes @done (30.08.16 12:26)
         ✔ Rename IndexData and VertexData to IndexBuffer and VertexBuffer @done (30.08.16 01:36)
         ✔ VBOWrapper to GLBuffer @done (30.08.16 01:36)
         ✔ make sure VertexFormats are copied whenever used for a period of time @done (30.08.16 01:37)
         ✔ VertexFormat.removeAttribute @done (30.08.16 01:37)
         ✔ Mesh.supportsMaterial / hasAttributes @done (30.08.16 01:41)
         ✔ sanity checks for VertexAttributeTypes being unique in a mesh @done (30.08.16 02:52)
-        › VertexAttribute-Namen ditchen und nur den Type nehmen
+        ✔ VertexAttribute-Namen ditchen und nur den Type nehmen @done (30.08.16 12:26)
+    › Dinge scheinen falsch zu laufen, viele VAO compiles. Ich sollte endlich performance metrics einbauen.
     › Area Light Test
     › Instancing
     VertexAttribute.setDivisor, Mesh.draw(instances = 1)

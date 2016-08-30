@@ -36,11 +36,11 @@ namespace ngn {
         int getAttributeOffset(int index) const {return mAttributeOffsets[index];}
 
         // I would love to use variadic templates and forwarding here, but I need attrType before emplace_back
-        void add(const std::string& name, AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false) {
+        void add(AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false) {
             if(hasAttribute(attrType)) {
                 LOG_ERROR("You are trying to add an attribute to a vertex format that is already present.");
             } else {
-                mAttributes.emplace_back(name, attrType, num, dataType, normalized);
+                mAttributes.emplace_back(attrType, num, dataType, normalized);
                 mAttributeOffsets.push_back(mStride);
                 const VertexAttribute& attr = mAttributes.back();
                 mStride += getAttributeDataTypeSize(attr.dataType) * attr.alignedNum;
@@ -58,23 +58,9 @@ namespace ngn {
         // I was thinking about hasAttributes, but you would probably pass a vector to that, which
         // would just as much code to create, than to call hasAttribute multiple times.
         bool hasAttribute(AttributeType attrType) const;
-        bool hasAttribute(const char* name) const;
 
         // These return a VertexAttributeAccessor instance that represents an invalid state (doesn't read or write)
         // if the attribute does not exist. use isValid()
-        template<typename T>
-        VertexAttributeAccessor<T> getAccessor(const char* name, void* data) const {
-            // If we want the vector to be reorder-able and resizable, we have to look for the element every time
-            // Also if the number of elements is small (which it mostly is), this is probably even faster than std::map
-            for(std::size_t i = 0; i < mAttributes.size(); ++i) {
-                if(mAttributes[i].name == name) {
-                    return VertexAttributeAccessor<T>(mAttributes[i], getStride(), getAttributeOffset(i), data);
-                }
-            }
-            printf("There is no attribute with name '%s'!", name);
-            return VertexAttributeAccessor<T>();
-        }
-
         template<typename T>
         VertexAttributeAccessor<T> getAccessor(AttributeType attrType, void* data) const {
             for(std::size_t i = 0; i < mAttributes.size(); ++i) {
@@ -82,7 +68,7 @@ namespace ngn {
                     return VertexAttributeAccessor<T>(mAttributes[i], getStride(), getAttributeOffset(i), data);
                 }
             }
-            printf("There is no attribute of type '%s', make sure to call hasAttribute!", AttributeTypeNames[static_cast<int>(attrType)]);
+            printf("There is no attribute of type '%s', make sure to call hasAttribute!", getVertexAttributeTypeName(attrType));
             return VertexAttributeAccessor<T>();
         }
     };
@@ -169,8 +155,8 @@ namespace ngn {
         size_t getNumVertices() const {return mNumVertices;}
         const VertexFormat& getVertexFormat() const {return mVertexFormat;}
 
-        template<typename T, typename argType>
-        VertexAttributeAccessor<T> getAccessor(argType id) {
+        template<typename T>
+        VertexAttributeAccessor<T> getAccessor(AttributeType id) {
             return mVertexFormat.getAccessor<T>(id, mData.get());
         }
 
@@ -179,11 +165,6 @@ namespace ngn {
         // If the types match in both buffers, they data is copied byte-by-byte, otherwise...
         // tons of rules. This has to be clever. Implement this sometime.
         void fillFromOtherBuffer(const VertexBuffer& other);
-
-        // pair of position and sizes
-        std::pair<glm::vec3, glm::vec3> boundingBox();
-        // position and radius
-        std::pair<glm::vec3, float> boundingSphere();
     };
 
     enum class IndexBufferType : GLenum {

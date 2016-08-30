@@ -2,8 +2,8 @@
 #version 330 core
 
 layout(location=0) in vec3 attrPosition;
-layout(location=1) in vec2 attrTexCoord;
-layout(location=2) in vec3 attrNormal;
+layout(location=1) in vec3 attrNormal;
+layout(location=2) in vec2 attrTexCoord;
 
 out VSOUT {
     vec2 texCoord;

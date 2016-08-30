@@ -27,36 +27,12 @@ namespace ngn {
         static GLuint lastBoundVAO;
 
         DrawMode mMode;
-        std::vector<std::pair<const ngn::ShaderProgram*, GLuint> > mVAOs;
+        GLuint mVAO;
         std::vector<std::unique_ptr<VertexBuffer> > mVertexBuffers;
         std::unique_ptr<IndexBuffer> mIndexBuffer;
 
-        GLuint getVAO(const ShaderProgram* shader) {
-            for(auto& pair : mVAOs) {
-                if(pair.first == shader) return pair.second;
-            }
-            return 0;
-        }
-
-        void setVAO(const ShaderProgram* shader, GLuint vao) {
-            for(auto& pair : mVAOs) {
-                if(pair.first == shader) {
-                    pair.second = vao;
-                    return;
-                }
-            }
-            mVAOs.push_back(std::make_pair(shader, vao));
-        }
-
-        static std::string attrIdToString(const char* name) {
-            return "name '" + std::string(name) + "'";
-        }
-        static std::string attrIdToString(AttributeType attrType) {
-            return "hint " + std::string(AttributeTypeNames[static_cast<int>(attrType)]);
-        }
-
     public:
-        Mesh(DrawMode mode) : mMode(mode), mIndexBuffer(nullptr) {}
+        Mesh(DrawMode mode) : mMode(mode), mVAO(0), mIndexBuffer(nullptr) {}
 
         // I'm not really sure what I want these to do
         Mesh(const Mesh& other) = delete;
@@ -92,32 +68,25 @@ namespace ngn {
             return nullptr;
         }
 
-        template<typename T, typename argType>
-        VertexAttributeAccessor<T> getAccessor(argType id) {
-            VertexBuffer* vData = nullptr;
-            for(size_t i = 0; i < mVertexBuffers.size(); ++i) {
-                if(mVertexBuffers[i]->getVertexFormat().hasAttribute(id)) {
-                    if(vData != nullptr)
-                        LOG_ERROR("A mesh seems to have multiple VertexBuffer objects attached that share an attribute with %s",
-                            attrIdToString(id).c_str());
-                    vData = mVertexBuffers[i].get();
-                }
+        template<typename T>
+        VertexAttributeAccessor<T> getAccessor(AttributeType id) {
+            VertexBuffer* vBuf = hasAttribute(id);
+            if(vBuf == nullptr) {
+                LOG_ERROR("You are requesting an accessor for a vertex attribute that is not present in the current mesh: '%s'", getVertexAttributeTypeName(id));
+                return VertexAttributeAccessor<T>();
             }
-            return vData->getAccessor<T>(id);
+            return vBuf->getAccessor<T>(id);
         }
 
-        // non-const argument, because we call .bind()
-        void compile(ShaderProgram* shader);
+        void compile();
 
         // In the header because of the slim possibility that it might be inlined
         void draw() {
-            GLuint vao = getVAO(ShaderProgram::currentShaderProgram);
-            if(vao == 0) {
-                compile(ShaderProgram::currentShaderProgram);
-                vao = getVAO(ShaderProgram::currentShaderProgram);
+            if(mVAO == 0) {
+                compile();
             }
 
-            if(lastBoundVAO != vao) glBindVertexArray(vao);
+            if(lastBoundVAO != mVAO) glBindVertexArray(mVAO);
 
             // A lof of this can go wrong if someone compiles this Mesh without an index buffer attached, then attaches one and compiles it with another
             // shader, while both are in use
@@ -149,6 +118,11 @@ namespace ngn {
         void transform(const glm::mat4& transform);
         // I don't think this is the proper prototype of this function, maybe merge with another Mesh?
         void merge(const VertexBuffer& other, const glm::mat4& transform);
+
+        // pair of position and sizes
+        std::pair<glm::vec3, glm::vec3> boundingBox();
+        // position and radius
+        std::pair<glm::vec3, float> boundingSphere();
     };
 
     Mesh* assimpMesh(const char* filename, const VertexFormat& format);

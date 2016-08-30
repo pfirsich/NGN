@@ -8,12 +8,11 @@
 namespace ngn {
     GLuint Mesh::lastBoundVAO = 0;
 
-    void Mesh::compile(ShaderProgram* shader) {
-        assert(shader != nullptr);
+    void Mesh::compile() {
+        LOG_DEBUG("VAO recompile");
 
-        GLuint vao = getVAO(shader);
-        if(vao == 0) glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
+        if(mVAO == 0) glGenVertexArrays(1, &mVAO);
+        glBindVertexArray(mVAO);
 
         // Not sure if this should be in VertexFormat
         for(auto& vData : mVertexBuffers) {
@@ -22,13 +21,11 @@ namespace ngn {
             const std::vector<VertexAttribute>& attributes = format.getAttributes();
             for(size_t i = 0; i < attributes.size(); ++i) {
                 const VertexAttribute& attr = attributes[i];
-                auto location = static_cast<GLint>(shader->getAttributeLocation(attr.name));
-                if(location != -1) {
-                    glEnableVertexAttribArray(location);
-                    glVertexAttribPointer(  location, attr.alignedNum, static_cast<GLenum>(attr.dataType),
-                                            attr.normalized ? GL_TRUE : GL_FALSE,
-                                            format.getStride(), reinterpret_cast<GLvoid*>(format.getAttributeOffset(i)));
-                }
+                int location = static_cast<int>(attr.type);
+                glEnableVertexAttribArray(location);
+                glVertexAttribPointer(location, attr.alignedNum, static_cast<GLenum>(attr.dataType),
+                                      attr.normalized ? GL_TRUE : GL_FALSE,
+                                      format.getStride(), reinterpret_cast<GLvoid*>(format.getAttributeOffset(i)));
             }
         }
 
@@ -42,8 +39,6 @@ namespace ngn {
 
         // VAO stores the last bound ELEMENT_BUFFER state, so as soon as the VAO is unbound, unbind the VBO
         if(mIndexBuffer != nullptr) mIndexBuffer->unbind();
-
-        setVAO(shader, vao);
     }
 
     Mesh* assimpMesh(aiMesh* mesh, const VertexFormat& format) {
@@ -66,8 +61,8 @@ namespace ngn {
             }
         }
 
-        if(mesh->HasTextureCoords(0) && format.hasAttribute(AttributeType::TEXCOORD)) {
-            auto texCoord = ngnMesh->getAccessor<glm::vec2>(AttributeType::TEXCOORD);
+        if(mesh->HasTextureCoords(0) && format.hasAttribute(AttributeType::TEXCOORD0)) {
+            auto texCoord = ngnMesh->getAccessor<glm::vec2>(AttributeType::TEXCOORD0);
             for(size_t i = 0; i < mesh->mNumVertices; ++i) {
                 aiVector3D& vec = mesh->mTextureCoords[0][i];
                 texCoord[i] = glm::vec2(vec.x, vec.y);
@@ -173,8 +168,8 @@ namespace ngn {
             normal[i] = glm::make_vec3(normals[side]);
         }
 
-        if(format.hasAttribute(AttributeType::TEXCOORD)) {
-            auto texCoord = mesh->getAccessor<glm::vec2>(AttributeType::TEXCOORD);
+        if(format.hasAttribute(AttributeType::TEXCOORD0)) {
+            auto texCoord = mesh->getAccessor<glm::vec2>(AttributeType::TEXCOORD0);
             for(int side = 0; side < 6; ++side) {
                 texCoord[side*4+0] = glm::vec2(0.0f, 0.0f);
                 texCoord[side*4+1] = glm::vec2(0.0f, 1.0f);
@@ -205,7 +200,7 @@ namespace ngn {
 
         auto position = mesh->getAccessor<glm::vec3>(AttributeType::POSITION);
         auto normal = mesh->getAccessor<glm::vec3>(AttributeType::NORMAL);
-        auto texCoord = mesh->getAccessor<glm::vec2>(AttributeType::TEXCOORD);
+        auto texCoord = mesh->getAccessor<glm::vec2>(AttributeType::TEXCOORD0);
 
         /* This should probably be:
         auto normal = VertexAttributeAccessor();

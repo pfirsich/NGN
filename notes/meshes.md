@@ -225,3 +225,8 @@ IndexBuffer sollten einsam bleiben. Man macht damit nur möglich, dass man Kram 
 
 => Fazit:
 Alles bleibt, wie es ist, bis auf ein paar Kleinigkeiten
+
+
+----------- Notes
+glMultiDraw... ist nicht unterstützt. Es gibt also nur ein Objekt pro VBO. Sollten Drawcalls ein Bottleneck sein, ist das ein Problem.
+Das ist aber ohnehin super unbequem alles, weil man extra-Arbeit machen muss um an jede Instanz dieser Modelle eigene Uniforms zu schicken. Im Prinzip läuft es dann auf instancing hinaus.

@@ -8,14 +8,8 @@ namespace ngn {
         return false;
     }
 
-    bool VertexFormat::hasAttribute(const char* name) const {
-        for(auto& attr : mAttributes)
-            if(attr.name == name)
-                return true;
-        return false;
-    }
-
     void GLBuffer::upload() {
+        LOG_DEBUG("GL buffer upload");
         mUploadedOnce = true;
         if(mVBO == 0) {
             glGenBuffers(1, &mVBO);

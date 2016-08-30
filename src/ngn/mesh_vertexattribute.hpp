@@ -24,28 +24,27 @@ namespace ngn {
     enum class AttributeType : int {
         POSITION = 0,
         NORMAL,
-        TEXCOORD,
         TANGENT,
-        COLOR,
-        CUSTOM // This has to be the last
+        BITANGENT,
+        COLOR0,
+        COLOR1,
+        BONEINDICES,
+        BONEWEIGHTS,
+        TEXCOORD0, TEXCOORD1, TEXCOORD2, TEXCOORD3,
+        CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3, CUSTOM4, CUSTOM5, CUSTOM6, CUSTOM7,
+        FINAL_COUNT_ENTRY // This is not a real type, just used to count
     };
 
-    static const char* AttributeTypeNames[] = {
-        "POSITION", "NORMAL", "TEXCOORD", "TANGENT", "COLOR", "CUSTOM"
-    };
-
-    static_assert(  static_cast<int>(AttributeType::CUSTOM) + 1 == sizeof(AttributeTypeNames) / sizeof(AttributeTypeNames[0]),
-                    "There should be just as many AttributeType names as there are AttributeTypes");
+    const char* getVertexAttributeTypeName(AttributeType attrType);
 
     struct VertexAttribute {
-        std::string name;
-        AttributeDataType dataType;
-        int num, alignedNum;
-        bool normalized;
         AttributeType type;
+        int num, alignedNum;
+        AttributeDataType dataType;
+        bool normalized;
 
-        VertexAttribute(const std::string& name, AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false) :
-                name(name), dataType(dataType), num(num), alignedNum(num), normalized(normalized), type(attrType) {
+        VertexAttribute(AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false) :
+                type(attrType), num(num), alignedNum(num), dataType(dataType), normalized(normalized) {
             // Align to 4 Bytes
             // https://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Attribute_sizes
             int overlap = 0;
