@@ -44,8 +44,8 @@ namespace ngn {
         bool normalized;
         AttributeType type;
 
-        VertexAttribute(const std::string& name, AttributeDataType dataType, int num, bool normalized, AttributeType type = AttributeType::CUSTOM) :
-                name(name), dataType(dataType), num(num), alignedNum(num), normalized(normalized), type(type) {
+        VertexAttribute(const std::string& name, AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false) :
+                name(name), dataType(dataType), num(num), alignedNum(num), normalized(normalized), type(attrType) {
             // Align to 4 Bytes
             // https://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Attribute_sizes
             int overlap = 0;

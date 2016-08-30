@@ -225,12 +225,3 @@ IndexBuffer sollten einsam bleiben. Man macht damit nur möglich, dass man Kram 
 
 => Fazit:
 Alles bleibt, wie es ist, bis auf ein paar Kleinigkeiten
-neu:
-[ ] VertexFormat.removeAttribute
-[ ] VertexFormat.require(std::vector<AttributeType>)
-[ ] Mesh.supportsMaterial / hasAttributes
-[x] Rename IndexData and VertexData to IndexBuffer and VertexBuffer
-[x] VBOWrapper to GLBuffer
-[ ] make sure that convertVertexFormat can be implemented as I think, maybe even do it already (naaah). - Das ist vermutlich auch etwas komisch, wenn man mehrere VertexBuffer hat. Ich denke stattdessen will man einfach eine Funktion haben, die einen VertexBuffer mit den Daten von einem anderen füllt (wenn vorhanden und mit Konvertierung) - 
-[ ] VertexAttribute-Namen ditchen und nur den Type nehmen
-[ ] make sure VertexFormats are copied whenever used

@@ -28,7 +28,7 @@ namespace ngn {
 
         DrawMode mMode;
         std::vector<std::pair<const ngn::ShaderProgram*, GLuint> > mVAOs;
-        std::vector<std::unique_ptr<VertexBuffer> > mVertexBuffer;
+        std::vector<std::unique_ptr<VertexBuffer> > mVertexBuffers;
         std::unique_ptr<IndexBuffer> mIndexBuffer;
 
         GLuint getVAO(const ShaderProgram* shader) {
@@ -58,22 +58,21 @@ namespace ngn {
     public:
         Mesh(DrawMode mode) : mMode(mode), mIndexBuffer(nullptr) {}
 
-        // I'm not really sure what I want this to do
+        // I'm not really sure what I want these to do
         Mesh(const Mesh& other) = delete;
         Mesh& operator=(const Mesh& other) = delete;
 
         template <typename... Ts>
         VertexBuffer* addVertexBuffer(Ts&&... args) {
-            std::unique_ptr<VertexBuffer> vData(new VertexBuffer(std::forward<Ts>(args)...));
-            // This is not enough if someone changes the size of an already added VertexBuffer object (not the last one)
-            if(mVertexBuffer.size() > 0 && mVertexBuffer.back()->getNumVertices() != vData->getNumVertices()) {
-                LOG_ERROR("Multiple VertexBuffer objects with different sizes in a single Mesh.");
-                return nullptr;
-            } else {
-                VertexBuffer* ret = vData.get();
-                mVertexBuffer.push_back(std::move(vData));
-                return ret;
+            VertexBuffer* vBuf = new VertexBuffer(std::forward<Ts>(args)...);
+            for(auto& attr : vBuf->getVertexFormat().getAttributes()) {
+                if(hasAttribute(attr.type) != nullptr) {
+                    LOG_ERROR("You are trying to add a vertex buffer to a mesh that contains vertex attributes that are already present in another vertex buffer already in that mesh.");
+                    return nullptr;
+                }
             }
+            mVertexBuffers.emplace_back(vBuf);
+            return vBuf;
         }
 
         // add might be confusing since every Mesh object can only hold a single instance of IndexBuffer
@@ -85,15 +84,23 @@ namespace ngn {
             return iData;
         }
 
+        // returns nullptr if the given attribute is not present in any vertexbuffer
+        VertexBuffer* hasAttribute(AttributeType attrType) {
+            for(auto& vBuffer : mVertexBuffers) {
+                if(vBuffer->getVertexFormat().hasAttribute(attrType)) return vBuffer.get();
+            }
+            return nullptr;
+        }
+
         template<typename T, typename argType>
         VertexAttributeAccessor<T> getAccessor(argType id) {
             VertexBuffer* vData = nullptr;
-            for(size_t i = 0; i < mVertexBuffer.size(); ++i) {
-                if(mVertexBuffer[i]->getVertexFormat().hasAttribute(id)) {
+            for(size_t i = 0; i < mVertexBuffers.size(); ++i) {
+                if(mVertexBuffers[i]->getVertexFormat().hasAttribute(id)) {
                     if(vData != nullptr)
                         LOG_ERROR("A mesh seems to have multiple VertexBuffer objects attached that share an attribute with %s",
                             attrIdToString(id).c_str());
-                    vData = mVertexBuffer[i].get();
+                    vData = mVertexBuffers[i].get();
                 }
             }
             return vData->getAccessor<T>(id);
@@ -121,10 +128,27 @@ namespace ngn {
                 // If someone had the great idea of having multiple VertexBuffer objects attached and changing their size after attaching
                 // this might break
                 size_t size = 0;
-                if(mVertexBuffer.size() > 0) size = mVertexBuffer[0]->getNumVertices();
+                if(mVertexBuffers.size() > 0) size = mVertexBuffers[0]->getNumVertices();
                 glDrawArrays(mode, 0, size);
             }
         }
+
+        // ---- geometry manipulation
+        // these functions are here (and not in VertexBuffer), because some of them have to
+        // for example read positions and write normals or read normals and write tangents, which might
+        // reside in different buffers
+
+        void calculateVertexNormals(bool faceAreaWeighted = true);
+        // sets normals so that in the fragment shader the normals can be interpolated using a "flat" varying - https://www.opengl.org/wiki/Type_Qualifier_(GLSL)
+        void calculateFaceNormals(bool lastVertexConvention = true);
+        void calculateTangents();
+
+        // moves center to 0, 0, 0 and radius to 1.0 if rescale = true
+        void normalize(bool rescale = false);
+        // Transform positions, normals, tangents and bitangents
+        void transform(const glm::mat4& transform);
+        // I don't think this is the proper prototype of this function, maybe merge with another Mesh?
+        void merge(const VertexBuffer& other, const glm::mat4& transform);
     };
 
     Mesh* assimpMesh(const char* filename, const VertexFormat& format);

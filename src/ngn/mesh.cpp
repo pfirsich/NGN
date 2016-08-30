@@ -16,7 +16,7 @@ namespace ngn {
         glBindVertexArray(vao);
 
         // Not sure if this should be in VertexFormat
-        for(auto& vData : mVertexBuffer) {
+        for(auto& vData : mVertexBuffers) {
             vData->bind();
             const VertexFormat& format = vData->getVertexFormat();
             const std::vector<VertexAttribute>& attributes = format.getAttributes();
@@ -25,7 +25,8 @@ namespace ngn {
                 auto location = static_cast<GLint>(shader->getAttributeLocation(attr.name));
                 if(location != -1) {
                     glEnableVertexAttribArray(location);
-                    glVertexAttribPointer(  location, attr.alignedNum, static_cast<GLenum>(attr.dataType), attr.normalized,
+                    glVertexAttribPointer(  location, attr.alignedNum, static_cast<GLenum>(attr.dataType),
+                                            attr.normalized ? GL_TRUE : GL_FALSE,
                                             format.getStride(), reinterpret_cast<GLvoid*>(format.getAttributeOffset(i)));
                 }
             }
@@ -33,7 +34,7 @@ namespace ngn {
 
         // for ARRAY_BUFFER only the calls to glEnableVertexAttribArray/glEnableVertexPointer are stored
         // so unbind now.
-        mVertexBuffer.back()->unbind();
+        mVertexBuffers.back()->unbind();
 
         if(mIndexBuffer != nullptr) mIndexBuffer->bind();
 

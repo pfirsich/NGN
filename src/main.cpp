@@ -29,9 +29,8 @@ bool initGL() {
         return false;
     }
 
-    vFormat.add("attrPosition", ngn::AttributeDataType::F32, 3, false, ngn::AttributeType::POSITION);
-    vFormat.add("attrTexCoord", ngn::AttributeDataType::F32, 2, false, ngn::AttributeType::TEXCOORD);
-    vFormat.add("attrNormal", ngn::AttributeDataType::F32, 3, false, ngn::AttributeType::NORMAL);
+    vFormat.add("attrPosition", ngn::AttributeType::POSITION, 3, ngn::AttributeDataType::F32);
+    vFormat.add("attrNormal", ngn::AttributeType::NORMAL, 3, ngn::AttributeDataType::F32);
 
     //boxMesh = ngn::boxMesh(0.5f, 0.5f, 0.5f, vFormat);
     //boxMesh = ngn::sphereMesh(0.5f, 40, 40, vFormat);

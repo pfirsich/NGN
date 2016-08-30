@@ -5,10 +5,12 @@
 #include <cstring>
 #include <utility>
 #include <memory>
+#include <algorithm>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+#include "log.hpp"
 #include "mesh_vertexattribute.hpp"
 #include "mesh_vertexaccessor.hpp"
 
@@ -24,25 +26,37 @@ namespace ngn {
         std::vector<VertexAttribute> mAttributes;
         std::vector<int> mAttributeOffsets;
         int mStride;
-        int mAttributeCount;
 
     public:
-        VertexFormat() : mStride(0), mAttributeCount(0) {}
+        VertexFormat() : mStride(0) {}
 
         const std::vector<VertexAttribute>& getAttributes() const {return mAttributes;}
-        int getAttributeCount() const {return mAttributeCount;}
+        int getAttributeCount() const {return mAttributes.size();}
         int getStride() const {return mStride;}
         int getAttributeOffset(int index) const {return mAttributeOffsets[index];}
 
-        template <typename... Ts>
-        void add(Ts&&... args) {
-            mAttributes.emplace_back(std::forward<Ts>(args)...);
-            mAttributeOffsets.push_back(mStride);
-            const VertexAttribute& attr = mAttributes.back();
-            mStride += getAttributeDataTypeSize(attr.dataType) * attr.alignedNum;
-            mAttributeCount++;
+        // I would love to use variadic templates and forwarding here, but I need attrType before emplace_back
+        void add(const std::string& name, AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false) {
+            if(hasAttribute(attrType)) {
+                LOG_ERROR("You are trying to add an attribute to a vertex format that is already present.");
+            } else {
+                mAttributes.emplace_back(name, attrType, num, dataType, normalized);
+                mAttributeOffsets.push_back(mStride);
+                const VertexAttribute& attr = mAttributes.back();
+                mStride += getAttributeDataTypeSize(attr.dataType) * attr.alignedNum;
+            }
         }
 
+        void remove(AttributeType attrType) {
+            mAttributes.erase(
+                std::remove_if(
+                    mAttributes.begin(), mAttributes.end(),
+                    [attrType](const VertexAttribute &attr) {return attr.type == attrType;}),
+                mAttributes.end());
+        }
+
+        // I was thinking about hasAttributes, but you would probably pass a vector to that, which
+        // would just as much code to create, than to call hasAttribute multiple times.
         bool hasAttribute(AttributeType attrType) const;
         bool hasAttribute(const char* name) const;
 
@@ -128,10 +142,11 @@ namespace ngn {
 
     class VertexBuffer : public GLBuffer {
     private:
-        const VertexFormat& mVertexFormat;
+        const VertexFormat mVertexFormat;
         size_t mNumVertices;
 
     public:
+        // The vertex formats will be copied, so it's not possible to to dangerous shenanigans by changing them after they were used
         VertexBuffer(const VertexFormat& format, UsageHint usage = UsageHint::STATIC) :
                 GLBuffer(GL_ARRAY_BUFFER, nullptr, 0, usage),
                 mVertexFormat(format), mNumVertices(0) {}
@@ -159,18 +174,11 @@ namespace ngn {
             return mVertexFormat.getAccessor<T>(id, mData.get());
         }
 
-        // geometry manipulation
-        void calculateVertexNormals(bool faceAreaWeighted);
-        // sets normals so that in the fragment shader the normals can be interpolated using a "flat" varying - https://www.opengl.org/wiki/Type_Qualifier_(GLSL)
-        void calculateFaceNormals(bool lastVertexConvention = true);
-        // moves center to 0, 0, 0 and radius to 1.0 if rescale = true
-        void calculateTangents();
-
-        void normalize(bool rescale = false);
-        void transform(const glm::mat4& transform);
-        void merge(const VertexBuffer& other, const glm::mat4& transform);
-
-        VertexBuffer* convertVertexFormat(const VertexFormat& format);
+        // Note that this is compatible with VertexBuffers that have a different VertexFormat
+        // This is actually what this is for mainly
+        // If the types match in both buffers, they data is copied byte-by-byte, otherwise...
+        // tons of rules. This has to be clever. Implement this sometime.
+        void fillFromOtherBuffer(const VertexBuffer& other);
 
         // pair of position and sizes
         std::pair<glm::vec3, glm::vec3> boundingBox();

@@ -7,14 +7,28 @@ Low-Level:
     ✔ log etwas aufräumen @done (28.08.16 06:01)
     ✔ shader etwas aufräumen @done (28.08.16 05:35)
     ✔ Alles ins ngn repo umziehen @done (28.08.16 06:14)
+    › Refactor Meshes
+        ✔ Rename IndexData and VertexData to IndexBuffer and VertexBuffer @done (30.08.16 01:36)
+        ✔ VBOWrapper to GLBuffer @done (30.08.16 01:36)
+        ✔ make sure VertexFormats are copied whenever used for a period of time @done (30.08.16 01:37)
+        ✔ VertexFormat.removeAttribute @done (30.08.16 01:37)
+        ✔ Mesh.supportsMaterial / hasAttributes @done (30.08.16 01:41)
+        ✔ sanity checks for VertexAttributeTypes being unique in a mesh @done (30.08.16 02:52)
+        › VertexAttribute-Namen ditchen und nur den Type nehmen
+    › Area Light Test
+    › Instancing
+    VertexAttribute.setDivisor, Mesh.draw(instances = 1)
+    › SudoHack-Grid-Wall (with Instancing)
     › Object implementieren (ohne Material, nur Mesh) + aufsplitten in HasId, Transforms, ...
     › Renderer integrieren
     › Uniform-Objects -> key-Value-store mit casterei und glUniform und so, noch nicht ganz sicher
     › Materials
-    NGN ML
+    YAML integrieren, VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
 
     › Vertex Format
     2_10_10_10 für Normals, 2›USHORT für TexCoord
+
+    › VertexBuffer.fillFromOtherBuffer
 
     › Assimp-Import flags optimieren
     http://assimp.sourceforge.net/lib_html/postprocess_8h.html
