@@ -247,4 +247,46 @@ namespace ngn {
 
         return mesh;
     }
+
+    Mesh* planeMesh(float width, float height, int segmentsX, int segmentsY, const VertexFormat& format) {
+        assert(segmentsX >= 1 && segmentsY >= 1);
+
+        Mesh* mesh = new Mesh(Mesh::DrawMode::TRIANGLES);
+        mesh->addVertexBuffer(format, (segmentsX+1)*(segmentsY+1));
+
+        auto position = mesh->getAccessor<glm::vec3>(AttributeType::POSITION);
+        auto normal = mesh->getAccessor<glm::vec3>(AttributeType::NORMAL);
+        auto texCoord = mesh->getAccessor<glm::vec2>(AttributeType::TEXCOORD0);
+
+        int index = 0;
+        glm::vec2 size(width, height);
+        for(int y = 0; y <= segmentsY; ++y) {
+            for(int x = 0; x <= segmentsX; ++x) {
+                glm::vec2 pos2D = glm::vec2((float)x / segmentsX, (float)y / segmentsY);
+                texCoord[index] = pos2D;
+                pos2D = pos2D * size - 0.5f * size;
+                position[index] = glm::vec3(pos2D.x, 0.0f, pos2D.y);
+                normal[index++] = glm::vec3(0.0f, 1.0f, 0.0f);
+            }
+        }
+
+        IndexBuffer* iData = mesh->setIndexBuffer(IndexBufferType::UI16, segmentsX*segmentsY*2*3);
+        uint16_t* indexBuffer = iData->getData<uint16_t>();
+        index = 0;
+        int perLine = segmentsX + 1;
+        for(int y = 0; y < segmentsY; ++y) {
+            for(int x = 0; x < segmentsX; ++x) {
+                int start = x + y * perLine;
+                indexBuffer[index++] = start;
+                indexBuffer[index++] = start + perLine;
+                indexBuffer[index++] = start + perLine + 1;
+
+                indexBuffer[index++] = start + perLine + 1;
+                indexBuffer[index++] = start + 1;
+                indexBuffer[index++] = start;
+            }
+        }
+
+        return mesh;
+    }
 }

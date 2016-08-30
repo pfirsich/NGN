@@ -134,12 +134,12 @@ namespace ngn {
     // Stacks represents the number of elements on the y axis
     Mesh* sphereMesh(float radius, int slices, int stacks, const VertexFormat& format);
 
+    // Make sure this can be used to make a "line mesh"?
+    Mesh* planeMesh(float width, float height, int segmentsX, int segmentsY, const VertexFormat& format);
+
     ///////////////////////////////////////////////////////////////////////////
     /*
     circleMesh(int radius, int segments, const VertexFormat&format = defaultFormat);
-    rectangleMesh(int width, int height, int subdivisionX = 1, int subdivisionY)
-        .normalize to get a plain thats centered
-        setPosition and lookAt to get a line + proper scaling
     cylinderMesh(radiusTop, radiusBottom) -> Cylinder
     subdivide(Mesh, iterations) // http://answers.unity3d.com/questions/259127/does-anyone-have-any-code-to-subdivide-a-mesh-and.html like this
     normalsMesh - generates normals from another VertexBuffer - maybe GL_LINES or actual arrows?
@@ -147,6 +147,6 @@ namespace ngn {
     frustumMesh - from camera/any perspective matrix, inverts is and converts ndc - corners
     coordinateSystem
 
-    Helper-Klasse für Ribbons/extruded geometry (eine shape, die dann angehangen wird und vllt. radius per Zeit ändern kann oder so)
+    // A Helper class or something for ribbons/extruded geometry (takes a shape, that's appended and maybe a radius (animated over time))
     */
 }

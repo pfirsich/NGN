@@ -15,7 +15,6 @@ Low-Level:
         ✔ Mesh.supportsMaterial / hasAttributes @done (30.08.16 01:41)
         ✔ sanity checks for VertexAttributeTypes being unique in a mesh @done (30.08.16 02:52)
         ✔ VertexAttribute-Namen ditchen und nur den Type nehmen @done (30.08.16 12:26)
-    › Dinge scheinen falsch zu laufen, viele VAO compiles. Ich sollte endlich performance metrics einbauen.
     › Area Light Test
     › Instancing
     VertexAttribute.setDivisor, Mesh.draw(instances = 1)
