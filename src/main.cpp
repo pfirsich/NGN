@@ -55,17 +55,16 @@ void moveCamera(float dt) {
     int numkeys = 0;
     const Uint8 *keyState = SDL_GetKeyboardState(&numkeys);
 
-    float speed = 2.0 * dt;
+    float speed = 6.0 * dt;
     glm::vec3 move(0.0);
     move.x = ((int)keyState[SDL_SCANCODE_D] - (int)keyState[SDL_SCANCODE_A]);
     move.y = ((int)keyState[SDL_SCANCODE_R] - (int)keyState[SDL_SCANCODE_F]);
     move.z = ((int)keyState[SDL_SCANCODE_W] - (int)keyState[SDL_SCANCODE_S]);
     if(glm::length(move) > 0.5) {
-        move = speed * glm::normalize(move);
         float y = move.y;
         move = camera.getLocalSystem() * move;
         move.y = y;
-        move = glm::normalize(move);
+        move = speed * glm::normalize(move);
         camera.setPosition(camera.getPosition() + move);
     }
 
@@ -76,7 +75,7 @@ void moveCamera(float dt) {
     }
 }
 
-void render() {
+void render(float dt) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glm::mat4 model;
@@ -87,7 +86,7 @@ void render() {
     glm::mat4 modelview = camera.getViewMatrix() * model;
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
 
-    light = light * glm::rotate(glm::mat4(), 0.007f, glm::vec3(0.0f, 1.0, 0.0f));
+    light = light * glm::rotate(glm::mat4(), 1.0f * dt, glm::vec3(0.0f, 1.0, 0.0f));
     glm::vec3 lightDir = glm::normalize(glm::mat3(camera.getViewMatrix()) * glm::vec3(light));
 
     shader->bind();
@@ -99,8 +98,7 @@ void render() {
     shader->unbind();
 }
 
-int main(int argc, char* args[])
-{
+int main(int argc, char** args) {
     ngn::setupDefaultLogging();
 
     std::unique_ptr<ngn::Window> window(new ngn::Window("ngn test", 1600, 900));
@@ -122,7 +120,7 @@ int main(int argc, char* args[])
         lastTime = t;
 
         moveCamera(dt);
-        render();
+        render(dt);
 
         window->updateAndSwap();
     }

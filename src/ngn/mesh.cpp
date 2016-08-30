@@ -9,8 +9,6 @@ namespace ngn {
     GLuint Mesh::lastBoundVAO = 0;
 
     void Mesh::compile() {
-        LOG_DEBUG("VAO recompile");
-
         if(mVAO == 0) glGenVertexArrays(1, &mVAO);
         glBindVertexArray(mVAO);
 

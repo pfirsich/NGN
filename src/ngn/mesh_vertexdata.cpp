@@ -9,7 +9,6 @@ namespace ngn {
     }
 
     void GLBuffer::upload() {
-        LOG_DEBUG("GL buffer upload");
         mUploadedOnce = true;
         if(mVBO == 0) {
             glGenBuffers(1, &mVBO);
