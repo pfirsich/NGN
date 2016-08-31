@@ -30,8 +30,8 @@ namespace ngn {
         COLOR1,
         BONEINDICES,
         BONEWEIGHTS,
-        TEXCOORD0, TEXCOORD1, TEXCOORD2, TEXCOORD3,
-        CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3, CUSTOM4, CUSTOM5, CUSTOM6, CUSTOM7,
+        TEXCOORD0, TEXCOORD1, TEXCOORD2, TEXCOORD3, // 8
+        CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3, CUSTOM4, CUSTOM5, CUSTOM6, CUSTOM7, // 12
         FINAL_COUNT_ENTRY // This is not a real type, just used to count
     };
 
@@ -42,9 +42,10 @@ namespace ngn {
         int num, alignedNum;
         AttributeDataType dataType;
         bool normalized;
+        unsigned int divisor;
 
-        VertexAttribute(AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false) :
-                type(attrType), num(num), alignedNum(num), dataType(dataType), normalized(normalized) {
+        VertexAttribute(AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false, unsigned int divisor = 0) :
+                type(attrType), num(num), alignedNum(num), dataType(dataType), normalized(normalized), divisor(divisor) {
             // Align to 4 Bytes
             // https://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Attribute_sizes
             int overlap = 0;

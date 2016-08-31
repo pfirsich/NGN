@@ -12,7 +12,8 @@
 
 std::vector<ngn::Mesh*> meshes;
 ngn::Mesh* lightMesh;
-ngn::VertexFormat vFormat;
+ngn::Mesh* boxMesh;
+ngn::VertexFormat vFormat, instanceDataFormat;
 
 ngn::ShaderProgram *shader;
 ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
@@ -21,6 +22,8 @@ glm::vec4 light = glm::vec4(1.0, 0.5, 1.0, 1.0);
 glm::vec3 areaLightPos = glm::vec3(40.0f, 7.0f, 0.0f);
 glm::vec2 areaLightSize = glm::vec2(20.0f, 10.0f);
 glm::vec3 areaLightDir = glm::vec3(-1.0f, 0.0f, 0.0f);
+
+int instances = 10;
 
 bool initGL() {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -35,9 +38,12 @@ bool initGL() {
     vFormat.add(ngn::AttributeType::POSITION, 3, ngn::AttributeDataType::F32);
     vFormat.add(ngn::AttributeType::NORMAL, 3, ngn::AttributeDataType::F32);
 
+    instanceDataFormat.add(ngn::AttributeType::CUSTOM0, 1, ngn::AttributeDataType::F32, false, 1);
+
     meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
     meshes.push_back(ngn::planeMesh(1000.0f, 1000.0f, 1, 1, vFormat));
-    meshes.push_back(ngn::boxMesh(100.0f, 100.0f, 100.0f, vFormat));
+    boxMesh = ngn::boxMesh(100.0f, 100.0f, 100.0f, vFormat);
+    boxMesh->addVertexBuffer(instanceDataFormat, instances, ngn::UsageHint::DYNAMIC);
 
     lightMesh = ngn::planeMesh(1.0f, 1.0f, 1, 1, vFormat);
     lightMesh->transform(glm::mat4(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
@@ -87,6 +93,12 @@ void moveCamera(float dt) {
 void render(float dt) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    auto instanceData = boxMesh->getAccessor<float>(ngn::AttributeType::CUSTOM0);
+    for(int i = 0; i < instances; ++i) {
+        instanceData[i] = glm::cos(ngn::getTime() + (float)i / instances * M_PI) * 150.0f;
+    }
+    boxMesh->hasAttribute(ngn::AttributeType::CUSTOM0)->upload();
+
     glm::mat4 model;
     model = glm::rotate(model, ngn::getTime() * 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
     float scale = 0.1f;
@@ -105,8 +117,6 @@ void render(float dt) {
     areaLightBase[0] = glm::normalize(glm::cross(areaLightBase[2], glm::vec3(0.0f, 1.0f, 0.0f)));
     areaLightBase[1] = glm::normalize(glm::cross(areaLightBase[0], areaLightBase[2]));
 
-
-
     shader->bind();
     shader->setUniform("modelview", modelview);
     shader->setUniform("projection", camera.getProjectionMatrix());
@@ -124,6 +134,7 @@ void render(float dt) {
     shader->setUniform("areaLightBase", glm::mat3(camera.getViewMatrix()) * areaLightBase);
     shader->setUniform("ambient", 0.1f);
     for(auto mesh : meshes) mesh->draw();
+    boxMesh->draw(instances);
 
     glm::mat4 lightModel = glm::translate(glm::mat4(), areaLightPos) *
                            glm::mat4(areaLightBase) *

@@ -82,7 +82,8 @@ namespace ngn {
         void compile();
 
         // In the header because of the slim possibility that it might be inlined
-        void draw() {
+        // instanceCount = 0 means, that the draw commands will not be instanced
+        void draw(size_t instanceCount = 0) {
             if(mVAO == 0) {
                 compile();
             }
@@ -93,13 +94,22 @@ namespace ngn {
             // shader, while both are in use
             GLenum mode = static_cast<GLenum>(mMode);
             if(mIndexBuffer != nullptr) {
-                glDrawElements(mode, mIndexBuffer->getNumIndices(), static_cast<GLenum>(mIndexBuffer->getDataType()), nullptr);
+                GLenum indexType = static_cast<GLenum>(mIndexBuffer->getDataType());
+                if(instanceCount > 0) {
+                    glDrawElementsInstanced(mode, mIndexBuffer->getNumIndices(), indexType, nullptr, instanceCount);
+                } else {
+                    glDrawElements(mode, mIndexBuffer->getNumIndices(), indexType, nullptr);
+                }
             } else {
                 // If someone had the great idea of having multiple VertexBuffer objects attached and changing their size after attaching
                 // this might break
                 size_t size = 0;
                 if(mVertexBuffers.size() > 0) size = mVertexBuffers[0]->getNumVertices();
-                glDrawArrays(mode, 0, size);
+                if(instanceCount > 0) {
+                    glDrawArraysInstanced(mode, 0, size, instanceCount);
+                } else {
+                    glDrawArrays(mode, 0, size);
+                }
             }
         }
 

@@ -19,7 +19,7 @@ Low-Level:
         ✔ transform - fix the light geomtry @done (30.08.16 22:41)
         ✔ normalize - choose sensible units @done (30.08.16 22:41)
         ✔ The actual area lighting @done (31.08.16 03:54)
-    › Instancing
+    ✔ Instancing @done (31.08.16 22:54)
     VertexAttribute.setDivisor, Mesh.draw(instances = 1)
     › SudoHack-Grid-Wall (with Instancing)
     › Materials, ohne Renderer und SceneGraph benutzbar
@@ -45,7 +45,7 @@ Low-Level:
 
     › Input
 
-    › FBO-Object
+    › FBO
     https://open.gl/framebuffers
 
 Mid-Level:

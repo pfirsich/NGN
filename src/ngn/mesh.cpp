@@ -25,6 +25,7 @@ namespace ngn {
                 glVertexAttribPointer(location, attr.alignedNum, static_cast<GLenum>(attr.dataType),
                                       attr.normalized ? GL_TRUE : GL_FALSE,
                                       format.getStride(), reinterpret_cast<GLvoid*>(format.getAttributeOffset(i)));
+                if(attr.divisor > 0) glVertexAttribDivisor(location, attr.divisor);
             }
         }
 

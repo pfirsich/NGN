@@ -36,11 +36,11 @@ namespace ngn {
         int getAttributeOffset(int index) const {return mAttributeOffsets[index];}
 
         // I would love to use variadic templates and forwarding here, but I need attrType before emplace_back
-        void add(AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false) {
+        void add(AttributeType attrType, int num, AttributeDataType dataType, bool normalized = false, unsigned int divisor = 0) {
             if(hasAttribute(attrType)) {
                 LOG_ERROR("You are trying to add an attribute to a vertex format that is already present.");
             } else {
-                mAttributes.emplace_back(attrType, num, dataType, normalized);
+                mAttributes.emplace_back(attrType, num, dataType, normalized, divisor);
                 mAttributeOffsets.push_back(mStride);
                 const VertexAttribute& attr = mAttributes.back();
                 mStride += getAttributeDataTypeSize(attr.dataType) * attr.alignedNum;
