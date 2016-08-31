@@ -1,4 +1,5 @@
 #include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -37,6 +38,54 @@ namespace ngn {
 
         // VAO stores the last bound ELEMENT_BUFFER state, so as soon as the VAO is unbound, unbind the VBO
         if(mIndexBuffer != nullptr) mIndexBuffer->unbind();
+    }
+
+    // Transform positions, normals, tangents and bitangents
+    void Mesh::transform(const glm::mat4& transform, const std::vector<AttributeType>& pointAttributes,
+                         const std::vector<AttributeType>& vectorAttributes) {
+        for(auto attrType : pointAttributes) {
+            if(!hasAttribute(attrType)) continue;
+            auto attr = getAccessor<glm::vec3>(attrType);
+            for(size_t i = 0; i < attr.getCount(); ++i) {
+                attr[i] = glm::vec3(transform * glm::vec4(attr.get(i), 1.0f));
+            }
+        }
+
+        for(auto attrType : vectorAttributes) {
+            if(!hasAttribute(attrType)) continue;
+            auto attr = getAccessor<glm::vec3>(attrType);
+            for(size_t i = 0; i < attr.getCount(); ++i) {
+                attr[i] = glm::vec3(transform * glm::vec4(attr.get(i), 0.0f));
+            }
+        }
+    }
+
+    void Mesh::normalize(bool rescale) {
+        std::pair<glm::vec3, float> bSphere;
+        glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(-bSphere.first.x, -bSphere.first.y, -bSphere.first.z));
+        if(rescale) t = glm::scale(t, glm::vec3(1.0f / bSphere.second));
+        transform(t);
+    }
+
+    glm::vec3 Mesh::center() const {
+        return boundingSphere().first;
+    }
+
+    std::pair<glm::vec3, float> Mesh::boundingSphere() const {
+        std::pair<glm::vec3, glm::vec3> bBox = boundingBox();
+        glm::vec3 center = (bBox.first + bBox.second) * 0.5f;
+        float radius = glm::length(center - bBox.first);
+        return std::make_pair(center, radius);
+    }
+
+    std::pair<glm::vec3, glm::vec3> Mesh::boundingBox() const {
+        glm::vec3 min, max;
+        auto position = getAccessor<glm::vec3>(AttributeType::POSITION);
+        for(size_t i = 0; i < position.getCount(); ++i) {
+            min = glm::min(position.get(i), min);
+            max = glm::max(position.get(i), max);
+        }
+        return std::make_pair(min, max);
     }
 
     Mesh* assimpMesh(aiMesh* mesh, const VertexFormat& format) {

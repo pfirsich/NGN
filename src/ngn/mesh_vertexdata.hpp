@@ -62,10 +62,10 @@ namespace ngn {
         // These return a VertexAttributeAccessor instance that represents an invalid state (doesn't read or write)
         // if the attribute does not exist. use isValid()
         template<typename T>
-        VertexAttributeAccessor<T> getAccessor(AttributeType attrType, void* data) const {
+        VertexAttributeAccessor<T> getAccessor(AttributeType attrType, size_t count, void* data) const {
             for(std::size_t i = 0; i < mAttributes.size(); ++i) {
                 if(mAttributes[i].type == attrType) {
-                    return VertexAttributeAccessor<T>(mAttributes[i], getStride(), getAttributeOffset(i), data);
+                    return VertexAttributeAccessor<T>(mAttributes[i], getStride(), getAttributeOffset(i), count, data);
                 }
             }
             printf("There is no attribute of type '%s', make sure to call hasAttribute!", getVertexAttributeTypeName(attrType));
@@ -157,7 +157,7 @@ namespace ngn {
 
         template<typename T>
         VertexAttributeAccessor<T> getAccessor(AttributeType id) {
-            return mVertexFormat.getAccessor<T>(id, mData.get());
+            return mVertexFormat.getAccessor<T>(id, mNumVertices, mData.get());
         }
 
         // Note that this is compatible with VertexBuffers that have a different VertexFormat

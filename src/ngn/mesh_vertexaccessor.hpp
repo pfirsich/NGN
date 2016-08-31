@@ -34,16 +34,18 @@ namespace ngn {
         const VertexAttribute* mAttribute; // Would probablyy use std::optional
         const int mStride;
         const int mAttributeOffset;
+        const size_t mCount;
         void* mData;
 
     public:
         // This represents an invalid state
-        VertexAttributeAccessor() : mAttribute(nullptr), mStride(0), mAttributeOffset(0), mData(nullptr) {}
+        VertexAttributeAccessor() : mAttribute(nullptr), mStride(0), mAttributeOffset(0), mCount(0), mData(nullptr) {}
 
-        VertexAttributeAccessor(const VertexAttribute& attr, int stride, int offset, void* data) :
-                mAttribute(&attr), mStride(stride), mAttributeOffset(offset), mData(data) {}
+        VertexAttributeAccessor(const VertexAttribute& attr, int stride, int offset, size_t num, void* data) :
+                mAttribute(&attr), mStride(stride), mAttributeOffset(offset), mCount(num), mData(data) {}
 
         bool isValid() const {return mData != nullptr;}
+        size_t getCount() const {return mCount;}
 
         // every attribute is aligned to 4 bytes
         template<typename pT>

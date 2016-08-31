@@ -4,6 +4,7 @@
 #include <utility>
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include "mesh_vertexdata.hpp"
 #include "mesh_vertexaccessor.hpp"
@@ -61,7 +62,7 @@ namespace ngn {
         }
 
         // returns nullptr if the given attribute is not present in any vertexbuffer
-        VertexBuffer* hasAttribute(AttributeType attrType) {
+        VertexBuffer* hasAttribute(AttributeType attrType) const {
             for(auto& vBuffer : mVertexBuffers) {
                 if(vBuffer->getVertexFormat().hasAttribute(attrType)) return vBuffer.get();
             }
@@ -69,7 +70,7 @@ namespace ngn {
         }
 
         template<typename T>
-        VertexAttributeAccessor<T> getAccessor(AttributeType id) {
+        VertexAttributeAccessor<T> getAccessor(AttributeType id) const {
             VertexBuffer* vBuf = hasAttribute(id);
             if(vBuf == nullptr) {
                 LOG_ERROR("You are requesting an accessor for a vertex attribute that is not present in the current mesh: '%s'", getVertexAttributeTypeName(id));
@@ -107,22 +108,26 @@ namespace ngn {
         // for example read positions and write normals or read normals and write tangents, which might
         // reside in different buffers
 
-        void calculateVertexNormals(bool faceAreaWeighted = true);
+        /*TODO*/ void calculateVertexNormals(bool faceAreaWeighted = true);
         // sets normals so that in the fragment shader the normals can be interpolated using a "flat" varying - https://www.opengl.org/wiki/Type_Qualifier_(GLSL)
-        void calculateFaceNormals(bool lastVertexConvention = true);
-        void calculateTangents();
+        /*TODO*/ void calculateFaceNormals(bool lastVertexConvention = true);
+        /*TODO*/ void calculateTangents();
 
         // moves center to 0, 0, 0 and radius to 1.0 if rescale = true
         void normalize(bool rescale = false);
-        // Transform positions, normals, tangents and bitangents
-        void transform(const glm::mat4& transform);
+        void transform(const glm::mat4& transform,
+           const std::vector<AttributeType>& pointAttributes = {AttributeType::POSITION},
+           const std::vector<AttributeType>& vectorAttributes = {AttributeType::NORMAL, AttributeType::TANGENT, AttributeType::BITANGENT});
         // I don't think this is the proper prototype of this function, maybe merge with another Mesh?
-        void merge(const VertexBuffer& other, const glm::mat4& transform);
+        /*TODO*/ void merge(const VertexBuffer& other, const glm::mat4& transform);
 
-        // pair of position and sizes
-        std::pair<glm::vec3, glm::vec3> boundingBox();
+        // Centroid of the bounding box
+        glm::vec3 center() const;
+        // axis-aligned
+        // first vector is point with minimal coordinates (x, y, z), second with maximum
+        std::pair<glm::vec3, glm::vec3> boundingBox() const;
         // position and radius
-        std::pair<glm::vec3, float> boundingSphere();
+        std::pair<glm::vec3, float> boundingSphere() const;
     };
 
     Mesh* assimpMesh(const char* filename, const VertexFormat& format);
