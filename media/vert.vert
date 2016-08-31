@@ -5,22 +5,31 @@ layout(location=0) in vec3 attrPosition;
 layout(location=1) in vec3 attrNormal;
 layout(location=2) in vec2 attrTexCoord;
 
-layout(location=12) in float attrOffset;
+layout(location=12) in float attrScale;
 
 out VSOUT {
     vec2 texCoord;
     vec3 normal;
     vec3 eye;
+    float brightness;
 } vsOut;
 
 uniform mat4 modelview;
 uniform mat4 projection;
 uniform mat3 normalMatrix;
 
+uniform int gridSizeX;
+
 void main() {
     vsOut.texCoord = attrTexCoord;
     vsOut.normal = normalize(normalMatrix * attrNormal);
-    vec3 pos = attrPosition + vec3(attrOffset, 0.0, -gl_InstanceID*120.0);
+    vec3 pos = attrPosition;
+    int y = gl_InstanceID / gridSizeX;
+    int x = gl_InstanceID % gridSizeX;
+    pos.x += x;
+    pos.y += y;
+    pos.z *= attrScale;
+    vsOut.brightness = attrScale / 10.0;
     vsOut.eye = vec3(-modelview * vec4(pos, 1.0));
     gl_Position = projection * modelview * vec4(pos, 1.0);
 }

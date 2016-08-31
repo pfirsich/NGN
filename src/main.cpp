@@ -10,8 +10,7 @@
 
 #include <ngn/ngn.hpp>
 
-std::vector<ngn::Mesh*> meshes;
-ngn::Mesh* lightMesh;
+ngn::Mesh* planeMesh;
 ngn::Mesh* boxMesh;
 ngn::VertexFormat vFormat, instanceDataFormat;
 
@@ -19,11 +18,7 @@ ngn::ShaderProgram *shader;
 ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
 glm::vec4 light = glm::vec4(1.0, 0.5, 1.0, 1.0);
 
-glm::vec3 areaLightPos = glm::vec3(40.0f, 7.0f, 0.0f);
-glm::vec2 areaLightSize = glm::vec2(20.0f, 10.0f);
-glm::vec3 areaLightDir = glm::vec3(-1.0f, 0.0f, 0.0f);
-
-int instances = 10;
+int gridSizeX = 100, gridSizeY = 100;
 
 bool initGL() {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -40,18 +35,15 @@ bool initGL() {
 
     instanceDataFormat.add(ngn::AttributeType::CUSTOM0, 1, ngn::AttributeDataType::F32, false, 1);
 
-    meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
-    meshes.push_back(ngn::planeMesh(1000.0f, 1000.0f, 1, 1, vFormat));
-    boxMesh = ngn::boxMesh(100.0f, 100.0f, 100.0f, vFormat);
-    boxMesh->addVertexBuffer(instanceDataFormat, instances, ngn::UsageHint::DYNAMIC);
+    planeMesh = ngn::planeMesh(1.0f, 1.0f, 1, 1, vFormat);
+    planeMesh->normalize();
+    planeMesh->transform(glm::scale(glm::mat4(), glm::vec3(1000.0f)));
 
-    lightMesh = ngn::planeMesh(1.0f, 1.0f, 1, 1, vFormat);
-    lightMesh->transform(glm::mat4(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
-                                   glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-                                   glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
-                                   glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)));
+    boxMesh = ngn::boxMesh(1.0f, 1.0f, 1.0f, vFormat);
+    boxMesh->transform(glm::translate(glm::mat4(), glm::vec3(0.5f)));
+    boxMesh->addVertexBuffer(instanceDataFormat, gridSizeX*gridSizeY, ngn::UsageHint::STREAM);
 
-    camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 3.0f)));
+    camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 100.0f)));
 
     return true;
 }
@@ -94,15 +86,17 @@ void render(float dt) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     auto instanceData = boxMesh->getAccessor<float>(ngn::AttributeType::CUSTOM0);
-    for(int i = 0; i < instances; ++i) {
-        instanceData[i] = glm::cos(ngn::getTime() + (float)i / instances * M_PI) * 150.0f;
+    for(int y = 0; y < gridSizeY; ++y) {
+        for(int x = 0; x < gridSizeX; ++x) {
+            instanceData[y*gridSizeX+x] = (glm::cos(ngn::getTime() + (float)x / gridSizeX * M_PI * 3.0f) *
+                                           glm::sin(ngn::getTime()*0.9f + (float)y / gridSizeY * M_PI * 4.0) + 1.0)
+                                           * 0.5 * 5.0f;
+        }
     }
     boxMesh->hasAttribute(ngn::AttributeType::CUSTOM0)->upload();
 
     glm::mat4 model;
-    model = glm::rotate(model, ngn::getTime() * 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    float scale = 0.1f;
-    model = glm::scale(model, glm::vec3(scale, scale, scale));
+    model = glm::translate(model, glm::vec3(-gridSizeX/2.0f, -gridSizeY/2.0f, 0.0f));
 
     glm::mat4 modelview = camera.getViewMatrix() * model;
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
@@ -110,38 +104,15 @@ void render(float dt) {
     light = light * glm::rotate(glm::mat4(), 1.0f * dt, glm::vec3(0.0f, 1.0, 0.0f));
     glm::vec3 lightDir = glm::normalize(glm::mat3(camera.getViewMatrix()) * glm::vec3(light));
 
-    areaLightDir = glm::vec3(-1.0f, -2.0 * (glm::sin(ngn::getTime()) * 0.5f + 0.5f), 0.0f);
-
-    glm::mat3 areaLightBase;
-    areaLightBase[2] = glm::normalize(areaLightDir);
-    areaLightBase[0] = glm::normalize(glm::cross(areaLightBase[2], glm::vec3(0.0f, 1.0f, 0.0f)));
-    areaLightBase[1] = glm::normalize(glm::cross(areaLightBase[0], areaLightBase[2]));
-
     shader->bind();
+    shader->setUniform("gridSizeX", gridSizeX);
     shader->setUniform("modelview", modelview);
+    shader->setUniform("lightDir", lightDir);
     shader->setUniform("projection", camera.getProjectionMatrix());
     shader->setUniform("normalMatrix", normalMatrix);
 
-    shader->setUniform("lightDir", lightDir);
-
-    // these are all given in camera space, since light calculations are easiest there (camera is at 0, 0, 0)
-    shader->setUniform("areaLightPos", glm::vec3(camera.getViewMatrix() * glm::vec4(areaLightPos, 1.0f)));
-    shader->setUniform("areaLightSize", areaLightSize);
-    /*LOG_DEBUG("\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f",
-        areaLightBase[0][0], areaLightBase[0][1], areaLightBase[0][2],
-        areaLightBase[1][0], areaLightBase[1][1], areaLightBase[1][2],
-        areaLightBase[2][0], areaLightBase[2][1], areaLightBase[2][2]);*/
-    shader->setUniform("areaLightBase", glm::mat3(camera.getViewMatrix()) * areaLightBase);
-    shader->setUniform("ambient", 0.1f);
-    for(auto mesh : meshes) mesh->draw();
-    boxMesh->draw(instances);
-
-    glm::mat4 lightModel = glm::translate(glm::mat4(), areaLightPos) *
-                           glm::mat4(areaLightBase) *
-                           glm::scale(glm::mat4(), glm::vec3(areaLightSize, 1.0f));
-    shader->setUniform("modelview", camera.getViewMatrix() * lightModel);
-    shader->setUniform("ambient", 1.0f);
-    lightMesh->draw();
+    planeMesh->draw();
+    boxMesh->draw(gridSizeX*gridSizeY);
 
     shader->unbind();
 }

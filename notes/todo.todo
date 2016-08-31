@@ -22,7 +22,7 @@ Low-Level:
     ✔ Instancing @done (31.08.16 22:54)
     VertexAttribute.setDivisor, Mesh.draw(instances = 1)
     › SudoHack-Grid-Wall (with Instancing)
-    › Materials, ohne Renderer und SceneGraph benutzbar
+    › Materials
     YAML integrieren, VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
     Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
     dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
