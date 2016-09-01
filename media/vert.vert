@@ -12,6 +12,7 @@ out VSOUT {
     vec3 normal;
     vec3 eye;
     float brightness;
+    vec3 localPos;
 } vsOut;
 
 uniform mat4 modelview;
@@ -19,6 +20,7 @@ uniform mat4 projection;
 uniform mat3 normalMatrix;
 
 uniform int gridSizeX;
+uniform float scaleHeight;
 
 void main() {
     vsOut.texCoord = attrTexCoord;
@@ -29,7 +31,8 @@ void main() {
     pos.x += x;
     pos.y += y;
     pos.z *= attrScale;
-    vsOut.brightness = attrScale / 10.0;
+    vsOut.brightness = attrScale / scaleHeight;
+    vsOut.localPos = attrPosition;
     vsOut.eye = vec3(-modelview * vec4(pos, 1.0));
     gl_Position = projection * modelview * vec4(pos, 1.0);
 }

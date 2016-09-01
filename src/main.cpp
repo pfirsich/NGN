@@ -10,6 +10,8 @@
 
 #include <ngn/ngn.hpp>
 
+//#include "perlin.c"
+
 ngn::Mesh* planeMesh;
 ngn::Mesh* boxMesh;
 ngn::VertexFormat vFormat, instanceDataFormat;
@@ -18,12 +20,13 @@ ngn::ShaderProgram *shader;
 ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
 glm::vec4 light = glm::vec4(1.0, 0.5, 1.0, 1.0);
 
-int gridSizeX = 100, gridSizeY = 100;
+int gridSizeX = 50, gridSizeY = 50;
 
 bool initGL() {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
 
     shader = new ngn::ShaderProgram();
     if(!shader->compileAndLinkFromFiles("media/frag.frag", "media/vert.vert")) {
@@ -43,7 +46,7 @@ bool initGL() {
     boxMesh->transform(glm::translate(glm::mat4(), glm::vec3(0.5f)));
     boxMesh->addVertexBuffer(instanceDataFormat, gridSizeX*gridSizeY, ngn::UsageHint::STREAM);
 
-    camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 100.0f)));
+    camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 50.0f)));
 
     return true;
 }
@@ -85,12 +88,14 @@ void moveCamera(float dt) {
 void render(float dt) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    float scaleHeight = 4.0f;
     auto instanceData = boxMesh->getAccessor<float>(ngn::AttributeType::CUSTOM0);
     for(int y = 0; y < gridSizeY; ++y) {
         for(int x = 0; x < gridSizeX; ++x) {
-            instanceData[y*gridSizeX+x] = (glm::cos(ngn::getTime() + (float)x / gridSizeX * M_PI * 3.0f) *
-                                           glm::sin(ngn::getTime()*0.9f + (float)y / gridSizeY * M_PI * 4.0) + 1.0)
-                                           * 0.5 * 5.0f;
+            //instanceData[y*gridSizeX+x] = perlin2d(x + ngn::getTime() * 3.0, y, 0.2f, 1) * scaleHeight;
+            instanceData[y*gridSizeX+x] = (glm::cos(ngn::getTime() + (float)x / gridSizeX * M_PI * 5.0f) *
+                                           glm::sin(ngn::getTime()*0.9f + (float)y / gridSizeY * M_PI * 6.0) + 1.0)
+                                           * 0.5 * scaleHeight;
         }
     }
     boxMesh->hasAttribute(ngn::AttributeType::CUSTOM0)->upload();
@@ -105,6 +110,7 @@ void render(float dt) {
     glm::vec3 lightDir = glm::normalize(glm::mat3(camera.getViewMatrix()) * glm::vec3(light));
 
     shader->bind();
+    shader->setUniform("scaleHeight", scaleHeight);
     shader->setUniform("gridSizeX", gridSizeX);
     shader->setUniform("modelview", modelview);
     shader->setUniform("lightDir", lightDir);
