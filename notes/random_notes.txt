@@ -2,6 +2,12 @@
 * Wie kann man sich nicht selbst in template spezialisierungen ertränken?
 ---------------------
 
+Optionen in DOOM:
+Lights Quality, Shadow Quality, Player Self-Shadow, Directional Occlusion Quality (AO), Decal Quality, Decal Filtering (Bi, Tri, Ani), Virtual Texturing Page Size, Reflections Quality, Particles Quality, Compute Shaders, Motion Blur Quality, Depth of Field, Depth of Field Antialiasing, HDR Bloom, Lens Flare, Lens Dirt
+
+------------------------------
+https://github.com/larspensjo/SimpleSignal Use this?
+
 Sicherstellen, dass man das Mesh einfach nur als Mesh benutzen kann, ähnlich mit Shadern. Für irgendwelche Experimente möchte ich in der Lage sein, einfach nur ein Mesh + Shader zu rendern. SceneGraph + Renderer sollen optional sein. Vielleicht will man auch überlegen Materials ohne SceneGraph und Renderer zu nutzen? Eher nicht, weil ein Material einfach die Renderer-Agnostische-Magiclastige Version eines ShaderPrograms wird. Neben dem ShaderProgram muss man einfach eine Uniform-List oder so einbauen, die Uniform buffer bindet und dann ist man, denke ich, set.
 
 Bei Object darauf achten (vllt. SceneNode nennen?), dass man render überschreiben kann und dann da eigene shenanigans machen kann. Auch drauf achten, dass man vielleicht trotzdem Materials benutzen kann. Vielleicht braucht man nen Material-Override?
