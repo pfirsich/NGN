@@ -48,12 +48,21 @@ Low-Level:
     › FBO
     https://open.gl/framebuffers
 
+    › getSurfaceArea für Meshes
+
 Mid-Level:
     › Skinning
-    › Instancing
+    ✔ Instancing @done (01.09.16 23:25)
     › Post-Process Pipeline
 
+    › Draw call sorting
+    http://realtimecollisiondetection.net/blog/?p=86
+    http://www.gamedev.net/topic/661114-temporal-coherence-and-render-queue-sorting/
+    http://www.gamedev.net/topic/636389-advanced-render-queue-api/
+
 High-Level:
+    › Alternative Szenen-Repräsentation für Game logic:
+    http://gamedev.stackexchange.com/questions/8210/scene-graph-as-object-container
     › Materials aus ASSIMP laden soweit möglich: http://learnopengl.com/#!Model-Loading/Model
     › Performance Counters - Rebinds, Recompiles (Shaders and VAOs), Reuploads, Rendered Objects, Culled Objects, etc., Frametime, State Switchesf
 
@@ -81,25 +90,57 @@ High-Level:
             https://seblagarde.wordpress.com/2011/08/17/feeding-a-physical-based-lighting-mode/
             http://www.frostbite.com/wp-content/uploads/2014/11/course_notes_moving_frostbite_to_pbr.pdf
             https://docs.unrealengine.com/latest/INT/Engine/Rendering/Materials/PhysicallyBased/
+            http://www.marmoset.co/toolbag/learn/pbr-theory
+            https://www.kdab.com/wp-content/uploads/stories/KDAB-whitepaper-PBR-2016-04-v3.pdf
+            https://gist.github.com/galek/53557375251e1a942dfa
+            http://www.gamedev.net/topic/672836-pbr-metalness-equation/
+            https://www.reddit.com/r/gamedev/comments/2r191k/physically_based_rendering_for_developers_ibl/
+            http://polycount.com/discussion/147370/pbr-questions
+            http://gamedev.stackexchange.com/questions/114360/what-is-the-difference-between-pbr-and-ssr
+            http://www.html5gamedevs.com/topic/22615-difference-between-pbr-material-and-standard-material-with-reflections/
+            https://seblagarde.wordpress.com/
+            http://www.marmoset.co/toolbag/learn/pbr-conversion
+            http://www.marmoset.co/toolbag/learn/pbr-practice
+            https://seblagarde.wordpress.com/2014/04/14/dontnod-physically-based-rendering-chart-for-unreal-engine-4/
+            http://www.gamedev.net/topic/669443-pbr-g-buffer-parameters-metalness/
+            Man kann 2 Bit für Metalness benutzen und irgendwo ein Array mit den 4 möglichen Metalness values hinterlegen.
         › Skybox
             http://threejs.org/examples/webgl_shaders_sky.html
         › Picking
+            https://www.reddit.com/r/GraphicsProgramming/comments/50vlf8/techniques_for_accurate_picking/
         › Deferred Shading
             http://frictionalgames.blogspot.de/2010/12/bye-bye-pre-pass-lighting.html
             http://www.john-chapman.net/content.php?id=13
+            http://http.developer.nvidia.com/GPUGems2/gpugems2_chapter09.html
+            http://learnopengl.com/#!Advanced-Lighting/Deferred-Shading
+            https://urho3d.github.io/documentation/HEAD/_rendering_modes.html
+            http://www.slideshare.net/TiagoAlexSousa/rendering-technologies-from-crysis-3-gdc-2013
+            http://tomgillen.blogspot.de/2010/07/gbuffer-layout.html
+            https://urho3d.github.io/documentation/HEAD/_rendering_modes.html
         › Bloom
             Unreal Bloom - http://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
         › HDR
         › Parallax Mapping?
         › Gamma Correction
         › Text Rendering
+            https://www.reddit.com/r/opengl/comments/50umy2/text_rendering_in_opengl_33/
         › Particles
+            https://www.youtube.com/watch?annotation_id=annotation_2102208391&feature=iv&src_vid=7fMCTVhEzmU&v=0IrCggoJCno
+            Definitiv sheets benutzen können, daraus auswählen können und animieren
+            Subemitters
+            https://www.youtube.com/watch?annotation_id=annotation_912057639&feature=iv&src_vid=0IrCggoJCno&v=rR_bm8f8rVE
         › Culling
             http://docs.cryengine.com/display/SDKDOC4/Culling+Explained
             Automatic Object Splitting
             Frustum Culling
             Portals
             z pre pass
+            or https://fgiesen.wordpress.com/2013/02/17/optimizing-sw-occlusion-culling-index/
+            CullingTheBattlefield.pdf
+            http://sedici.unlp.edu.ar/bitstream/handle/10915/23640/4763-Implementing_Software_Occlusion_Culling_for_Real_Time_Applications.pdf;jsessionid=C824A64DB459A72888D2C81BEAA72A64?sequence=1
+            http://de.slideshare.net/guerrillagames/practical-occlusion-culling-in-killzone-3
+            Das beste scheint hier aber immer zu sein entweder die Geometry von Artists machen zu lassen, dafür hab ich nicht die Kapazität
+            http://www.gdcvault.com/play/1017837/Why-Render-Hidden-Objects-Cull
         › Lighting
             http://sunandblackcat.com/tipFullView.php?l=eng&topicid=31&topic=Advanced-GLSL-Lighting-Models
             http://threejs.org/examples/webgl_lights_hemisphere.html
@@ -108,6 +149,7 @@ High-Level:
             http://www.gamedev.net/topic/640573-area-lights-forward-and-deferred/ Mehr Area lights
             http://www.gamedev.net/topic/677849-area-lights-with-deferred-renderer/
             http://www.gamedev.net/topic/552315-glsl-area-light-implementation/
+            https://urho3d.github.io/documentation/HEAD/_rendering_modes.html
             › Area Lights
             http://www.gamedev.net/topic/552315-glsl-area-light-implementation/
             http://research.microsoft.com/en-us/um/people/johnsny/papers/arealights.pdf
@@ -119,4 +161,6 @@ High-Level:
             https://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/ - GOOD SHIT
         › Anti-Aliasing
             Temporal AA: http://threejs.org/examples/webgl_postprocessing_taa.html
+        › Scripting
+            https://urho3d.github.io/documentation/HEAD/_lua_scripting.html
         › GodRays - http://threejs.org/examples/webgl_postprocessing_godrays.html

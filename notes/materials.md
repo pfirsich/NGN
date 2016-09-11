@@ -131,3 +131,295 @@ materialType:
                         getLightParams -> lightDirection, lightAttenuation...
                 spotlight:
                     glsl: *lightglsl
+
+
+It is really, really important, that the Material system is usable out of the box for basic shading.
+A guy on gamedev.net argued (and is right) that if you want to make a single game, you should have one type of material (which is bullshit) but the point stands that being able to do everything in a single way without doing much work is important.
+
+Vielleicht ist ein Material einfach ein Objekt, dass mir ein Shader-Objekt gibt, wenn ich sage "ich hätte gerne technique X, pass Y" und zusätzlich in der Lage ist ein UniformBuffer-Objekt zu konstruieren, dass die nötigen Parameter hält, die ich dann übergeben darf.
+Am besten kann man da auch beliebige Objekte zurückgeben, die von UniformBuffer erben, aber schöneren access zulassen: setDiffuseColor statt
+setParameter("diffuseColor", glm::vec4());
+http://www.gamedev.net/topic/678502-best-way-to-abstract-shaders-in-a-small-engine/ - Ingenu
+vielleicht muss es sowohl eine UniformMap geben, die glUniform-calls macht, als auch Buffer (die vorzuziehen sind, aber für manche anwendungsgebiete halt cancer sind)
+
+Z-Prepass: sort front to back
+Lighting: sort by material
+Translucent: back to front
+
+VertexFormat bekommen indem man aus dem Material den Vertex Shader holt und daraus die Liste von Vertex-Attributen
+
+
+Erst Graph traversieren (es wäre gut, wenn der linear in memory liegt)
+
+OGRE:
+properties:
+ambient, diffuse, specular, emmissive, shininess, txtures, sourceblendfactor
+depth test, depth write, depth comparison, cull direction (ccw, cw)
+dynamic lighting enabled
+polygon mode (lines, fill, points)
+
+technique properties:
+listed in order of preference. earlier techniques are preferred over later ones
+attributes: 
+lod_index/lod_distance - 0 is best quality and default
+shader_caster_material - you can specify another material for shadow map rendering
+shadow_receiver_material - 
+gpu_vendor_rule, feste liste mit include oder exclude
+gpu_device_rule, pattern-matching
+
+sampler properties:
+texture_wrap_mode: repeat, clamp, mirror, border
+filtering: none, bilinear, trilinear, anisotropic
+max_anisotropy
+mipmap_bias
+
+material top level properties:
+lod_values distanc1, distance2, distance3
+receive_shadows
+
+außerdem gibts nen haufen default vertex/fragment programs, sodass man super viel darin schon einfach machen kann (selbst ohne zu erben, aber das mag ich nicht)
+
+
+material inheritance, that literally just copies and you can overwrite stuff
+
+entweder explizit ne materialtype klasse und material-instanzen, die nur uniforms halten
+oder material hält halt nur parameter + referenzen zu shader-objekten. viel mehr isses nicht, aber wenn man vversch. kopien hat könnte man blöd werden.
+
+In OGRE können jede Semgnete des scripts inheriten (mit der gleichen syntax) von allen anderen genamedten segmenten.
+
+Vielleicht will man parameter im material markieren um anzudeuten, dass man sie nicht während der laufzeit ändern möchte. dann können die in den shader kompiliert werden.
+
+
+renderer queue entry:
+ShaderProgram*
+vector UniformMaps
+vector UniformBuffers
+texture unit map
+Mesh* - alternatively VAO, mode, vertexCount, indexCount, etc., but why? (probably because of cache)
+RenderState
+
+generates a sort-key or implements comparison
+
+This might be the holy grail:
+http://www.slideshare.net/repii/frostbite-rendering-architecture-and-realtime-procedural-shading-texturing-techniques-presentation?from=ss_embed
+
+The Disney BRDF is used for EVERY material (except hair I think) in their movies, which makes this obviously a little easier. 
+
+
+--- Vertex Formats
+http://www.gamedev.net/topic/668726-graphics-engines-whats-more-common-standard-vertex-structure-or-dynamic-based-on-context/
+In the final case a material would reference a vertex format, which is also a data file and the mesh would already be saved in that format for maximum efficiency.
+Also a mesh probably needs multiple VAOs for different shaders (for example depth-prepass only binds pos/maybe uv)
+Mostly the cost for paying the whole vertex buffer is payed, but having a separate VAO just for shadow maps/z-prepass is a good idea.
+But best (and I want this) is to use two streams, one for shadow maps and z-prepass and another stream for all the other data (normals, tangents, colors, etc.)
+The meshes should be exported with information about the vertexformat they have been exported with, so that a check can be performed.
+
+----
+Blending, Depth Function, Cull Face Side, Front Face, Stencil Function, Stencil Operation
+
+--- regarding UBOs
+http://www.gamedev.net/topic/655969-speed-gluniform-vs-uniform-buffer-objects/
+Der Speedup ist, selbst, wenn man es richtig macht, nur sehr klein, also np einfach normale Uniforms zu benutzen (erstmal)
+Später dann:
+http://sunandblackcat.com/tipFullView.php?l=eng&topicid=21&topic=OpenGL-Uniform-Buffer-Objects
+http://learnopengl.com/#!Advanced-OpenGL/Advanced-GLSL
+
+Urho:
+different passes used in different renderers/stages
+texture and shader parameters defined on the technique level
+technique has a quality (0-2)
+texture-attribute also holds sampler state
+shaders and defines can be specified on technique and pass level
+no different techniques for skinned, non-skinned, instanced, billboard, different pervertex/perpixel lights, but rather defines
+
+passes:
+a switch for unlit|perpixel|pervertex
+
+in deferred:
+deferred - rendering in to gbuffer
+emissive - additional pass for emmisive after light accum
+
+in light prepass:
+prepass - opaque geometry normals and depth to g-buffer
+material - rendering opaque geometry for second time using light accum result
+
+in forward:
+ambient: base pass for opaque or transparent geometry
+negative: a darkening pass used for negative lights
+light: additive pass for a single light
+
+for all:
+postopaque - custom forward pass after standard opaque before transparent
+shadow - rendering to shadow map
+
+refract - after postopaque that renders the viewport texture from the environment texture unit, will ping pong the scene rendertarget, but will not be performed if not refractive stuff to render
+
+base (ambient, per-vertex and fog)
+light: one per pixel light for opaque object
+alpha: base for transparent
+litalpha: light for transparent
+
+default render state: 
+alpha amsking and testing disabled
+blend mode: replace
+ccw culling
+depth test: lequal
+depth write enabled
+
+for quality and  lod to work correctly the techniques have to appar in specific order:
+most distant & highest quality
+...
+most distant & lowest quality
+second most distant & highest quality
+...
+
+base materials will be copied completely before overwriting selectively
+
+
+
+urho uses an ubershader-like approach, permutations are built on demand
+inbuilt defines and specified defines
+
+defines in VS:
+NUMVERTEXLIGHTS
+DIRLIGHT, SPOTLIGHT, POINTLIGHT, PERPIXEL
+SHADOW (light has shadowing)
+NORMALOFFSET
+SKINNED, INSTANCED, BILLBOARD
+
+PS:
+DIRLIGHT, SPOTLIGHT, POINTLIGHT, PERPIXEL
+CUBEMASK (mask for spotlight)
+SPEC - light has specular
+SHADOW
+SIMPLE_SHADOW, PCF_SHADOW, VSM_SHADOW
+HEIGHTFOG
+
+helper functions like GetWorldPos, GetClipPos
+
+shader precaching can be done beforehand for a predefined set of combinations
+
+Effektiv einfach eine Liste Shader haben, mit Tags, die dann entsprechend ausgewählt werden können.
+
+```yaml
+material:
+    name: Phong # not needed, filename
+    #base: # filename
+    lodDistances: [12, 100]
+    techniques:
+        -   tags: []
+            lodIndex:
+            parameters:
+                albedo:
+                normalMap:
+                specularIntensity: # value or map
+                specularExponent: # value or map
+                specularColor:
+            shader:
+                vertex: # can be auto-generated
+                fragment:
+                    includes:
+                    defines:
+                    code: !!file path # maybe only files?!
+                    code: |
+                    int main(...) {
+                        vec3 
+                    }
+```
+
+Use Material Inheritance instead of Material Type and Material?
+Is that enough?
+Ist es vielleicht cooler einen Parameter-Satz "Material" zu nennen. Und dann eine Reihe Shader dafür zu haben, die man referenziert und die auch darauf passen müssen.
+
+-----
+
+Unity hat seit einer Weile "surface" shader, die als output nur eine Reihe üblicher Parameter haben, die dann durch das lighting model später verwurstet werden (an beliebigen stellen der pipeline):
+
+Input ist:
+float3 viewDir
+float4 with COLOR semantic
+float4 screenPos
+float3 worldPos
+float3 worldRefl
+float3 worldNormal
+
+Output:
+struct SurfaceOutputStandard
+{
+    fixed3 Albedo;      // base (diffuse or specular) color
+    fixed3 Normal;      // tangent space normal, if written
+    half3 Emission;
+    half Metallic;      // 0=non-metal, 1=metal
+    half Smoothness;    // 0=rough, 1=smooth
+    half Occlusion;     // occlusion (default 1)
+    fixed Alpha;        // alpha for transparencies
+};
+struct SurfaceOutputStandardSpecular
+{
+    fixed3 Albedo;      // diffuse color
+    fixed3 Specular;    // specular color
+    fixed3 Normal;      // tangent space normal, if written
+    half3 Emission;
+    half Smoothness;    // 0=rough, 1=smooth
+    half Occlusion;     // occlusion (default 1)
+    fixed Alpha;        // alpha for transparencies
+};
+
+früher:
+struct SurfaceOutput
+{
+    fixed3 Albedo;  // diffuse color
+    fixed3 Normal;  // tangent space normal, if written
+    fixed3 Emission;
+    half Specular;  // specular power in 0..1 range
+    fixed Gloss;    // specular intensity
+    fixed Alpha;    // alpha for transparencies
+};
+
+Man kann auch eine "finalColorModifier"-function angeben, die die color NACH dem lighting beeinflusst. 
+
+man kann auch einen vertex-shader definieren
+
+Das ist eigentlich ziemlich geil.
+
+Wenn man das Lighting Model ändern möchte, kann man dafür Funktionen definieren, die ein SurfaceOutput + light dir + viewdir (optional) + light atten. Output ist ein half4, also eine einzige color. An dieser Stelle kommen auch lightmaps ins Spiel? Eventuell?
+
+Diese sind auch light-type-agnostisch! (oho, boys!)
+
+Wenn man die SurfaceOutput-Structs selbst definieren kann, kann man damit implizit das G-Buffer layout partiell beschreiben und mit ein paar extra-angaben auch komplett. 
+In Unity kann man sogar das Lighting Model für Deferred gar nicht ändern.
+
+man sollte materials als "forwardonly" taggen können, die dann im deferred renderer in einem post-opaque-pass ausgeführt werden (oder post-alpha, wenn sie alpha sind)
+
+Die Shader-Objekte kann man dann auch für Postprocesses und so benutzen und die ShaderProgram-Abstraktion, die momentan existiert ersetzen
+
+vllt. kann man in jedem shader einfach bestimmte funktionen definieren, die extrahiert werden können. in surface-shadern definiert man eine surface-funktion und überschreibt eine existierende vom renderer bereitgestellte default-implementation von fragment() und vertex() nicht, kann die aber alle überschreiben (dafür muss man magic machen, glaub ich). so kann man vllt. auch lightingmodel überschreiben.
+
+Materials sind tatsächlich nur Parameter-Sätze für die Shader. Wichtig: Ein Material, dass mit mehreren Objekten assoziiert ist und geändert wird, ändert sich für alle diese Objekte. -> Uniform Buffer Objects! besonders, wenn sie statisch sind.
+
+----- 
+Recap:
+class Material
+class Shader - hat eine Liste von implementierten Funktionen?
+Vielleicht muss man Funktionen auch registrieren? Entweder auf ne Meta-Ebene 'setSurfaceFunction("surface")', oder mit ner extra-directive "!surface", damit kann man dann auch includes schön regeln, oder durch parsen introspecten.
+Die Meta-Nummer ist vermutlich am besten zuerst zu implementieren, weil es wenig Arbeit ist und weil man so ähnliche Funktionen sowieso braucht, falls man directives implementieren sollte (die mir am besten gefallen).
+
+Forward Renderer (mit allem Krempel)
+Deferred Renderer mit versch. Lighting Models - einfach nur einzelne versch, aber auch wenn man mehrere auf einmal will und einen lightingmodelindex einbauen muss
+
+versch. Effekte:
+* No Man's Sky - Topographic Scanner: In Deferred als Post-Process, in Forward muss das ein Material sein, dass jedes Objekt hat, oder partiell implementiert.
+* Winston's Barrier - post-alpha sogar wegen refraction, screen als input-texture, refraction muss man ohnehin überdenken
+* Feuer?
+* Screen Space Reflected stuff?
+* Es sollte die Möglichkeit geben ein Objekt mit fest definierbaren vertex und fragment shadern an bestimmten Stellen/passes in der pipeline zu rendern (dann renderer-abhängig)
+
+in Unity kann man AN das OBJEKT (nicht im Material) kleben wie gesortet werden soll, cast shadows, receive shadows, sorting layer und order in layer (vielleicht ist das aber nur für billboard)
+Blending ist aber z.B. im Material
+
+RenderStateBlock -> setDepthTest(), 
+UniformBlock -> UniformSet, UniformBuffer - Interface: ->setFloat(), ->setInteger(), etc. und bind() - lazy upload für buffers
+
+RenderStateBlock.addState<RenderStateBlock::DepthTest>(true);
+RenderStateBlock.removeState<RenderStateBlock>();
+RenderStateBlock.getState<RenderStateBlock>().set(false);
