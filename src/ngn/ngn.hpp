@@ -6,3 +6,5 @@
 #include "shader.hpp"
 #include "log.hpp"
 #include "signal.hpp"
+#include "uniformblock.hpp"
+#include "renderstateblock.hpp"

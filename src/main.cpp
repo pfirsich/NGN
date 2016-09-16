@@ -18,6 +18,8 @@ ngn::VertexFormat vFormat, instanceDataFormat;
 ngn::ShaderProgram *shader;
 ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
 glm::vec4 light = glm::vec4(1.0, 0.5, 1.0, 1.0);
+ngn::RenderStateBlock stateBlock;
+ngn::UniformList uniformList;
 
 glm::vec3 areaLightPos = glm::vec3(40.0f, 7.0f, 0.0f);
 glm::vec2 areaLightSize = glm::vec2(20.0f, 10.0f);
@@ -27,8 +29,8 @@ int instances = 10;
 
 bool initGL() {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
+    stateBlock.setCullFaces(ngn::RenderStateBlock::FaceDirections::BACK);
+    stateBlock.setDepthTest(ngn::RenderStateBlock::DepthFunc::LESS);
 
     shader = new ngn::ShaderProgram();
     if(!shader->compileAndLinkFromFiles("media/frag.frag", "media/vert.vert")) {
@@ -117,21 +119,21 @@ void render(float dt) {
     areaLightBase[0] = glm::normalize(glm::cross(areaLightBase[2], glm::vec3(0.0f, 1.0f, 0.0f)));
     areaLightBase[1] = glm::normalize(glm::cross(areaLightBase[0], areaLightBase[2]));
 
-    shader->bind();
-    shader->setUniform("modelview", modelview);
-    shader->setUniform("projection", camera.getProjectionMatrix());
-    shader->setUniform("normalMatrix", normalMatrix);
+    uniformList.setMatrix4("projection", camera.getProjectionMatrix());
+    uniformList.setMatrix3("normalMatrix", normalMatrix);
 
-    shader->setUniform("lightDir", lightDir);
+    uniformList.setVector3("lightDir", lightDir);
 
     // these are all given in camera space, since light calculations are easiest there (camera is at 0, 0, 0)
-    shader->setUniform("areaLightPos", glm::vec3(camera.getViewMatrix() * glm::vec4(areaLightPos, 1.0f)));
-    shader->setUniform("areaLightSize", areaLightSize);
-    /*LOG_DEBUG("\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f",
-        areaLightBase[0][0], areaLightBase[0][1], areaLightBase[0][2],
-        areaLightBase[1][0], areaLightBase[1][1], areaLightBase[1][2],
-        areaLightBase[2][0], areaLightBase[2][1], areaLightBase[2][2]);*/
-    shader->setUniform("areaLightBase", glm::mat3(camera.getViewMatrix()) * areaLightBase);
+    uniformList.setVector3("areaLightPos", glm::vec3(camera.getViewMatrix() * glm::vec4(areaLightPos, 1.0f)));
+    uniformList.setVector2("areaLightSize", areaLightSize);
+    uniformList.setMatrix3("areaLightBase", glm::mat3(camera.getViewMatrix()) * areaLightBase);
+
+    stateBlock.apply();
+    shader->bind();
+    uniformList.apply();
+
+    shader->setUniform("modelview", modelview);
     shader->setUniform("ambient", 0.1f);
     for(auto mesh : meshes) mesh->draw();
     boxMesh->draw(instances);

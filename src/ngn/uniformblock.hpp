@@ -49,37 +49,20 @@ namespace ngn {
                     LOG_ERROR("Setting uniform value with a different type than previous set!");
                     return;
                 }
-
-                assert(it->second.constData == nullptr || it->second.ownedData == nullptr);
-                if(copy) {
-                    if(it->second.constData) {
-                        it->second.constData = nullptr;
-                        it->second.ownedData = new T[count];
-                    } else {
-                        if(it->second.count != count) {
-                            deleteParam(it->second);
-                            it->second.ownedData = new T[count];
-                        }
-                    }
-                    std::memcpy(it->second.ownedData, ptr, sizeof(T)*count);
-                } else {
-                    if(it->second.ownedData) {
-                        deleteParam(it->second);
-                        it->second.constData = ptr;
-                    } else {
-                        it->second.constData = ptr;
-                    }
-                }
             } else {
                 it = mParameters.emplace(std::string(name), type).first;
-                if(copy) {
-                    it->second.constData = nullptr;
-                    it->second.ownedData = new T[count];
-                    std::memcpy(it->second.ownedData, ptr, sizeof(T)*count);
-                } else {
-                    it->second.constData = ptr;
-                    it->second.ownedData = nullptr;
-                }
+            }
+
+            assert(it->second.constData == nullptr || it->second.ownedData == nullptr);
+            if(copy) {
+                if(it->second.count != count) deleteParam(it->second);
+                if(!it->second.ownedData) it->second.ownedData = new T[count];
+
+                it->second.constData = nullptr;
+                std::memcpy(it->second.ownedData, ptr, sizeof(T)*count);
+            } else {
+                it->second.constData = ptr;
+                deleteParam(it->second);
             }
 
             it->second.count = count;

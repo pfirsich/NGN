@@ -14,7 +14,8 @@ EXECUTABLE = build/ngnTest
 LDFLAGS =
 
 SRC = src/main.cpp src/ngn/log.cpp src/ngn/window.cpp src/ngn/mesh.cpp src/ngn/mesh_vertexaccessor.cpp \
-	  src/ngn/mesh_vertexattribute.cpp src/ngn/mesh_vertexdata.cpp src/ngn/shader.cpp src/ngn/transforms.cpp
+	  src/ngn/mesh_vertexattribute.cpp src/ngn/mesh_vertexdata.cpp src/ngn/shader.cpp src/ngn/transforms.cpp \
+	  src/ngn/uniformblock.cpp src/ngn/renderstateblock.cpp
 OBJ = $(SRC:%.cpp=%.o)
 
 # dependencies

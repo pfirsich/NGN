@@ -10,9 +10,6 @@ namespace ngn {
     // I just force a first set with them
     glm::ivec4 Renderer::currentViewport = glm::ivec4(0, 0, 0, 0);
     glm::ivec4 Renderer::currentScissor = glm::ivec4(0, 0, 0, 0);
-    bool Renderer::currentDepthTest = false, Renderer::currentStencilTest = false, Renderer::currentScissorTest = false;
-    bool Renderer::currentDepthWrite = true;
-    Renderer::DepthFunc Renderer::currentDepthFunc = Renderer::DEPTH_FUNC_LESS;
 
     void Renderer::updateState() const {
         if(currentViewport != viewport) {
@@ -39,22 +36,6 @@ namespace ngn {
         if(currentClearStencil != clearStencil) {
             currentClearStencil = clearStencil;
             glClearStencil(clearStencil);
-        }
-
-        if(currentDepthTest != depthTest) {
-            currentDepthTest = depthTest;
-            if(depthTest)
-                glEnable(GL_DEPTH_TEST);
-            else
-                glDisable(GL_DEPTH_TEST);
-        }
-
-        if(currentStencilTest != stencilTest) {
-            currentStencilTest = stencilTest;
-            if(stencilTest)
-                glEnable(GL_STENCIL_TEST);
-            else
-                glDisable(GL_STENCIL_TEST);
         }
 
         if(currentScissorTest != scissorTest) {
