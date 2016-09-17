@@ -114,7 +114,7 @@ namespace ngn {
 
         void setBlendMode(BlendMode mode);
 
-        void apply(bool force = false);
+        void apply(bool force = false) const;
 
         // stencil func - glStencilFunc
         // stencil op - glStencilOp

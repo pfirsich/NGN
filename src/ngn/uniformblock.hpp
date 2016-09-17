@@ -2,14 +2,19 @@
 
 #include <cstring>
 #include <map>
+#include <vector>
+#include <utility>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include "log.hpp"
+#include "texture.hpp"
 
 namespace ngn {
     class UniformBlock {
+    public:
+        static const size_t MAX_TEXTURE_UNITS = 16;
     protected:
         enum class ParamType {
             FLOAT, INT, VECF2, VECF3, VECF4, MATF2, MATF3, MATF4
@@ -26,6 +31,7 @@ namespace ngn {
         };
 
         std::map<std::string, ParamData> mParameters;
+        std::vector<std::pair<std::string, const Texture*> > mTextures;
 
         void deleteParam(ParamData& param) {
             if(param.ownedData) {
@@ -132,6 +138,16 @@ namespace ngn {
         }
         void setMatrix4Array(const char* name, const glm::mat4* vp, size_t count = 1, bool copy = false){
             setParam<glm::mat4>(name, ParamType::MATF4, vp, count, copy);
+        }
+
+        void setTexture(const char* name, const Texture* texture) {
+            for(auto& elem : mTextures) {
+                if(elem.first == name) {
+                    elem.second = texture;
+                    return;
+                }
+            }
+            mTextures.push_back(std::make_pair(name, texture));
         }
 
         virtual void apply() = 0;

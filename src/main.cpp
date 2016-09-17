@@ -1,8 +1,5 @@
 #include <SDL.h>
 #include <glad/glad.h>
-#include <SDL_opengl.h>
-#include <stdio.h>
-#include <string>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,49 +7,9 @@
 
 #include <ngn/ngn.hpp>
 
-std::vector<ngn::Mesh*> meshes;
-ngn::VertexFormat vFormat;
-
-ngn::ShaderProgram *shader;
-ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
-glm::vec4 light = glm::vec4(1.0, 0.5, 1.0, 1.0);
-ngn::RenderStateBlock globalStateBlock;
-
-ngn::Scene scene;
-ngn::Object ironman, ground, cube;
-
-bool initGL() {
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    globalStateBlock.setCullFaces(ngn::RenderStateBlock::FaceDirections::BACK);
-    globalStateBlock.setDepthTest(ngn::RenderStateBlock::DepthFunc::LESS);
-    globalStateBlock.apply(true);
-
-    shader = new ngn::ShaderProgram();
-    if(!shader->compileAndLinkFromFiles("media/frag.frag", "media/vert.vert")) {
-        return false;
-    }
-
-    vFormat.add(ngn::AttributeType::POSITION, 3, ngn::AttributeDataType::F32);
-    vFormat.add(ngn::AttributeType::NORMAL, 3, ngn::AttributeDataType::F32);
-
-    meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
-
-    ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
-    ground.setMaterial(new ngn::Material(shader));
-    ground.getMaterial()->setVector3("color", glm::vec3(0.5f, 1.0f, 0.5f));
-
-    cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
-    cube.setMaterial(new ngn::Material(shader));
-    cube.getMaterial()->setVector3("color", glm::vec3(1.0f, 0.5f, 0.5f));
-
-    camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 3.0f)));
-
-    return true;
-}
-
-void renderNode(ngn::Object& node, float dt) {
+void renderNode(ngn::Object& node, ngn::Camera& camera, const glm::vec3& light, float dt) {
     // light
-    glm::vec3 lightDir = glm::normalize(glm::mat3(camera.getViewMatrix()) * glm::vec3(light));
+    glm::vec3 lightDir = glm::normalize(glm::mat3(camera.getViewMatrix()) * light);
 
     // for later
     glm::mat4 model = node.getWorldMatrix();
@@ -64,6 +21,7 @@ void renderNode(ngn::Object& node, float dt) {
     mat->mStateBlock.apply();
     shader->bind();
     mat->apply();
+
     shader->setUniform("projection", camera.getProjectionMatrix());
     shader->setUniform("modelview", modelview);
     shader->setUniform("normalMatrix", normalMatrix);
@@ -73,15 +31,7 @@ void renderNode(ngn::Object& node, float dt) {
     node.getMesh()->draw();
 }
 
-void render(float dt) {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    globalStateBlock.apply();
-    renderNode(ground, dt);
-    renderNode(cube, dt);
-}
-
-void moveCamera(float dt) {
+void moveCamera(ngn::Camera& camera, float dt) {
     static int lastMouseX = -1, lastMouseY = -1;
     if(lastMouseX < 0 and lastMouseY < 0)
         SDL_GetMouseState(&lastMouseX, &lastMouseY);
@@ -118,16 +68,58 @@ int main(int argc, char** args) {
     ngn::setupDefaultLogging();
 
     std::unique_ptr<ngn::Window> window(new ngn::Window("ngn test", 1600, 900));
-    auto size = window->getSize();
-    if(!initGL()) return 1;
-    window->resizeSignal.connect([&](int w, int h) {
+    ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
+    window->resizeSignal.connect([&camera](int w, int h) {
         glViewport(0, 0, w, h);
         camera.setAspect((float)w/h);
     });
+    auto size = window->getSize();
     window->resizeSignal.emit(size.x, size.y);
 
-    float lastTime = ngn::getTime();
+    ngn::Texture* whitePixel = new ngn::Texture;
+    uint32_t data = 0xFFFFFFFF;
+    whitePixel->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 4, 1, 1, 4, false);
 
+    // Scene
+    ngn::RenderStateBlock globalStateBlock;
+    globalStateBlock.setCullFaces(ngn::RenderStateBlock::FaceDirections::BACK);
+    globalStateBlock.setDepthTest(ngn::RenderStateBlock::DepthFunc::LESS);
+    globalStateBlock.apply(true);
+
+    ngn::ShaderProgram *shader = new ngn::ShaderProgram();
+    if(!shader->compileAndLinkFromFiles("media/frag.frag", "media/vert.vert")) {
+        return false;
+    }
+
+    ngn::VertexFormat vFormat;
+    vFormat.add(ngn::AttributeType::POSITION, 3, ngn::AttributeDataType::F32);
+    vFormat.add(ngn::AttributeType::NORMAL, 3, ngn::AttributeDataType::F32);
+    vFormat.add(ngn::AttributeType::TEXCOORD0, 2, ngn::AttributeDataType::F32);
+
+    ngn::Scene scene;
+
+    std::vector<ngn::Mesh*> meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
+
+    ngn::Object ground;
+    ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
+    ground.setMaterial(new ngn::Material(shader));
+    ground.getMaterial()->setVector3("color", glm::vec3(0.5f, 1.0f, 0.5f));
+    ground.getMaterial()->setTexture("baseTex", whitePixel);
+    ground.getMaterial()->setFloat("shininess", 64.0);
+    scene.add(&ground);
+
+    ngn::Object cube;
+    cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
+    cube.setMaterial(new ngn::Material(shader));
+    cube.getMaterial()->setTexture("baseTex", new ngn::Texture("media/sq.png"));
+    cube.getMaterial()->setVector3("color", glm::vec3(1.0f, 1.0f, 1.0f));
+    cube.getMaterial()->setFloat("shininess", 256.0);
+    scene.add(&cube);
+
+    camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 3.0f)));
+
+    // Mainloop
+    float lastTime = ngn::getTime();
     bool quit = false;
     window->closeSignal.connect([&]() {quit = true;});
     while(!quit) {
@@ -135,8 +127,14 @@ int main(int argc, char** args) {
         float dt = t - lastTime;
         lastTime = t;
 
-        moveCamera(dt);
-        render(dt);
+        moveCamera(camera, dt);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        globalStateBlock.apply();
+        glm::vec3 lightDir = glm::vec3(1.0f, 0.3f, 1.0f);
+        renderNode(ground, camera, lightDir, dt);
+        renderNode(cube, camera, lightDir, dt);
 
         window->updateAndSwap();
     }

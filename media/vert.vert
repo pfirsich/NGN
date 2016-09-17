@@ -3,7 +3,7 @@
 
 layout(location=0) in vec3 attrPosition;
 layout(location=1) in vec3 attrNormal;
-layout(location=2) in vec2 attrTexCoord;
+layout(location=8) in vec2 attrTexCoord;
 
 layout(location=12) in float attrOffset;
 

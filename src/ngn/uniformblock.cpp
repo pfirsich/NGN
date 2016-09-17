@@ -20,5 +20,9 @@ namespace ngn {
                 case ParamType::MATF4: glUniformMatrix4fv(loc, c, GL_FALSE, glm::value_ptr(*reinterpret_cast<const glm::mat4*>(data))); break;
             }
         }
+
+        for(size_t i = 0; i < mTextures.size(); ++i) {
+            mTextures[i].second->bind(i);
+        }
     }
 }

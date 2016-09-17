@@ -15,8 +15,13 @@ LDFLAGS =
 
 SRC = src/main.cpp src/ngn/log.cpp src/ngn/window.cpp src/ngn/mesh.cpp src/ngn/mesh_vertexaccessor.cpp \
 	  src/ngn/mesh_vertexattribute.cpp src/ngn/mesh_vertexdata.cpp src/ngn/shader.cpp \
-	  src/ngn/uniformblock.cpp src/ngn/renderstateblock.cpp src/ngn/scenenode.cpp
+	  src/ngn/uniformblock.cpp src/ngn/renderstateblock.cpp src/ngn/scenenode.cpp src/ngn/texture.cpp
 OBJ = $(SRC:%.cpp=%.o)
+
+DEPFILEDIR = depfiles
+# For some stupid reason -MM -MF produces empty object files, -MMD -MF works though
+DEPFLAGS = -MMD -MF $(patsubst %.o,$(DEPFILEDIR)/%.d,$@)
+DEPS = $(SRC:%.cpp=$(DEPFILEDIR)/%.d)
 
 # dependencies
 ## SDL
@@ -32,10 +37,14 @@ CFLAGS += -Idependencies/glm
 # ASSIMP
 CFLAGS += -Idependencies/assimp/include
 LDFLAGS += -Ldependencies/assimp/lib -lassimp -lzlibstatic
+# stb_image
+CFLAGS += -Idependencies/stb_image
 
 LDFLAGS += -lstdc++
 
 all: test
+
+-include $(DEPS)
 
 debug: CFLAGS += -DDEBUG -g -O0
 debug: $(EXECUTABLE)
@@ -47,7 +56,7 @@ $(EXECUTABLE): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
 run:
 	$(EXECUTABLE)

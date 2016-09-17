@@ -10,6 +10,8 @@ out vec4 fragColor;
 
 uniform vec3 lightDir; // view space
 uniform vec3 color;
+uniform sampler2D baseTex;
+uniform float shininess = 128.0;
 
 void main() {
     vec3 N = normalize(vsOut.normal); // renormalize because of interpolation?
@@ -17,10 +19,9 @@ void main() {
     vec3 L = lightDir;
     float L_atten = 1.0; // directional
 
-    vec3 albedo = color;
+    vec3 albedo = color * texture2D(baseTex, vsOut.texCoord).rgb;
     vec3 specColor = vec3(1.0, 1.0, 1.0);
     vec3 ambiColor = vec3(1.0, 1.0, 1.0) * 0.1;
-    float shininess = 128.0;
 
     float rimLight = smoothstep(0.35, 1.0, 1.0 - max(dot(E, N), 0.0)) * 0.8;
     rimLight = 0.0;
