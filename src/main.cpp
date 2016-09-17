@@ -7,28 +7,72 @@
 
 #include <ngn/ngn.hpp>
 
-void renderNode(ngn::Object& node, ngn::Camera& camera, const glm::vec3& light, float dt) {
-    // light
+#include <stack>
+struct RenderQueueEntry {
+    ngn::ShaderProgram* shaderProgram;
+    std::vector<ngn::UniformBlock*> uniformBlocks;
+    ngn::Mesh* mesh;
+    const ngn::RenderStateBlock* stateBlock;
+
+    RenderQueueEntry(ngn::ShaderProgram* shader, ngn::Mesh* mesh, const ngn::RenderStateBlock* state) :
+            shaderProgram(shader), mesh(mesh), stateBlock(state) {}
+};
+
+void renderRenderQueue(std::vector<RenderQueueEntry>& queue) {
+    for(auto& entry : queue) {
+        entry.stateBlock->apply();
+        entry.shaderProgram->bind();
+        for(auto block : entry.uniformBlocks) block->apply();
+        entry.mesh->draw();
+    }
+}
+
+void render(ngn::SceneNode* root, ngn::Camera& camera, const glm::vec3& light) {
+    static std::vector<RenderQueueEntry> renderQueue;
+    if(renderQueue.size() == 0) renderQueue.reserve(2048);
+    renderQueue.clear();
+
+    ngn::UniformList transformUniforms;
+    transformUniforms.setMatrix4("projection", camera.getProjectionMatrix());
+
+    ngn::UniformList lightingUniforms;
     glm::vec3 lightDir = glm::normalize(glm::mat3(camera.getViewMatrix()) * light);
+    lightingUniforms.setVector3("lightDir", lightDir);
 
-    // for later
-    glm::mat4 model = node.getWorldMatrix();
-    glm::mat4 modelview = camera.getViewMatrix() * model;
-    glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
+    // Build queue
+    std::stack<ngn::SceneNode*> traversalStack;
+    traversalStack.push(root);
+    while(!traversalStack.empty()) {
+        ngn::SceneNode* top = traversalStack.top();
+        traversalStack.pop();
 
-    ngn::Material* mat = node.getMaterial();
-    ngn::ShaderProgram* shader = mat->mShader;
-    mat->mStateBlock.apply();
-    shader->bind();
-    mat->apply();
+        // handle current node
+        ngn::Mesh* mesh = top->getMesh();
+        if(mesh) {
+            ngn::Material* mat = top->getMaterial();
+            assert(mat != nullptr); // Rendering a mesh without a material is impossible
 
-    shader->setUniform("projection", camera.getProjectionMatrix());
-    shader->setUniform("modelview", modelview);
-    shader->setUniform("normalMatrix", normalMatrix);
+            glm::mat4 model = top->getWorldMatrix();
+            glm::mat4 modelview = camera.getViewMatrix() * model;
+            glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
+            transformUniforms.setMatrix4("model", model);
+            transformUniforms.setMatrix4("modelview", modelview);
+            transformUniforms.setMatrix3("normalMatrix", normalMatrix);
+            transformUniforms.setMatrix4("modelviewprojection", camera.getProjectionMatrix() * modelview);
 
-    shader->setUniform("lightDir", lightDir);
+            renderQueue.emplace_back(mat->mShader, mesh, &(mat->mStateBlock));
+            renderQueue.back().uniformBlocks.push_back(mat);
+            renderQueue.back().uniformBlocks.push_back(&transformUniforms);
+            renderQueue.back().uniformBlocks.push_back(&lightingUniforms);
+        }
 
-    node.getMesh()->draw();
+        // chilren
+        for(auto child : top->getChildren()) {
+            traversalStack.push(child);
+        }
+    }
+
+    renderRenderQueue(renderQueue);
 }
 
 void moveCamera(ngn::Camera& camera, float dt) {
@@ -99,6 +143,18 @@ int main(int argc, char** args) {
     ngn::Scene scene;
 
     std::vector<ngn::Mesh*> meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
+    ngn::Object ironman;
+    for(auto mesh : meshes) {
+        ngn::Object* obj = new ngn::Object;
+        obj->setMesh(mesh);
+        ironman.add(obj);
+    }
+    ironman.setMaterial(new ngn::Material(shader));
+    ironman.getMaterial()->setVector3("color", glm::vec3(1.0f, 1.0f, 1.0f));
+    ironman.getMaterial()->setTexture("baseTex", whitePixel);
+    ironman.getMaterial()->setFloat("shininess", 512.0f);
+    ironman.setScale(glm::vec3(0.1f, 0.1, 0.1f));
+    scene.add(&ironman);
 
     ngn::Object ground;
     ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
@@ -130,11 +186,9 @@ int main(int argc, char** args) {
         moveCamera(camera, dt);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         globalStateBlock.apply();
         glm::vec3 lightDir = glm::vec3(1.0f, 0.3f, 1.0f);
-        renderNode(ground, camera, lightDir, dt);
-        renderNode(cube, camera, lightDir, dt);
+        render(&scene, camera, lightDir);
 
         window->updateAndSwap();
     }

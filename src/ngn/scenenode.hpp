@@ -8,6 +8,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include "material.hpp"
+#include "mesh.hpp"
+
 namespace ngn {
     class SceneNode {
     public:
@@ -27,6 +30,9 @@ namespace ngn {
         SceneNode* mParent;
         std::vector<SceneNode*> mChildren;
 
+        Material* mMaterial;
+        Mesh* mMesh;
+
         bool mMatrixDirty;
 
     public:
@@ -43,7 +49,7 @@ namespace ngn {
         }
 
         SceneNode() : mPosition(0.0f, 0.0f, 0.0f), mScale(1.0f, 1.0f, 1.0f), mQuaternion(),
-                mParent(nullptr), mMatrixDirty(true) {
+                mParent(nullptr), mMaterial(nullptr), mMesh(nullptr), mMatrixDirty(true) {
             nodeIdMap[mId = nextId++] = this;
         }
 
@@ -60,8 +66,17 @@ namespace ngn {
             nodeIdMap[mId = id] = this;
         }
 
+        // Mesh/Material
+        Mesh* getMesh() {return mMesh;}
+        void setMesh(Mesh* mesh) {mMesh = mesh;}
+
+        // inherit materials
+        Material* getMaterial() {return mMaterial ? mMaterial : (mParent ? mParent->getMaterial() : nullptr);}
+        void setMaterial(Material* material) {mMaterial = material;}
+
         // Hierarchy
         SceneNode* getParent() {return mParent;}
+        const std::vector<SceneNode*>& getChildren() const {return mChildren;}
 
         // you may add a node twice to the graph, which is not intended, but the overhead of checking is undesirable
         void add(SceneNode* obj) {
@@ -151,4 +166,5 @@ namespace ngn {
     };
 
     using Scene = SceneNode;
+    using Object = SceneNode;
 }

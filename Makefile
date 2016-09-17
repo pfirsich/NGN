@@ -66,4 +66,4 @@ test: debug run
 remake: clean all
 
 clean:
-	rm -f $(EXECUTABLE) $(OBJ)
+	rm -f $(EXECUTABLE) $(OBJ) $(DEPS)
