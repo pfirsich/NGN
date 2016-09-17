@@ -1,9 +1,10 @@
 #pragma once
 
-#include "transforms.hpp"
+#include "scenenode.hpp"
 
 namespace ngn {
-    class Camera : public Transforms {
+    //TODO: Camera has to account for parent transforms
+    class Camera : public SceneNode {
     protected:
         glm::mat4 mViewMatrix, mInverseViewMatrix, mProjectionMatrix, mInverseProjectionMatrix;
         bool mViewDirty, mProjectionDirty;

@@ -2,8 +2,9 @@
 #include "log.hpp"
 
 namespace ngn {
+    // These values are only accurate because we make sure that they are set when the program starts
     bool RenderStateBlock::currentDepthWrite = true;
-    RenderStateBlock::DepthFunc RenderStateBlock::currentDepthFunc = RenderStateBlock::DepthFunc::DISABLED;
+    RenderStateBlock::DepthFunc RenderStateBlock::currentDepthFunc = RenderStateBlock::DepthFunc::LESS;
     RenderStateBlock::FaceDirections RenderStateBlock::currentCullFaces = RenderStateBlock::FaceDirections::BACK;
     RenderStateBlock::FaceOrientation RenderStateBlock::currentFrontFace = RenderStateBlock::FaceOrientation::CCW;
     bool RenderStateBlock::currentBlendEnabled = false;
@@ -37,14 +38,14 @@ namespace ngn {
         }
     }
 
-    void RenderStateBlock::apply() {
-        if(mDepthWrite != currentDepthWrite) {
+    void RenderStateBlock::apply(bool force) {
+        if(mDepthWrite != currentDepthWrite || force) {
             glDepthMask(mDepthWrite);
             LOG_DEBUG("glDepthMask");
             currentDepthWrite = mDepthWrite;
         }
 
-        if(mDepthFunc != currentDepthFunc) {
+        if(mDepthFunc != currentDepthFunc || force) {
             if(mDepthFunc == DepthFunc::DISABLED) {
                 glDisable(GL_DEPTH_TEST);
             } else {
@@ -55,7 +56,7 @@ namespace ngn {
             currentDepthFunc = mDepthFunc;
         }
 
-        if(mCullFaces != currentCullFaces) {
+        if(mCullFaces != currentCullFaces || force) {
             if(mCullFaces == FaceDirections::NONE) {
                 glDisable(GL_CULL_FACE);
             } else {
@@ -66,22 +67,22 @@ namespace ngn {
             LOG_DEBUG("cull face");
         }
 
-        if(mFrontFace != currentFrontFace) {
+        if(mFrontFace != currentFrontFace || force) {
             glFrontFace(static_cast<GLenum>(mFrontFace));
             currentFrontFace = mFrontFace;
         }
 
-        if(mBlendEnabled != currentBlendEnabled) {
+        if(mBlendEnabled != currentBlendEnabled || force) {
             if(mBlendEnabled) {
                 glEnable(GL_BLEND);
-                if(mBlendSrcFactor != currentBlendSrcFactor || mBlendDstFactor != currentBlendDstFactor) {
+                if(mBlendSrcFactor != currentBlendSrcFactor || mBlendDstFactor != currentBlendDstFactor || force) {
                     glBlendFunc(static_cast<GLenum>(mBlendSrcFactor),
                                 static_cast<GLenum>(mBlendDstFactor));
                     currentBlendSrcFactor = mBlendSrcFactor;
                     currentBlendDstFactor = mBlendDstFactor;
                     LOG_DEBUG("blend func");
                 }
-                if(mBlendEquation != currentBlendEquation) {
+                if(mBlendEquation != currentBlendEquation || force) {
                     glBlendEquation(static_cast<GLenum>(mBlendEquation));
                     currentBlendEquation = mBlendEquation;
                     LOG_DEBUG("blend eq");
@@ -89,7 +90,7 @@ namespace ngn {
             } else {
                 glDisable(GL_BLEND);
             }
-            LOG_DEBUG("blend enabled");
+            LOG_DEBUG("blend enable");
             currentBlendEnabled = mBlendEnabled;
         }
     }

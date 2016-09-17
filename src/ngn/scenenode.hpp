@@ -1,13 +1,18 @@
 #pragma once
 
+#include <vector>
 #include <cstdio>
+#include <map>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 namespace ngn {
-    class Transforms {
+    class SceneNode {
+    public:
+        using Id = uint32_t;
+
     protected:
         glm::vec3 mPosition, mScale;
         glm::quat mQuaternion;
@@ -17,11 +22,66 @@ namespace ngn {
         virtual void dirty() {mMatrixDirty = true;}
 
     private:
+        Id mId;
+
+        SceneNode* mParent;
+        std::vector<SceneNode*> mChildren;
+
         bool mMatrixDirty;
 
     public:
-        Transforms() : mPosition(0.0f, 0.0f, 0.0f), mScale(1.0f, 1.0f, 1.0f), mQuaternion(), mMatrixDirty(true) {}
+        static Id nextId;
+        static std::map<Id, SceneNode*> nodeIdMap;
 
+        static SceneNode* getById(Id id) {
+            auto it = nodeIdMap.find(id);
+            if(it != nodeIdMap.end()) {
+                return it->second;
+            } else {
+                return nullptr;
+            }
+        }
+
+        SceneNode() : mPosition(0.0f, 0.0f, 0.0f), mScale(1.0f, 1.0f, 1.0f), mQuaternion(),
+                mParent(nullptr), mMatrixDirty(true) {
+            nodeIdMap[mId = nextId++] = this;
+        }
+
+        ~SceneNode() {
+            if(mParent != nullptr) mParent->remove(this);
+        }
+
+        // Id etc.
+        Id getId() const {return mId;}
+        // if you use setId, please make sure SceneNode::nextId has a valid value after it
+        // probably something like: SceneNode::nextId == std::max(SceneNode::nextId + 1, theIdISetTo);
+        void setId(Id id) {
+            nodeIdMap.erase(mId);
+            nodeIdMap[mId = id] = this;
+        }
+
+        // Hierarchy
+        SceneNode* getParent() {return mParent;}
+
+        // you may add a node twice to the graph, which is not intended, but the overhead of checking is undesirable
+        void add(SceneNode* obj) {
+            obj->mParent = this;
+            mChildren.push_back(obj);
+        }
+
+        void remove(SceneNode* obj) {
+            auto it = mChildren.begin();
+            while(it != mChildren.end()) {
+                if(*it == obj) {
+                    (*it)->mParent = nullptr;
+                    it = mChildren.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+
+        // Transforms
         void setPosition(const glm::vec3& position) {mPosition = position; dirty();}
         glm::vec3 getPosition() const {return mPosition;}
 
@@ -64,6 +124,13 @@ namespace ngn {
             return mMatrix;
         }
 
+        glm::mat4 getWorldMatrix() {
+            if(mParent)
+                return mParent->getWorldMatrix() * getMatrix();
+            else
+                return getMatrix();
+        }
+
         void setMatrix(const glm::mat4& matrix, bool updateTRS = true) {
             mMatrix = matrix;
             mMatrixDirty = false;
@@ -82,4 +149,6 @@ namespace ngn {
             lookAt(mPosition, at, up);
         }
     };
+
+    using Scene = SceneNode;
 }

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <utility>
 
 #include <glad/glad.h>
@@ -112,7 +114,7 @@ namespace ngn {
 
         void setBlendMode(BlendMode mode);
 
-        void apply();
+        void apply(bool force = false);
 
         // stencil func - glStencilFunc
         // stencil op - glStencilOp

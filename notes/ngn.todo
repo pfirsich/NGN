@@ -21,15 +21,23 @@ Low-Level:
         ✔ The actual area lighting @done (31.08.16 03:54)
     ✔ Instancing @done (31.08.16 22:54)
     VertexAttribute.setDivisor, Mesh.draw(instances = 1)
-    › SudoHack-Grid-Wall (with Instancing)
+    › SceneGraph
+    › Textures
+    › Asset Manager
+    getResource<Texture>(filename) or (filename, aliasshortname)
+    .free - shared_ptr everywhere, if a resource is not found, substitute a replacement (checker texture, error model, identity shader)
+    automatic reloading when files have changed?!
+    http://gamedev.stackexchange.com/questions/34051/how-should-i-structure-an-extensible-asset-loading-system
+    http://gamedev.stackexchange.com/questions/2185/resource-managers-are-they-any-good
+    http://gamedev.stackexchange.com/questions/1702/how-to-design-an-assetmanager
+    › Input
+    › SceneGraph.castRay - slow, without acceleration structure (maybe kd-tree or octree later?)
+
     › Materials
     YAML integrieren, VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
     Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
     dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
-    › Object implementieren (ohne Material, nur Mesh) + aufsplitten in HasId, Transforms, SceneNode
-    Camera sollte auch wieder SceneNode werden (damit man Objekte darankleben kann), Tags, Id, Name natürlich auch
     › Renderer integrieren
-    › Uniform-Objects -> key-Value-store mit casterei und glUniform und so, noch nicht ganz sicher
 
     › Vertex Format
     2_10_10_10 für Normals, 2›USHORT für TexCoord
@@ -42,8 +50,8 @@ Low-Level:
     http://assimp.sourceforge.net/lib_html/structai_node.html
     http://assimp.sourceforge.net/lib_html/structai_mesh.html
     https://github.com/assimp/assimp/blob/master/samples/SimpleOpenGL/Sample_SimpleOpenGL.c
+    › SudoHack-Grid-Wall (with Instancing)
 
-    › Input
 
     › FBO
     https://open.gl/framebuffers
@@ -52,7 +60,7 @@ Low-Level:
 
 Mid-Level:
     › Skinning
-    ✔ Instancing @done (01.09.16 23:25)
+    › Instancing (in the SceneGraph)
     › Post-Process Pipeline
 
     › Draw call sorting

@@ -1,7 +1,10 @@
-#include "transforms.hpp"
+#include "scenenode.hpp"
 
 namespace ngn {
-    void Transforms::updateTRSFromMatrix() {
+    SceneNode::Id SceneNode::nextId = 0;
+    std::map<SceneNode::Id, SceneNode*> SceneNode::nodeIdMap;
+
+    void SceneNode::updateTRSFromMatrix() {
         mPosition = glm::vec3(mMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
         mQuaternion = glm::normalize(glm::quat_cast(mMatrix));
         // remove the translation and put the scale factors in the columns

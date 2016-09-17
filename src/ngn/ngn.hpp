@@ -8,3 +8,6 @@
 #include "signal.hpp"
 #include "uniformblock.hpp"
 #include "renderstateblock.hpp"
+#include "scenenode.hpp"
+#include "meshmaterialnode.hpp"
+#include "material.hpp"
