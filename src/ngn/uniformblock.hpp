@@ -78,7 +78,7 @@ namespace ngn {
         }
     public:
         UniformBlock() {}
-        ~UniformBlock() {
+        virtual ~UniformBlock() {
             for(auto& param : mParameters) {
                 deleteParam(param.second);
             }

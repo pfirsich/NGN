@@ -32,12 +32,12 @@ void render(ngn::SceneNode* root, ngn::Camera& camera, const glm::vec3& light) {
     if(renderQueue.size() == 0) renderQueue.reserve(2048);
     renderQueue.clear();
 
-    ngn::UniformList transformUniforms;
-    transformUniforms.setMatrix4("projection", camera.getProjectionMatrix());
-
-    ngn::UniformList lightingUniforms;
+    ngn::UniformList globalUniforms;
+    globalUniforms.setMatrix4("projection", camera.getProjectionMatrix());
     glm::vec3 lightDir = glm::normalize(glm::mat3(camera.getViewMatrix()) * light);
-    lightingUniforms.setVector3("lightDir", lightDir);
+    globalUniforms.setVector3("lightDir", lightDir);
+
+    std::vector<ngn::UniformList*> perObjectUniformList;
 
     // Build queue
     std::stack<ngn::SceneNode*> traversalStack;
@@ -52,18 +52,20 @@ void render(ngn::SceneNode* root, ngn::Camera& camera, const glm::vec3& light) {
             ngn::Material* mat = top->getMaterial();
             assert(mat != nullptr); // Rendering a mesh without a material is impossible
 
+            ngn::UniformList* objUniforms = new ngn::UniformList;
+            perObjectUniformList.push_back(objUniforms);
             glm::mat4 model = top->getWorldMatrix();
             glm::mat4 modelview = camera.getViewMatrix() * model;
             glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
-            transformUniforms.setMatrix4("model", model);
-            transformUniforms.setMatrix4("modelview", modelview);
-            transformUniforms.setMatrix3("normalMatrix", normalMatrix);
-            transformUniforms.setMatrix4("modelviewprojection", camera.getProjectionMatrix() * modelview);
+            objUniforms->setMatrix4("model", model);
+            objUniforms->setMatrix4("modelview", modelview);
+            objUniforms->setMatrix3("normalMatrix", normalMatrix);
+            objUniforms->setMatrix4("modelviewprojection", camera.getProjectionMatrix() * modelview);
 
             renderQueue.emplace_back(mat->mShader, mesh, &(mat->mStateBlock));
             renderQueue.back().uniformBlocks.push_back(mat);
-            renderQueue.back().uniformBlocks.push_back(&transformUniforms);
-            renderQueue.back().uniformBlocks.push_back(&lightingUniforms);
+            renderQueue.back().uniformBlocks.push_back(objUniforms);
+            renderQueue.back().uniformBlocks.push_back(&globalUniforms);
         }
 
         // chilren
@@ -73,6 +75,9 @@ void render(ngn::SceneNode* root, ngn::Camera& camera, const glm::vec3& light) {
     }
 
     renderRenderQueue(renderQueue);
+
+    // Can I do this differently? (i.e. better)
+    for(auto ulist : perObjectUniformList) delete ulist;
 }
 
 void moveCamera(ngn::Camera& camera, float dt) {
@@ -153,7 +158,8 @@ int main(int argc, char** args) {
     ironman.getMaterial()->setVector3("color", glm::vec3(1.0f, 1.0f, 1.0f));
     ironman.getMaterial()->setTexture("baseTex", whitePixel);
     ironman.getMaterial()->setFloat("shininess", 512.0f);
-    ironman.setScale(glm::vec3(0.1f, 0.1, 0.1f));
+    ironman.setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
+    ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
     scene.add(&ironman);
 
     ngn::Object ground;
@@ -170,6 +176,7 @@ int main(int argc, char** args) {
     cube.getMaterial()->setTexture("baseTex", new ngn::Texture("media/sq.png"));
     cube.getMaterial()->setVector3("color", glm::vec3(1.0f, 1.0f, 1.0f));
     cube.getMaterial()->setFloat("shininess", 256.0);
+    cube.setPosition(glm::vec3(0.0f, 5.0f, 0.0f));
     scene.add(&cube);
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 3.0f)));
