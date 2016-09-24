@@ -10,6 +10,7 @@
 
 #include "material.hpp"
 #include "mesh.hpp"
+#include "lightdata.hpp"
 
 namespace ngn {
     class SceneNode {
@@ -31,7 +32,11 @@ namespace ngn {
         std::vector<SceneNode*> mChildren;
 
         Material* mMaterial;
+        bool mMaterialOwned;
         Mesh* mMesh;
+        bool mMeshOwned;
+        LightData* mLightData;
+        bool mLightDataOwned;
 
         bool mMatrixDirty;
 
@@ -49,12 +54,17 @@ namespace ngn {
         }
 
         SceneNode() : mPosition(0.0f, 0.0f, 0.0f), mScale(1.0f, 1.0f, 1.0f), mQuaternion(),
-                mParent(nullptr), mMaterial(nullptr), mMesh(nullptr), mMatrixDirty(true) {
+                mParent(nullptr),
+                mMaterial(nullptr), mMaterialOwned(false), mMesh(nullptr), mMeshOwned(false), mLightData(nullptr), mLightDataOwned(false),
+                mMatrixDirty(true) {
             nodeIdMap[mId = nextId++] = this;
         }
 
-        ~SceneNode() {
+        virtual ~SceneNode() {
             if(mParent != nullptr) mParent->remove(this);
+            if(mMaterialOwned) delete mMaterial;
+            if(mMeshOwned) delete mMesh;
+            if(mLightDataOwned) delete mLightData;
         }
 
         // Id etc.
@@ -68,11 +78,14 @@ namespace ngn {
 
         // Mesh/Material
         Mesh* getMesh() {return mMesh;}
-        void setMesh(Mesh* mesh) {mMesh = mesh;}
+        void setMesh(Mesh* mesh, bool owned = false) {mMesh = mesh; mMeshOwned = owned;}
 
         // inherit materials
         Material* getMaterial() {return mMaterial ? mMaterial : (mParent ? mParent->getMaterial() : nullptr);}
-        void setMaterial(Material* material) {mMaterial = material;}
+        void setMaterial(Material* material, bool owned = false) {mMaterial = material; mMaterialOwned = owned;}
+
+        LightData* getLightData() {return mLightData;}
+        void setLightData(LightData* light, bool owned = false) {mLightData = light; mLightDataOwned = owned;}
 
         // Hierarchy
         SceneNode* getParent() {return mParent;}
@@ -167,4 +180,5 @@ namespace ngn {
 
     using Scene = SceneNode;
     using Object = SceneNode;
+    using Light = SceneNode;
 }

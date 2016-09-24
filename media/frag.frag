@@ -1,14 +1,14 @@
 #version 330 core
 
 in VSOUT {
-    in vec2 texCoord;
-    in vec3 normal;
-    in vec3 eye; // The inverse = position
+    vec2 texCoord;
+    vec3 normal;
+    vec3 eye; // The inverse = position
+    vec3 lightDir; // world space
 } vsOut;
 
 out vec4 fragColor;
 
-uniform vec3 lightDir; // view space
 uniform vec3 color;
 uniform sampler2D baseTex;
 uniform float shininess = 128.0;
@@ -16,7 +16,7 @@ uniform float shininess = 128.0;
 void main() {
     vec3 N = normalize(vsOut.normal); // renormalize because of interpolation?
     vec3 E = normalize(vsOut.eye);
-    vec3 L = lightDir;
+    vec3 L = vsOut.lightDir;
     float L_atten = 1.0; // directional
 
     vec3 albedo = color * texture2D(baseTex, vsOut.texCoord).rgb;

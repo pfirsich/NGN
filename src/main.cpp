@@ -7,79 +7,6 @@
 
 #include <ngn/ngn.hpp>
 
-#include <stack>
-struct RenderQueueEntry {
-    ngn::ShaderProgram* shaderProgram;
-    std::vector<ngn::UniformBlock*> uniformBlocks;
-    ngn::Mesh* mesh;
-    const ngn::RenderStateBlock* stateBlock;
-
-    RenderQueueEntry(ngn::ShaderProgram* shader, ngn::Mesh* mesh, const ngn::RenderStateBlock* state) :
-            shaderProgram(shader), mesh(mesh), stateBlock(state) {}
-};
-
-void renderRenderQueue(std::vector<RenderQueueEntry>& queue) {
-    for(auto& entry : queue) {
-        entry.stateBlock->apply();
-        entry.shaderProgram->bind();
-        for(auto block : entry.uniformBlocks) block->apply();
-        entry.mesh->draw();
-    }
-}
-
-void render(ngn::SceneNode* root, ngn::Camera& camera, const glm::vec3& light) {
-    static std::vector<RenderQueueEntry> renderQueue;
-    if(renderQueue.size() == 0) renderQueue.reserve(2048);
-    renderQueue.clear();
-
-    ngn::UniformList globalUniforms;
-    globalUniforms.setMatrix4("projection", camera.getProjectionMatrix());
-    glm::vec3 lightDir = glm::normalize(glm::mat3(camera.getViewMatrix()) * light);
-    globalUniforms.setVector3("lightDir", lightDir);
-
-    std::vector<ngn::UniformList*> perObjectUniformList;
-
-    // Build queue
-    std::stack<ngn::SceneNode*> traversalStack;
-    traversalStack.push(root);
-    while(!traversalStack.empty()) {
-        ngn::SceneNode* top = traversalStack.top();
-        traversalStack.pop();
-
-        // handle current node
-        ngn::Mesh* mesh = top->getMesh();
-        if(mesh) {
-            ngn::Material* mat = top->getMaterial();
-            assert(mat != nullptr); // Rendering a mesh without a material is impossible
-
-            ngn::UniformList* objUniforms = new ngn::UniformList;
-            perObjectUniformList.push_back(objUniforms);
-            glm::mat4 model = top->getWorldMatrix();
-            glm::mat4 modelview = camera.getViewMatrix() * model;
-            glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
-            objUniforms->setMatrix4("model", model);
-            objUniforms->setMatrix4("modelview", modelview);
-            objUniforms->setMatrix3("normalMatrix", normalMatrix);
-            objUniforms->setMatrix4("modelviewprojection", camera.getProjectionMatrix() * modelview);
-
-            renderQueue.emplace_back(mat->mShader, mesh, &(mat->mStateBlock));
-            renderQueue.back().uniformBlocks.push_back(mat);
-            renderQueue.back().uniformBlocks.push_back(objUniforms);
-            renderQueue.back().uniformBlocks.push_back(&globalUniforms);
-        }
-
-        // chilren
-        for(auto child : top->getChildren()) {
-            traversalStack.push(child);
-        }
-    }
-
-    renderRenderQueue(renderQueue);
-
-    // Can I do this differently? (i.e. better)
-    for(auto ulist : perObjectUniformList) delete ulist;
-}
-
 void moveCamera(ngn::Camera& camera, float dt) {
     static int lastMouseX = -1, lastMouseY = -1;
     if(lastMouseX < 0 and lastMouseY < 0)
@@ -116,24 +43,20 @@ void moveCamera(ngn::Camera& camera, float dt) {
 int main(int argc, char** args) {
     ngn::setupDefaultLogging();
 
-    std::unique_ptr<ngn::Window> window(new ngn::Window("ngn test", 1600, 900));
+    ngn::Window window("ngn test", 1600, 900);
+    ngn::Renderer renderer;
     ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
-    window->resizeSignal.connect([&camera](int w, int h) {
-        glViewport(0, 0, w, h);
+
+    window.resizeSignal.connect([&camera, &renderer](int w, int h) {
+        renderer.viewport = glm::ivec4(0, 0, w, h);
         camera.setAspect((float)w/h);
     });
-    auto size = window->getSize();
-    window->resizeSignal.emit(size.x, size.y);
+    auto size = window.getSize();
+    window.resizeSignal.emit(size.x, size.y);
 
     ngn::Texture* whitePixel = new ngn::Texture;
     uint32_t data = 0xFFFFFFFF;
     whitePixel->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 4, 1, 1, 4, false);
-
-    // Scene
-    ngn::RenderStateBlock globalStateBlock;
-    globalStateBlock.setCullFaces(ngn::RenderStateBlock::FaceDirections::BACK);
-    globalStateBlock.setDepthTest(ngn::RenderStateBlock::DepthFunc::LESS);
-    globalStateBlock.apply(true);
 
     ngn::ShaderProgram *shader = new ngn::ShaderProgram();
     if(!shader->compileAndLinkFromFiles("media/frag.frag", "media/vert.vert")) {
@@ -145,6 +68,7 @@ int main(int argc, char** args) {
     vFormat.add(ngn::AttributeType::NORMAL, 3, ngn::AttributeDataType::F32);
     vFormat.add(ngn::AttributeType::TEXCOORD0, 2, ngn::AttributeDataType::F32);
 
+    // Scene
     ngn::Scene scene;
 
     std::vector<ngn::Mesh*> meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
@@ -154,7 +78,7 @@ int main(int argc, char** args) {
         obj->setMesh(mesh);
         ironman.add(obj);
     }
-    ironman.setMaterial(new ngn::Material(shader));
+    ironman.setMaterial(new ngn::Material(shader), true);
     ironman.getMaterial()->setVector3("color", glm::vec3(1.0f, 1.0f, 1.0f));
     ironman.getMaterial()->setTexture("baseTex", whitePixel);
     ironman.getMaterial()->setFloat("shininess", 512.0f);
@@ -164,7 +88,7 @@ int main(int argc, char** args) {
 
     ngn::Object ground;
     ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
-    ground.setMaterial(new ngn::Material(shader));
+    ground.setMaterial(new ngn::Material(shader), true);
     ground.getMaterial()->setVector3("color", glm::vec3(0.5f, 1.0f, 0.5f));
     ground.getMaterial()->setTexture("baseTex", whitePixel);
     ground.getMaterial()->setFloat("shininess", 64.0);
@@ -172,19 +96,25 @@ int main(int argc, char** args) {
 
     ngn::Object cube;
     cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
-    cube.setMaterial(new ngn::Material(shader));
+    cube.setMaterial(new ngn::Material(shader), true);
     cube.getMaterial()->setTexture("baseTex", new ngn::Texture("media/sq.png"));
     cube.getMaterial()->setVector3("color", glm::vec3(1.0f, 1.0f, 1.0f));
     cube.getMaterial()->setFloat("shininess", 256.0);
     cube.setPosition(glm::vec3(0.0f, 5.0f, 0.0f));
     scene.add(&cube);
 
+    ngn::Light light;
+    light.setLightData(new ngn::LightData, true);
+    light.getLightData()->setType(ngn::LightData::LightType::DIRECTIONAL);
+    //light.lookAt(-1.0f, -1.0f, -1.0f);
+    scene.add(&light);
+
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 3.0f)));
 
     // Mainloop
     float lastTime = ngn::getTime();
     bool quit = false;
-    window->closeSignal.connect([&]() {quit = true;});
+    window.closeSignal.connect([&quit]() {quit = true;});
     while(!quit) {
         float t = ngn::getTime();
         float dt = t - lastTime;
@@ -192,12 +122,8 @@ int main(int argc, char** args) {
 
         moveCamera(camera, dt);
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        globalStateBlock.apply();
-        glm::vec3 lightDir = glm::vec3(1.0f, 0.3f, 1.0f);
-        render(&scene, camera, lightDir);
-
-        window->updateAndSwap();
+        renderer.render(&scene, &camera);
+        window.updateAndSwap();
     }
 
     return 0;

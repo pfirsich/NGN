@@ -11,3 +11,4 @@
 #include "scenenode.hpp"
 #include "material.hpp"
 #include "texture.hpp"
+#include "renderer.hpp"

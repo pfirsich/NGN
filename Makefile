@@ -15,7 +15,8 @@ LDFLAGS =
 
 SRC = src/main.cpp src/ngn/log.cpp src/ngn/window.cpp src/ngn/mesh.cpp src/ngn/mesh_vertexaccessor.cpp \
 	  src/ngn/mesh_vertexattribute.cpp src/ngn/mesh_vertexdata.cpp src/ngn/shader.cpp \
-	  src/ngn/uniformblock.cpp src/ngn/renderstateblock.cpp src/ngn/scenenode.cpp src/ngn/texture.cpp
+	  src/ngn/uniformblock.cpp src/ngn/renderstateblock.cpp src/ngn/scenenode.cpp src/ngn/texture.cpp \
+	  src/ngn/renderer.cpp
 OBJ = $(SRC:%.cpp=%.o)
 
 DEPFILEDIR = depfiles

@@ -11,16 +11,21 @@ out VSOUT {
     vec2 texCoord;
     vec3 normal;
     vec3 eye;
+    vec3 lightDir; // world space
 } vsOut;
 
 uniform mat4 modelview;
 uniform mat4 projection;
 uniform mat3 normalMatrix;
+uniform mat4 view;
+
+const vec3 worldLightDir = vec3(1.0, 1.0, 1.0);
 
 void main() {
     vsOut.texCoord = attrTexCoord;
     vsOut.normal = normalize(normalMatrix * attrNormal);
     vec3 pos = attrPosition + vec3(attrOffset, 0.0, -gl_InstanceID*120.0);
     vsOut.eye = vec3(-modelview * vec4(pos, 1.0));
+    vsOut.lightDir = normalize(view * vec4(worldLightDir, 0.0)).xyz;
     gl_Position = projection * modelview * vec4(pos, 1.0);
 }

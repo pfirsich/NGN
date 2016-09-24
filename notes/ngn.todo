@@ -21,23 +21,23 @@ Low-Level:
         ✔ The actual area lighting @done (31.08.16 03:54)
     ✔ Instancing @done (31.08.16 22:54)
     VertexAttribute.setDivisor, Mesh.draw(instances = 1)
-    › SceneGraph
-    › Textures
+    ✔ SceneGraph @done (18.09.16 01:58)
+    ✔ Textures @done (18.09.16 01:58)
     › Asset Manager
-    getResource<Texture>(filename) or (filename, aliasshortname)
-    .free - shared_ptr everywhere, if a resource is not found, substitute a replacement (checker texture, error model, identity shader)
-    automatic reloading when files have changed?!
-    http://gamedev.stackexchange.com/questions/34051/how-should-i-structure-an-extensible-asset-loading-system
-    http://gamedev.stackexchange.com/questions/2185/resource-managers-are-they-any-good
-    http://gamedev.stackexchange.com/questions/1702/how-to-design-an-assetmanager
     › Input
     › SceneGraph.castRay - slow, without acceleration structure (maybe kd-tree or octree later?)
-
+    › statistics
+    stripped in release, STATISTICS("name", value)
+    the values can have different handlers, ones that just save the last written value, ones that average, ones that average in a window, etc.
+    maybe every value has the option to query all these metrics
+    for binds, recompiles, etc. - I need text output!
     › Materials
     YAML integrieren, VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
     Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
     dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
     › Renderer integrieren
+
+    › Lights
 
     › Vertex Format
     2_10_10_10 für Normals, 2›USHORT für TexCoord
@@ -52,6 +52,7 @@ Low-Level:
     https://github.com/assimp/assimp/blob/master/samples/SimpleOpenGL/Sample_SimpleOpenGL.c
     › SudoHack-Grid-Wall (with Instancing)
 
+    › Text
 
     › FBO
     https://open.gl/framebuffers
@@ -73,6 +74,7 @@ High-Level:
     http://gamedev.stackexchange.com/questions/8210/scene-graph-as-object-container
     › Materials aus ASSIMP laden soweit möglich: http://learnopengl.com/#!Model-Loading/Model
     › Performance Counters - Rebinds, Recompiles (Shaders and VAOs), Reuploads, Rendered Objects, Culled Objects, etc., Frametime, State Switchesf
+    › Scripting
 
     Default Renderer:
         › Derivative Mapping
@@ -130,6 +132,11 @@ High-Level:
         › HDR
         › Parallax Mapping?
         › Gamma Correction
+            http://renderwonk.com/blog/index.php/archive/adventures-with-gamma-correct-rendering/
+            http://http.developer.nvidia.com/GPUGems3/gpugems3_ch24.html
+            http://stackoverflow.com/questions/23026151/do-i-need-to-gamma-correct-the-final-color-output-on-a-modern-computer-monitor
+            http://learnopengl.com/#!Advanced-Lighting/Gamma-Correction
+            https://www.reddit.com/r/programming/comments/53wdf6/what_every_coder_should_know_about_gamma/
         › Text Rendering
             https://www.reddit.com/r/opengl/comments/50umy2/text_rendering_in_opengl_33/
         › Particles
@@ -174,3 +181,6 @@ High-Level:
         › GodRays - http://threejs.org/examples/webgl_postprocessing_godrays.html
         › Screen Space Reflections
         https://www.reddit.com/r/gamedev/comments/52lawa/what_exactly_are_screenspace_reflections/
+
+Sound:
+    https://www.youtube.com/watch?v=Vjm--AqG04Y
