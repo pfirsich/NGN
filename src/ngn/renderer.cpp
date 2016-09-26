@@ -14,6 +14,8 @@ namespace ngn {
     glm::ivec4 Renderer::currentScissor = glm::ivec4(0, 0, 0, 0);
     bool Renderer::currentScissorTest = false;
 
+    int Renderer::nextRendererIndex = 0;
+
     void Renderer::updateState() const {
         if(currentViewport != viewport) {
             currentViewport = viewport;
@@ -67,54 +69,111 @@ namespace ngn {
         if(autoClear) clear();
         stateBlock.apply();
 
+        static std::vector<SceneNode*> linearizedSceneGraph;
+        if(linearizedSceneGraph.capacity() == 0) linearizedSceneGraph.reserve(131072);
+        linearizedSceneGraph.clear(); // resize(0) might retain capacity?
+        if(linearizedSceneGraph.capacity() == 0)
+            LOG_DEBUG("vector::clear() sets vector capacity to 0 on this platform");
+
         static std::vector<RenderQueueEntry> renderQueue;
-        if(renderQueue.size() == 0) renderQueue.reserve(2048);
+        if(renderQueue.capacity() == 0) renderQueue.reserve(2048);
         renderQueue.clear();
 
-        UniformList globalUniforms;
-        globalUniforms.setMatrix4("projection", camera->getProjectionMatrix());
-        globalUniforms.setMatrix4("view", camera->getViewMatrix());
+        constexpr int LIGHT_TYPE_COUNT = static_cast<int>(LightData::LightType::LIGHT_TYPES_LAST);
+        static std::vector<SceneNode*> lightLists[LIGHT_TYPE_COUNT];
+        for(int i = 0; i < LIGHT_TYPE_COUNT; ++i) {
+            if(lightLists[i].capacity() == 0) lightLists[i].reserve(1024);
+            lightLists[i].clear();
+        }
 
-        std::vector<UniformList*> perObjectUniformList;
+        glm::mat4 viewMatrix(camera->getViewMatrix());
+        glm::mat4 projectionMatrix(camera->getProjectionMatrix());
 
-        // Build queue
+        // linearize scene graph (this should in theory not be done every frame)
         std::stack<SceneNode*> traversalStack;
         traversalStack.push(root);
         while(!traversalStack.empty()) {
-            SceneNode* top = traversalStack.top();
+            SceneNode* node = traversalStack.top();
             traversalStack.pop();
 
-            // handle current node
-            Mesh* mesh = top->getMesh();
-            if(mesh) {
-                Material* mat = top->getMaterial();
-                assert(mat != nullptr); // Rendering a mesh without a material is impossible
+            linearizedSceneGraph.push_back(node);
 
-                UniformList* objUniforms = new UniformList;
-                perObjectUniformList.push_back(objUniforms);
-                glm::mat4 model = top->getWorldMatrix();
-                glm::mat4 modelview = camera->getViewMatrix() * model;
-                glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
-                objUniforms->setMatrix4("model", model);
-                objUniforms->setMatrix4("modelview", modelview);
-                objUniforms->setMatrix3("normalMatrix", normalMatrix);
-                objUniforms->setMatrix4("modelviewprojection", camera->getProjectionMatrix() * modelview);
-
-                renderQueue.emplace_back(mat->mShader, mesh, &(mat->mStateBlock));
-                renderQueue.back().uniformBlocks.push_back(objUniforms);
-                renderQueue.back().uniformBlocks.push_back(&globalUniforms);
-                renderQueue.back().uniformBlocks.push_back(mat);
+            RendererData* rendererData = node->rendererData[mRendererIndex];
+            if(rendererData == nullptr) {
+                node->rendererData[mRendererIndex] = rendererData = new RendererData;
             }
 
-            // chilren
-            for(auto child : top->getChildren()) {
+            if(node->getMesh()) {
+                glm::mat4 model = node->getWorldMatrix();
+                glm::mat4 modelview = viewMatrix * model;
+                glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
+                rendererData->uniforms.setMatrix4("model", model);
+                rendererData->uniforms.setMatrix4("view", viewMatrix);
+                rendererData->uniforms.setMatrix4("projection", projectionMatrix);
+                rendererData->uniforms.setMatrix4("modelview", modelview);
+                rendererData->uniforms.setMatrix3("normalMatrix", normalMatrix);
+                rendererData->uniforms.setMatrix4("modelviewprojection", projectionMatrix * modelview);
+            }
+
+            LightData* lightData = node->getLightData();
+            if(lightData) {
+                lightLists[static_cast<int>(lightData->getType())].push_back(node);
+            }
+
+            for(auto child : node->getChildren()) {
                 traversalStack.push(child);
             }
         }
 
-        renderRenderQueue(renderQueue);
+        // build render queue
 
-        // Can I do this differently? (i.e. better)
-        for(auto ulist : perObjectUniformList) delete ulist;
+        //TODO: only do this for opaque objects
+        // ambient pass
+        for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
+            SceneNode* node = linearizedSceneGraph[i];
+            Mesh* mesh = node->getMesh();
+            if(mesh) {
+                renderQueue.emplace_back(node);
+                RenderQueueEntry& queueEntry = renderQueue.back();
+                RendererData* rendererData = node->rendererData[mRendererIndex];
+                renderQueue.back().uniformBlocks.push_back(&(rendererData->uniforms));
+
+                queueEntry.perEntryUniforms.setInteger("ambientPass", 1);
+            }
+        }
+
+        // light pass
+        for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
+            SceneNode* node = linearizedSceneGraph[i];
+            Mesh* mesh = node->getMesh();
+            if(mesh) {
+                for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
+                    // later: sort by influence and take the N most influential lights
+                    for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
+                        SceneNode* light = lightLists[ltype][l];
+                        LightData* lightData = light->getLightData();
+
+                        renderQueue.emplace_back(node);
+                        RenderQueueEntry& queueEntry = renderQueue.back();
+                        RendererData* rendererData = node->rendererData[mRendererIndex];
+                        queueEntry.uniformBlocks.push_back(&(rendererData->uniforms));
+
+                        // TODO: Move this into a separate uniform block per light!
+                        queueEntry.perEntryUniforms.setInteger("ambientPass", 0);
+                        queueEntry.perEntryUniforms.setInteger("light.type", static_cast<int>(lightData->getType()));
+                        queueEntry.perEntryUniforms.setFloat("light.range", lightData->getRange());
+                        queueEntry.perEntryUniforms.setVector3("light.color", lightData->getColor());
+                        queueEntry.perEntryUniforms.setVector3("light.position", glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
+                        queueEntry.perEntryUniforms.setVector3("light.direction", glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
+
+                        queueEntry.stateBlock.setBlendEnabled(true);
+                        queueEntry.stateBlock.setBlendFactors(RenderStateBlock::BlendFactor::ONE, RenderStateBlock::BlendFactor::ONE);
+                        queueEntry.stateBlock.setDepthTest(RenderStateBlock::DepthFunc::EQUAL);
+                    }
+                }
+            }
+        }
+
+        renderRenderQueue(renderQueue);
     }
 }

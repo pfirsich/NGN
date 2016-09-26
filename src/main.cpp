@@ -106,8 +106,22 @@ int main(int argc, char** args) {
     ngn::Light light;
     light.setLightData(new ngn::LightData, true);
     light.getLightData()->setType(ngn::LightData::LightType::DIRECTIONAL);
-    //light.lookAt(-1.0f, -1.0f, -1.0f);
+    light.getLightData()->setColor(glm::vec3(0.2f, 0.2f, 0.2f));
+    light.lookAt(glm::vec3(-0.5f, -0.5f, -1.0f));
     scene.add(&light);
+
+    ngn::Light pointLight;
+    pointLight.setLightData(new ngn::LightData, true);
+    pointLight.getLightData()->setType(ngn::LightData::LightType::POINT);
+    pointLight.getLightData()->setRange(50.0f);
+    pointLight.getLightData()->setColor(glm::vec3(1.0f, 0.5f, 0.5f));
+    pointLight.setPosition(glm::vec3(-10.0f, 10.0f, 30.0f));
+
+    pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, vFormat));
+    pointLight.setMaterial(new ngn::Material(shader), true);
+    pointLight.getMaterial()->setTexture("baseTex", whitePixel);
+    pointLight.getMaterial()->setVector3("color", glm::vec3(1.0f, 0.0f, 0.0f));
+    scene.add(&pointLight);
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 3.0f)));
 
@@ -119,6 +133,8 @@ int main(int argc, char** args) {
         float t = ngn::getTime();
         float dt = t - lastTime;
         lastTime = t;
+
+        pointLight.setPosition(25.0f * glm::vec3(glm::cos(t), 0.0f, glm::sin(t)) + glm::vec3(0.0f, 10.0f, 0.0f));
 
         moveCamera(camera, dt);
 

@@ -23,8 +23,16 @@ Low-Level:
     VertexAttribute.setDivisor, Mesh.draw(instances = 1)
     ✔ SceneGraph @done (18.09.16 01:58)
     ✔ Textures @done (18.09.16 01:58)
+    ✔ Lights @done (26.09.16 03:25)
+    ✔ Multipass Forward Renderer - with one fixed hardcoded material @done (26.09.16 03:25)
+    › light culling
+    › Limit the lighting so far to opaque only objects
+    › Implement transparent objects
+    › batch lights (render multiple per pass)
+    › Materials
     › Asset Manager
     › Input
+    › Use temporal coherence for render queue
     › SceneGraph.castRay - slow, without acceleration structure (maybe kd-tree or octree later?)
     › statistics
     stripped in release, STATISTICS("name", value)
@@ -35,9 +43,6 @@ Low-Level:
     YAML integrieren, VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
     Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
     dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
-    › Renderer integrieren
-
-    › Lights
 
     › Vertex Format
     2_10_10_10 für Normals, 2›USHORT für TexCoord
@@ -63,6 +68,9 @@ Mid-Level:
     › Skinning
     › Instancing (in the SceneGraph)
     › Post-Process Pipeline
+    › Custom Ambient Lighting
+        Fixed color
+        Hemisphere light - http://sunandblackcat.com/tipFullView.php?l=eng&topicid=31&topic=Advanced-GLSL-Lighting-Models
 
     › Draw call sorting
     http://realtimecollisiondetection.net/blog/?p=86
@@ -137,6 +145,7 @@ High-Level:
             http://stackoverflow.com/questions/23026151/do-i-need-to-gamma-correct-the-final-color-output-on-a-modern-computer-monitor
             http://learnopengl.com/#!Advanced-Lighting/Gamma-Correction
             https://www.reddit.com/r/programming/comments/53wdf6/what_every_coder_should_know_about_gamma/
+            http://filmicgames.com/archives/299
         › Text Rendering
             https://www.reddit.com/r/opengl/comments/50umy2/text_rendering_in_opengl_33/
         › Particles
@@ -144,6 +153,8 @@ High-Level:
             Definitiv sheets benutzen können, daraus auswählen können und animieren
             Subemitters
             https://www.youtube.com/watch?annotation_id=annotation_912057639&feature=iv&src_vid=0IrCggoJCno&v=rR_bm8f8rVE
+        › Z Prepass
+            https://www.opengl.org/discussion_boards/showthread.php/183862-Depth-pre-pass-does-OpenGL-still-execute-fragment-shader-if-color-mask-is-GL_FALSE
         › Culling
             http://docs.cryengine.com/display/SDKDOC4/Culling+Explained
             Automatic Object Splitting

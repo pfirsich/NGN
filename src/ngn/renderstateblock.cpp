@@ -41,7 +41,6 @@ namespace ngn {
     void RenderStateBlock::apply(bool force) const {
         if(mDepthWrite != currentDepthWrite || force) {
             glDepthMask(mDepthWrite);
-            LOG_DEBUG("glDepthMask");
             currentDepthWrite = mDepthWrite;
         }
 
@@ -52,7 +51,6 @@ namespace ngn {
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(static_cast<GLenum>(mDepthFunc));
             }
-            LOG_DEBUG("depth func");
             currentDepthFunc = mDepthFunc;
         }
 
@@ -64,7 +62,6 @@ namespace ngn {
                 glCullFace(static_cast<GLenum>(mCullFaces));
             }
             currentCullFaces = mCullFaces;
-            LOG_DEBUG("cull face");
         }
 
         if(mFrontFace != currentFrontFace || force) {
@@ -80,17 +77,14 @@ namespace ngn {
                                 static_cast<GLenum>(mBlendDstFactor));
                     currentBlendSrcFactor = mBlendSrcFactor;
                     currentBlendDstFactor = mBlendDstFactor;
-                    LOG_DEBUG("blend func");
                 }
                 if(mBlendEquation != currentBlendEquation || force) {
                     glBlendEquation(static_cast<GLenum>(mBlendEquation));
                     currentBlendEquation = mBlendEquation;
-                    LOG_DEBUG("blend eq");
                 }
             } else {
                 glDisable(GL_BLEND);
             }
-            LOG_DEBUG("blend enable");
             currentBlendEnabled = mBlendEnabled;
         }
     }

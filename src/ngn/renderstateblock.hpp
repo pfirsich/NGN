@@ -63,6 +63,7 @@ namespace ngn {
         enum class BlendMode {
             REPLACE, // disable GL_BLEND
             ADD, // ONE, ONE and ADD
+            MIX, // SRC_ALPHA, ONE_MINUS_SRC_ALPHA and ADD
             MODULATE, // DST_COLOR, ZERO and ADD
             SCREEN, // ONE, ONE_MINUS_SRC_COLOR and ADD
         };

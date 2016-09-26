@@ -11,6 +11,7 @@
 #include "mesh.hpp"
 #include "camera.hpp"
 #include "uniformblock.hpp"
+#include "rendererdata.hpp"
 
 namespace ngn {
     // ForwardRenderer, DeferredRenderer
@@ -22,21 +23,32 @@ namespace ngn {
         struct RenderQueueEntry {
             ShaderProgram* shaderProgram;
             std::vector<UniformBlock*> uniformBlocks;
+            UniformList perEntryUniforms;
             Mesh* mesh;
-            const RenderStateBlock* stateBlock;
+            RenderStateBlock stateBlock;
 
-            RenderQueueEntry(ShaderProgram* shader, Mesh* mesh, const RenderStateBlock* state) :
-                    shaderProgram(shader), mesh(mesh), stateBlock(state) {}
+            RenderQueueEntry(SceneNode* node) {
+                Material* mat = node->getMaterial();
+                assert(mat != nullptr); // Rendering a mesh without a material is impossible
+                shaderProgram = mat->mShader;
+                mesh = node->getMesh();
+                stateBlock = mat->mStateBlock;
+                uniformBlocks.push_back(mat);
+            }
         };
 
         void renderRenderQueue(std::vector<RenderQueueEntry>& queue) {
             for(auto& entry : queue) {
-                entry.stateBlock->apply();
+                entry.stateBlock.apply();
                 entry.shaderProgram->bind();
                 for(auto block : entry.uniformBlocks) block->apply();
+                entry.perEntryUniforms.apply();
                 entry.mesh->draw();
             }
         }
+
+    private:
+        int mRendererIndex;
 
     public:
         // Variables that store the current GL state
@@ -46,6 +58,8 @@ namespace ngn {
         static glm::ivec4 currentViewport;
         static glm::ivec4 currentScissor;
         static bool currentScissorTest;
+
+        static int nextRendererIndex;
 
         bool autoClear, autoClearColor, autoClearDepth, autoClearStencil;
 
@@ -67,6 +81,9 @@ namespace ngn {
             stateBlock.setCullFaces(RenderStateBlock::FaceDirections::BACK);
             stateBlock.setDepthTest(RenderStateBlock::DepthFunc::LESS);
             stateBlock.apply(true);
+            mRendererIndex = nextRendererIndex++;
+            if(mRendererIndex >= SceneNode::MAX_RENDERDATA_COUNT)
+                LOG_CRITICAL("More than SceneNode::MAX_RENDERDATA_COUNT(%d) renderers!", SceneNode::MAX_RENDERDATA_COUNT);
         }
         ~Renderer() {}
 

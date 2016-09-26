@@ -41,6 +41,7 @@ namespace ngn {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
 
         Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | createWindowFlags | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
         mSDLWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
@@ -65,6 +66,8 @@ namespace ngn {
                 LOG_ERROR("SDL_GL_SetSwapInterval failed! - '%s'\n", SDL_GetError());
             }
         }
+
+        glEnable(GL_FRAMEBUFFER_SRGB);
     }
 
     void Window::makeCurrent() const {

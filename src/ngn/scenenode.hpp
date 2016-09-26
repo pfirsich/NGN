@@ -11,6 +11,7 @@
 #include "material.hpp"
 #include "mesh.hpp"
 #include "lightdata.hpp"
+#include "rendererdata.hpp"
 
 namespace ngn {
     class SceneNode {
@@ -41,6 +42,9 @@ namespace ngn {
         bool mMatrixDirty;
 
     public:
+        static constexpr int MAX_RENDERDATA_COUNT = 4;
+        RendererData* rendererData[MAX_RENDERDATA_COUNT];
+
         static Id nextId;
         static std::map<Id, SceneNode*> nodeIdMap;
 
@@ -58,6 +62,7 @@ namespace ngn {
                 mMaterial(nullptr), mMaterialOwned(false), mMesh(nullptr), mMeshOwned(false), mLightData(nullptr), mLightDataOwned(false),
                 mMatrixDirty(true) {
             nodeIdMap[mId = nextId++] = this;
+            for(int i = 0; i < MAX_RENDERDATA_COUNT; ++i) rendererData[i] = nullptr;
         }
 
         virtual ~SceneNode() {
@@ -65,6 +70,7 @@ namespace ngn {
             if(mMaterialOwned) delete mMaterial;
             if(mMeshOwned) delete mMesh;
             if(mLightDataOwned) delete mLightData;
+            for(int i = 0; i < MAX_RENDERDATA_COUNT; ++i) delete rendererData[i];
         }
 
         // Id etc.
