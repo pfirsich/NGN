@@ -283,13 +283,13 @@ namespace ngn {
             for(int slice = 0; slice < slices - 1; ++slice) {
                 int firstFaceVertex = firstStackVertex + slice;
                 int nextVertex = firstFaceVertex + 1;
-                indexBuffer[index++] = firstFaceVertex;
+                indexBuffer[index++] = nextVertex + slices;
                 indexBuffer[index++] = firstFaceVertex + slices;
-                indexBuffer[index++] = nextVertex + slices;
-
                 indexBuffer[index++] = firstFaceVertex;
-                indexBuffer[index++] = nextVertex + slices;
+
                 indexBuffer[index++] = nextVertex;
+                indexBuffer[index++] = nextVertex + slices;
+                indexBuffer[index++] = firstFaceVertex;
             }
         }
 
