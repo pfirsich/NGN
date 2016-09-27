@@ -25,11 +25,38 @@ Low-Level:
     ✔ Textures @done (18.09.16 01:58)
     ✔ Lights @done (26.09.16 03:25)
     ✔ Multipass Forward Renderer - with one fixed hardcoded material @done (26.09.16 03:25)
-    › light culling
-    › Limit the lighting so far to opaque only objects
-    › Implement transparent objects
-    › batch lights (render multiple per pass)
+    ✔ Handle custom depth and blend states @done (27.09.16 16:48)
+    In fact high level blend modes should not be part of a stateblock, since they are not state, but part of the material
+    Also introduce a boolean property "lit" and setLit, setUnlit
+    Maybe some day support a custom blend mode, but for now *don't* expose blend factors to engine users
+    Pull some types out of renderstateblock and make only a select number of exposed parameters available as material properties
+    => renderstateblock private and the possibility for sanitizing properties
+    › Blending seems to be buggy - ADD, MODULATE and SCREEN in particular
+    › Multiple passes
+    For Cusutom depth functions to make sense, this is necessary.
     › Materials
+    › Draw call sorting
+    Also depth sorting for transparent objects
+    For opaque geometry I want to draw all ambient passes first, so I can have a semi depth-prepass for shading
+    For transparent geometry it is only correct to draw all passes for a single object after another and not first all ambient, then all lighting passes
+
+    › Custom Ambient Lighting
+        Fixed color
+        Hemisphere light - http://sunandblackcat.com/tipFullView.php?l=eng&topicid=31&topic=Advanced-GLSL-Lighting-Models
+    › Predefined constants for uniform locations that are repeatedly set in render()
+    There is no other way to get rid of map::find, except if all shaders start sharing locations for uniforms
+    Maybe try implementing an own map, that just does a linear search?
+    › Helper-Functions toGamma, toLinear - look up how to do this correctly in EXT_framebuffer_srgb
+    https://www.opengl.org/registry/specs/EXT/framebuffer_sRGB.txt
+    C-Functions are provided in this spec
+    interestingly all color constants you can set in the programmable pipeline (blend ref color, clear color) are linear
+    just as the alpha component is linear
+    so probably make this convention as well.
+
+    › Debug MODULATE and SCREEN?
+
+    › light culling
+    › batch lights (render multiple per pass)
     › Asset Manager
     › Input
     › Use temporal coherence for render queue
@@ -68,9 +95,6 @@ Mid-Level:
     › Skinning
     › Instancing (in the SceneGraph)
     › Post-Process Pipeline
-    › Custom Ambient Lighting
-        Fixed color
-        Hemisphere light - http://sunandblackcat.com/tipFullView.php?l=eng&topicid=31&topic=Advanced-GLSL-Lighting-Models
 
     › Draw call sorting
     http://realtimecollisiondetection.net/blog/?p=86

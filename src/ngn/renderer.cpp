@@ -64,113 +64,142 @@ namespace ngn {
         glClear(mask);
     }
 
-    void Renderer::render(SceneNode* root, Camera* camera) {
+    void Renderer::render(SceneNode* root, Camera* camera, bool regenerateQueue) {
         updateState();
         if(autoClear) clear();
         stateBlock.apply();
 
         static std::vector<SceneNode*> linearizedSceneGraph;
         if(linearizedSceneGraph.capacity() == 0) linearizedSceneGraph.reserve(131072);
-        linearizedSceneGraph.clear(); // resize(0) might retain capacity?
-        if(linearizedSceneGraph.capacity() == 0)
-            LOG_DEBUG("vector::clear() sets vector capacity to 0 on this platform");
 
         static std::vector<RenderQueueEntry> renderQueue;
         if(renderQueue.capacity() == 0) renderQueue.reserve(2048);
-        renderQueue.clear();
 
         constexpr int LIGHT_TYPE_COUNT = static_cast<int>(LightData::LightType::LIGHT_TYPES_LAST);
         static std::vector<SceneNode*> lightLists[LIGHT_TYPE_COUNT];
-        for(int i = 0; i < LIGHT_TYPE_COUNT; ++i) {
-            if(lightLists[i].capacity() == 0) lightLists[i].reserve(1024);
-            lightLists[i].clear();
-        }
+        for(int i = 0; i < LIGHT_TYPE_COUNT; ++i) if(lightLists[i].capacity() == 0) lightLists[i].reserve(1024);
 
-        glm::mat4 viewMatrix(camera->getViewMatrix());
-        glm::mat4 projectionMatrix(camera->getProjectionMatrix());
+        if(regenerateQueue) {
+            glm::mat4 viewMatrix(camera->getViewMatrix());
+            glm::mat4 projectionMatrix(camera->getProjectionMatrix());
 
-        // linearize scene graph (this should in theory not be done every frame)
-        std::stack<SceneNode*> traversalStack;
-        traversalStack.push(root);
-        while(!traversalStack.empty()) {
-            SceneNode* node = traversalStack.top();
-            traversalStack.pop();
+            // linearize scene graph (this should in theory not be done every frame)
+            linearizedSceneGraph.clear(); // resize(0) might retain capacity?
+            if(linearizedSceneGraph.capacity() == 0)
+                LOG_DEBUG("vector::clear() sets vector capacity to 0 on this platform");
 
-            linearizedSceneGraph.push_back(node);
+            for(int i = 0; i < LIGHT_TYPE_COUNT; ++i) lightLists[i].clear();
 
-            RendererData* rendererData = node->rendererData[mRendererIndex];
-            if(rendererData == nullptr) {
-                node->rendererData[mRendererIndex] = rendererData = new RendererData;
-            }
+            std::stack<SceneNode*> traversalStack;
+            traversalStack.push(root);
+            while(!traversalStack.empty()) {
+                SceneNode* node = traversalStack.top();
+                traversalStack.pop();
 
-            if(node->getMesh()) {
-                glm::mat4 model = node->getWorldMatrix();
-                glm::mat4 modelview = viewMatrix * model;
-                glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
-                rendererData->uniforms.setMatrix4("model", model);
-                rendererData->uniforms.setMatrix4("view", viewMatrix);
-                rendererData->uniforms.setMatrix4("projection", projectionMatrix);
-                rendererData->uniforms.setMatrix4("modelview", modelview);
-                rendererData->uniforms.setMatrix3("normalMatrix", normalMatrix);
-                rendererData->uniforms.setMatrix4("modelviewprojection", projectionMatrix * modelview);
-            }
+                linearizedSceneGraph.push_back(node);
 
-            LightData* lightData = node->getLightData();
-            if(lightData) {
-                lightLists[static_cast<int>(lightData->getType())].push_back(node);
-            }
-
-            for(auto child : node->getChildren()) {
-                traversalStack.push(child);
-            }
-        }
-
-        // build render queue
-
-        //TODO: only do this for opaque objects
-        // ambient pass
-        for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
-            SceneNode* node = linearizedSceneGraph[i];
-            Mesh* mesh = node->getMesh();
-            if(mesh) {
-                renderQueue.emplace_back(node);
-                RenderQueueEntry& queueEntry = renderQueue.back();
                 RendererData* rendererData = node->rendererData[mRendererIndex];
-                renderQueue.back().uniformBlocks.push_back(&(rendererData->uniforms));
+                if(rendererData == nullptr) {
+                    node->rendererData[mRendererIndex] = rendererData = new RendererData;
+                }
 
-                queueEntry.perEntryUniforms.setInteger("ambientPass", 1);
+                if(node->getMesh()) {
+                    glm::mat4 model = node->getWorldMatrix();
+                    glm::mat4 modelview = viewMatrix * model;
+                    glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
+                    rendererData->uniforms.setMatrix4("model", model);
+                    rendererData->uniforms.setMatrix4("view", viewMatrix);
+                    rendererData->uniforms.setMatrix4("projection", projectionMatrix);
+                    rendererData->uniforms.setMatrix4("modelview", modelview);
+                    rendererData->uniforms.setMatrix3("normalMatrix", normalMatrix);
+                    rendererData->uniforms.setMatrix4("modelviewprojection", projectionMatrix * modelview);
+                }
+
+                LightData* lightData = node->getLightData();
+                if(lightData) {
+                    lightLists[static_cast<int>(lightData->getType())].push_back(node);
+                }
+
+                for(auto child : node->getChildren()) {
+                    traversalStack.push(child);
+                }
             }
-        }
 
-        // light pass
-        for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
-            SceneNode* node = linearizedSceneGraph[i];
-            Mesh* mesh = node->getMesh();
-            if(mesh) {
-                for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
-                    // later: sort by influence and take the N most influential lights
-                    for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
-                        SceneNode* light = lightLists[ltype][l];
-                        LightData* lightData = light->getLightData();
+            // build render queue
+            renderQueue.clear();
 
-                        renderQueue.emplace_back(node);
-                        RenderQueueEntry& queueEntry = renderQueue.back();
-                        RendererData* rendererData = node->rendererData[mRendererIndex];
-                        queueEntry.uniformBlocks.push_back(&(rendererData->uniforms));
+            LOG_DEBUG("----- frame\n");
 
-                        // TODO: Move this into a separate uniform block per light!
-                        queueEntry.perEntryUniforms.setInteger("ambientPass", 0);
-                        queueEntry.perEntryUniforms.setInteger("light.type", static_cast<int>(lightData->getType()));
-                        queueEntry.perEntryUniforms.setFloat("light.range", lightData->getRange());
-                        queueEntry.perEntryUniforms.setVector3("light.color", lightData->getColor());
-                        queueEntry.perEntryUniforms.setVector3("light.position", glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
-                        queueEntry.perEntryUniforms.setVector3("light.direction", glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
+            for(bool drawTransparent = false; ; drawTransparent = !drawTransparent) {
+                // ambient pass
+                for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
+                    SceneNode* node = linearizedSceneGraph[i];
+                    Mesh* mesh = node->getMesh();
+                    if(mesh) {
+                        Material* mat = node->getMaterial();
+                        assert(mat != nullptr);
 
-                        queueEntry.stateBlock.setBlendEnabled(true);
-                        queueEntry.stateBlock.setBlendFactors(RenderStateBlock::BlendFactor::ONE, RenderStateBlock::BlendFactor::ONE);
-                        queueEntry.stateBlock.setDepthTest(RenderStateBlock::DepthFunc::EQUAL);
+                        if(drawTransparent == mat->mStateBlock.getBlendEnabled()) {
+                            renderQueue.emplace_back(node);
+                            RenderQueueEntry& queueEntry = renderQueue.back();
+                            RendererData* rendererData = node->rendererData[mRendererIndex];
+                            renderQueue.back().uniformBlocks.push_back(&(rendererData->uniforms));
+
+                            queueEntry.perEntryUniforms.setInteger("ambientPass", 1);
+                            if(queueEntry.stateBlock.getBlendEnabled()) {
+                                //queueEntry.stateBlock.setDepthWrite(false);
+                            }
+                            LOG_DEBUG("ambient (obj %d) - transparent: %d\n", node->getId(), drawTransparent);
+                        }
                     }
                 }
+
+                // light pass
+                for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
+                    SceneNode* node = linearizedSceneGraph[i];
+                    Mesh* mesh = node->getMesh();
+                    if(mesh) {
+                        Material* mat = node->getMaterial();
+                        assert(mat != nullptr);
+                        if(drawTransparent == mat->mStateBlock.getBlendEnabled() && mat->getLit()) {
+                            for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
+                                // later: sort by influence and take the N most influential lights
+                                for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
+                                    SceneNode* light = lightLists[ltype][l];
+                                    LightData* lightData = light->getLightData();
+
+                                    renderQueue.emplace_back(node);
+                                    RenderQueueEntry& queueEntry = renderQueue.back();
+                                    RendererData* rendererData = node->rendererData[mRendererIndex];
+                                    queueEntry.uniformBlocks.push_back(&(rendererData->uniforms));
+
+                                    // TODO: Move this into a separate uniform block per light!
+                                    queueEntry.perEntryUniforms.setInteger("ambientPass", 0);
+                                    queueEntry.perEntryUniforms.setInteger("light.type", static_cast<int>(lightData->getType()));
+                                    queueEntry.perEntryUniforms.setFloat("light.range", lightData->getRange());
+                                    queueEntry.perEntryUniforms.setVector3("light.color", lightData->getColor());
+                                    queueEntry.perEntryUniforms.setVector3("light.position", glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
+                                    queueEntry.perEntryUniforms.setVector3("light.direction", glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
+
+                                    std::pair<RenderStateBlock::BlendFactor, RenderStateBlock::BlendFactor> blendFactors = queueEntry.stateBlock.getBlendFactors();
+                                    blendFactors.second = RenderStateBlock::BlendFactor::ONE;
+
+                                    if(drawTransparent) {
+                                        //queueEntry.stateBlock.setDepthWrite(false);
+                                    } else {
+                                        blendFactors.first = RenderStateBlock::BlendFactor::ONE;
+                                    }
+                                    queueEntry.stateBlock.setBlendFactors(blendFactors);
+                                    queueEntry.stateBlock.setBlendEnabled(true);
+                                    queueEntry.stateBlock.setDepthTest(queueEntry.stateBlock.getAdditionalPassDepthFunc());
+
+                                    LOG_DEBUG("light %d (obj %d) - transparent: %d\n", light->getId(), node->getId(), drawTransparent);
+                                }
+                            }
+                        }
+                    }
+                }
+                if(drawTransparent) break;
             }
         }
 

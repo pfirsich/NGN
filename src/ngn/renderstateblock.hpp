@@ -5,46 +5,46 @@
 #include <glad/glad.h>
 
 namespace ngn {
+    enum class DepthFunc : GLenum {
+        // If the depth test is disabled the depth buffer will not be written to.
+        // If you want to write unconditionally (not test), use ALWAYS!
+        DISABLED = 0,
+        NEVER = GL_NEVER,
+        LESS = GL_LESS,
+        EQUAL = GL_EQUAL,
+        LEQUAL = GL_LEQUAL,
+        GREATER = GL_GREATER,
+        NOTEQUAL = GL_NOTEQUAL,
+        GEQUAL = GL_GEQUAL,
+        ALWAYS = GL_ALWAYS
+    };
+
+    enum class FaceDirections : GLenum {
+        NONE = 0,
+        FRONT = GL_FRONT,
+        BACK = GL_BACK,
+        FRONT_AND_BACK
+    };
+
+    enum class FaceOrientation : GLenum {
+        CW = GL_CW,
+        CCW = GL_CCW
+    };
+
     class RenderStateBlock {
     public:
-        enum class DepthFunc : GLenum {
-            // If the depth test is disabled the depth buffer will not be written to.
-            // If you want to write unconditionally (not test), use ALWAYS!
-            DISABLED = 0,
-            NEVER = GL_NEVER,
-            LESS = GL_LESS,
-            EQUAL = GL_EQUAL,
-            LEQUAL = GL_LEQUAL,
-            GREATER = GL_GREATER,
-            NOTEQUAL = GL_NOTEQUAL,
-            GEQUAL = GL_GEQUAL,
-            ALWAYS = GL_ALWAYS
-        };
-
-        enum class FaceDirections : GLenum {
-            NONE = 0,
-            FRONT = GL_FRONT,
-            BACK = GL_BACK,
-            FRONT_AND_BACK
-        };
-
-        enum class FaceOrientation : GLenum {
-            CW = GL_CW,
-            CCW = GL_CCW
-        };
-
         // https://www.opengl.org/wiki/Blending
         enum class BlendFactor : GLenum {
-            ZERO = GL_ZERO,
-            ONE = GL_ONE,
-            SRC_COLOR = GL_SRC_COLOR,
-            ONE_MINUS_SRC_COLOR = GL_ONE_MINUS_SRC_COLOR,
-            DST_COLOR = GL_DST_COLOR,
-            ONE_MINUS_DST_COLOR = GL_ONE_MINUS_DST_COLOR,
-            SRC_ALPHA = GL_SRC_ALPHA,
-            ONE_MINUS_SRC_ALPHA = GL_ONE_MINUS_SRC_ALPHA,
-            DST_ALPHA = GL_DST_ALPHA,
-            ONE_MINUS_DST_ALPHA = GL_ONE_MINUS_DST_ALPHA,
+            ZERO = GL_ZERO, // 0
+            ONE = GL_ONE, // 0
+            SRC_COLOR = GL_SRC_COLOR, // 0x300
+            ONE_MINUS_SRC_COLOR = GL_ONE_MINUS_SRC_COLOR, // 0x301
+            DST_COLOR = GL_DST_COLOR, // 0x306
+            ONE_MINUS_DST_COLOR = GL_ONE_MINUS_DST_COLOR, // 0x307
+            SRC_ALPHA = GL_SRC_ALPHA, // 0x302
+            ONE_MINUS_SRC_ALPHA = GL_ONE_MINUS_SRC_ALPHA, // 0x303
+            DST_ALPHA = GL_DST_ALPHA, // 0x304
+            ONE_MINUS_DST_ALPHA = GL_ONE_MINUS_DST_ALPHA, // 0x305
             CONSTANT_COLOR = GL_CONSTANT_COLOR,
             ONE_MINUS_CONSTANT_COLOR = GL_ONE_MINUS_CONSTANT_COLOR,
             CONSTANT_ALPHA = GL_CONSTANT_ALPHA,
@@ -57,15 +57,6 @@ namespace ngn {
             REVERSE_SUBTRACT = GL_FUNC_REVERSE_SUBTRACT,
             MIN = GL_MIN,
             MAX = GL_MAX
-        };
-
-        // high level
-        enum class BlendMode {
-            REPLACE, // disable GL_BLEND
-            ADD, // ONE, ONE and ADD
-            MIX, // SRC_ALPHA, ONE_MINUS_SRC_ALPHA and ADD
-            MODULATE, // DST_COLOR, ZERO and ADD
-            SCREEN, // ONE, ONE_MINUS_SRC_COLOR and ADD
         };
 
     private:
@@ -109,15 +100,35 @@ namespace ngn {
 
         std::pair<BlendFactor, BlendFactor> getBlendFactors() const {return std::make_pair(mBlendSrcFactor, mBlendDstFactor);}
         void setBlendFactors(BlendFactor src, BlendFactor dst) {mBlendSrcFactor = src; mBlendDstFactor = dst;}
+        void setBlendFactors(std::pair<BlendFactor, BlendFactor> factors) {setBlendFactors(factors.first, factors.second);}
 
         BlendEq getBlendEquation() const {return mBlendEquation;}
         void setBlendEquation(BlendEq eq) {mBlendEquation = eq;}
-
-        void setBlendMode(BlendMode mode);
 
         void apply(bool force = false) const;
 
         // stencil func - glStencilFunc
         // stencil op - glStencilOp
+
+        // this is intended for multiplass rendering - every additional pass added on top needs a different depth function
+        // If depth write is enabled, this will be the depth function that will be used for all additional passes
+        // mostly this means equal
+        DepthFunc getAdditionalPassDepthFunc() const {
+            if(mDepthWrite) {
+                switch(mDepthFunc) {
+                    case DepthFunc::DISABLED: return DepthFunc::DISABLED;
+                    case DepthFunc::NEVER: return DepthFunc::NEVER; // this is not EQUAL, since the first time nothing has been written
+                    case DepthFunc::LESS: return DepthFunc::EQUAL;
+                    case DepthFunc::EQUAL: return DepthFunc::EQUAL;
+                    case DepthFunc::LEQUAL: return DepthFunc::EQUAL;
+                    case DepthFunc::GREATER: return DepthFunc::EQUAL;
+                    case DepthFunc::NOTEQUAL: return DepthFunc::EQUAL;
+                    case DepthFunc::GEQUAL: return DepthFunc::EQUAL;
+                    case DepthFunc::ALWAYS: return DepthFunc::EQUAL;
+                }
+                return mDepthFunc; // This should in theory never be called, but the compilers whines if this is not here
+            }
+            return mDepthFunc;
+        }
     };
 }

@@ -70,7 +70,7 @@ namespace ngn {
 
         bool link();
 
-        void bind() {
+        inline void bind() {
             if(currentShaderProgram != this) {
                 glUseProgram(mProgramObject);
                 currentShaderProgram = this;

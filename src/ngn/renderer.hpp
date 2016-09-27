@@ -37,12 +37,15 @@ namespace ngn {
             }
         };
 
-        void renderRenderQueue(std::vector<RenderQueueEntry>& queue) {
+        inline void renderRenderQueue(std::vector<RenderQueueEntry>& queue) {
+            LOG_DEBUG("------- render\n");
             for(auto& entry : queue) {
                 entry.stateBlock.apply();
                 entry.shaderProgram->bind();
                 for(auto block : entry.uniformBlocks) block->apply();
                 entry.perEntryUniforms.apply();
+                LOG_DEBUG("blend enabled: %d, factors: 0x%X, 0x%X\n", RenderStateBlock::currentBlendEnabled,
+                    static_cast<int>(RenderStateBlock::currentBlendSrcFactor), static_cast<int>(RenderStateBlock::currentBlendDstFactor));
                 entry.mesh->draw();
             }
         }
@@ -78,8 +81,8 @@ namespace ngn {
         Renderer() : autoClear(true), autoClearColor(true), autoClearDepth(true), autoClearStencil(false),
                 clearColor(currentClearColor), clearDepth(currentClearDepth), clearStencil(currentClearStencil), scissorTest(currentScissorTest),
                 viewport(currentViewport), scissor(currentScissor) {
-            stateBlock.setCullFaces(RenderStateBlock::FaceDirections::BACK);
-            stateBlock.setDepthTest(RenderStateBlock::DepthFunc::LESS);
+            stateBlock.setCullFaces(FaceDirections::BACK);
+            stateBlock.setDepthTest(DepthFunc::LESS);
             stateBlock.apply(true);
             mRendererIndex = nextRendererIndex++;
             if(mRendererIndex >= SceneNode::MAX_RENDERDATA_COUNT)
@@ -94,6 +97,6 @@ namespace ngn {
         //setRenderTarget
         void clear(bool color, bool depth, bool stencil) const;
         void clear() const {clear(autoClearColor, autoClearDepth, autoClearStencil);}
-        virtual void render(SceneNode* root, Camera* camera);
+        virtual void render(SceneNode* root, Camera* camera, bool regenerateQueue = true);
     };
 }

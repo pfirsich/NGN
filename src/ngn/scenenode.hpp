@@ -15,6 +15,8 @@
 
 namespace ngn {
     class SceneNode {
+    friend class Renderer;
+
     public:
         using Id = uint32_t;
 
@@ -41,9 +43,9 @@ namespace ngn {
 
         bool mMatrixDirty;
 
-    public:
         static constexpr int MAX_RENDERDATA_COUNT = 4;
         RendererData* rendererData[MAX_RENDERDATA_COUNT];
+    public:
 
         static Id nextId;
         static std::map<Id, SceneNode*> nodeIdMap;

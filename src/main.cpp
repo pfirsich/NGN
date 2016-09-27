@@ -7,24 +7,40 @@
 
 #include <ngn/ngn.hpp>
 
+struct InputState {
+    struct MouseState {
+        int x, y;
+        int lastX, lastY;
+        int deltaX, deltaY;
+        uint32_t buttons;
+
+        MouseState() : x(-1), y(-1), lastX(-1), lastY(-1), deltaX(0), deltaY(0), buttons(0) {}
+    } mouse;
+
+    int numKeys;
+    const uint8_t* key;
+
+    InputState() : numKeys(0), key(nullptr) {}
+
+    void update() {
+        if(mouse.lastX < 0 and mouse.lastY < 0)
+            SDL_GetMouseState(&mouse.lastX, &mouse.lastY);
+        mouse.buttons = SDL_GetMouseState(&mouse.x, &mouse.y);
+        mouse.deltaX = mouse.x - mouse.lastX; mouse.deltaY = mouse.y - mouse.lastY;
+        mouse.lastX = mouse.x; mouse.lastY = mouse.y;
+
+        if(key) delete key;
+
+        key = SDL_GetKeyboardState(&numKeys);
+    }
+} inputState;
+
 void moveCamera(ngn::Camera& camera, float dt) {
-    static int lastMouseX = -1, lastMouseY = -1;
-    if(lastMouseX < 0 and lastMouseY < 0)
-        SDL_GetMouseState(&lastMouseX, &lastMouseY);
-
-    int x = 0, y = 0;
-    Uint32 buttons = SDL_GetMouseState(&x, &y);
-    int deltaMouseX = x - lastMouseX, deltaMouseY = y - lastMouseY;
-    lastMouseX = x; lastMouseY = y;
-
-    int numkeys = 0;
-    const Uint8 *keyState = SDL_GetKeyboardState(&numkeys);
-
     float speed = 10.0 * dt;
     glm::vec3 move(0.0);
-    move.x = ((int)keyState[SDL_SCANCODE_D] - (int)keyState[SDL_SCANCODE_A]);
-    move.y = ((int)keyState[SDL_SCANCODE_R] - (int)keyState[SDL_SCANCODE_F]);
-    move.z = ((int)keyState[SDL_SCANCODE_W] - (int)keyState[SDL_SCANCODE_S]);
+    move.x = ((int)inputState.key[SDL_SCANCODE_D] - (int)inputState.key[SDL_SCANCODE_A]);
+    move.y = ((int)inputState.key[SDL_SCANCODE_R] - (int)inputState.key[SDL_SCANCODE_F]);
+    move.z = ((int)inputState.key[SDL_SCANCODE_W] - (int)inputState.key[SDL_SCANCODE_S]);
     if(glm::length(move) > 0.5) {
         float y = move.y;
         move = camera.getLocalSystem() * move;
@@ -33,10 +49,10 @@ void moveCamera(ngn::Camera& camera, float dt) {
         camera.setPosition(camera.getPosition() + move);
     }
 
-    if(buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+    if(inputState.mouse.buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
         float sensitivity = 2.0f * 0.001f;
-        camera.rotateWorld(sensitivity * deltaMouseX, glm::vec3(0.0f, 1.0f, 0.0f));
-        camera.rotate(sensitivity * deltaMouseY, glm::vec3(1.0f, 0.0f, 0.0f));
+        camera.rotateWorld(sensitivity * inputState.mouse.deltaX, glm::vec3(0.0f, 1.0f, 0.0f));
+        camera.rotate(sensitivity * inputState.mouse.deltaY, glm::vec3(1.0f, 0.0f, 0.0f));
     }
 }
 
@@ -71,7 +87,7 @@ int main(int argc, char** args) {
     // Scene
     ngn::Scene scene;
 
-    std::vector<ngn::Mesh*> meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
+    /*std::vector<ngn::Mesh*> meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
     ngn::Object ironman;
     for(auto mesh : meshes) {
         ngn::Object* obj = new ngn::Object;
@@ -79,17 +95,26 @@ int main(int argc, char** args) {
         ironman.add(obj);
     }
     ironman.setMaterial(new ngn::Material(shader), true);
-    ironman.getMaterial()->setVector3("color", glm::vec3(1.0f, 1.0f, 1.0f));
+    ironman.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     ironman.getMaterial()->setTexture("baseTex", whitePixel);
     ironman.getMaterial()->setFloat("shininess", 512.0f);
     ironman.setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
     ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
-    scene.add(&ironman);
+    scene.add(&ironman);*/
+
+    ngn::Object sphere;
+    sphere.setMesh(ngn::sphereMesh(5.0f, 32, 32, vFormat));
+    sphere.setMaterial(new ngn::Material(shader), true);
+    sphere.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    sphere.getMaterial()->setTexture("baseTex", whitePixel);
+    sphere.getMaterial()->setFloat("shininess", 512.0f);
+    sphere.setPosition(glm::vec3(20.0f, 10.0f, 0.0f));
+    scene.add(&sphere);
 
     ngn::Object ground;
     ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
     ground.setMaterial(new ngn::Material(shader), true);
-    ground.getMaterial()->setVector3("color", glm::vec3(0.5f, 1.0f, 0.5f));
+    ground.getMaterial()->setVector4("color", glm::vec4(0.5f, 1.0f, 0.5f, 1.0f));
     ground.getMaterial()->setTexture("baseTex", whitePixel);
     ground.getMaterial()->setFloat("shininess", 64.0);
     scene.add(&ground);
@@ -98,8 +123,11 @@ int main(int argc, char** args) {
     cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
     cube.setMaterial(new ngn::Material(shader), true);
     cube.getMaterial()->setTexture("baseTex", new ngn::Texture("media/sq.png"));
-    cube.getMaterial()->setVector3("color", glm::vec3(1.0f, 1.0f, 1.0f));
+    cube.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     cube.getMaterial()->setFloat("shininess", 256.0);
+    cube.getMaterial()->setBlendMode(ngn::Material::BlendMode::TRANSLUCENT);
+    //cube.getMaterial()->setUnlit();
+    cube.getMaterial()->setDepthTest(ngn::DepthFunc::GREATER);
     cube.setPosition(glm::vec3(0.0f, 5.0f, 0.0f));
     scene.add(&cube);
 
@@ -115,12 +143,11 @@ int main(int argc, char** args) {
     pointLight.getLightData()->setType(ngn::LightData::LightType::POINT);
     pointLight.getLightData()->setRange(50.0f);
     pointLight.getLightData()->setColor(glm::vec3(1.0f, 0.5f, 0.5f));
-    pointLight.setPosition(glm::vec3(-10.0f, 10.0f, 30.0f));
 
-    pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, vFormat));
+    /*pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, vFormat));
     pointLight.setMaterial(new ngn::Material(shader), true);
     pointLight.getMaterial()->setTexture("baseTex", whitePixel);
-    pointLight.getMaterial()->setVector3("color", glm::vec3(1.0f, 0.0f, 0.0f));
+    pointLight.getMaterial()->setVector4("color", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));*/
     scene.add(&pointLight);
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 0.0f, 3.0f)));
@@ -134,11 +161,13 @@ int main(int argc, char** args) {
         float dt = t - lastTime;
         lastTime = t;
 
+        inputState.update();
+
         pointLight.setPosition(25.0f * glm::vec3(glm::cos(t), 0.0f, glm::sin(t)) + glm::vec3(0.0f, 10.0f, 0.0f));
 
         moveCamera(camera, dt);
 
-        renderer.render(&scene, &camera);
+        renderer.render(&scene, &camera, !inputState.key[SDL_SCANCODE_M]);
         window.updateAndSwap();
     }
 

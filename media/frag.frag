@@ -8,7 +8,7 @@ in VSOUT {
 
 out vec4 fragColor;
 
-uniform vec3 color;
+uniform vec4 color;
 uniform sampler2D baseTex;
 uniform float shininess = 128.0;
 uniform bool ambientPass;
@@ -35,12 +35,13 @@ vec3 toGamma(in vec3 col) {
 }
 
 void main() {
-    vec3 albedo =  toLinear(color * texture2D(baseTex, vsOut.texCoord).rgb);
+    vec4 tex = texture2D(baseTex, vsOut.texCoord);
+    vec3 albedo =  toLinear(color.rgb * tex.rgb);
     vec3 specColor = toLinear(vec3(1.0, 1.0, 1.0));
     vec3 ambiColor = toLinear(vec3(1.0, 1.0, 1.0) * 0.1);
 
     if(ambientPass) {
-        fragColor = vec4(albedo * ambiColor, 1.0);
+        fragColor = vec4(albedo * ambiColor, color.a * tex.a);
     } else {
         vec3 N = normalize(vsOut.normal); // renormalize because of interpolation?
         vec3 E = normalize(vsOut.eye);
@@ -57,7 +58,6 @@ void main() {
             L_atten = 1.0 - smoothstep(0.0, light.range, dist);
         }
 
-
         float rimLight = smoothstep(0.35, 1.0, 1.0 - max(dot(E, N), 0.0)) * 0.8;
         rimLight = 0.0;
         float lambert = max(dot(L, N), 0.0) + rimLight;
@@ -68,6 +68,6 @@ void main() {
         specular *= L_atten;
         //specular = 0.0;
 
-        fragColor = vec4((albedo * lambert + specular * specColor) * light.color, 1.0);
+        fragColor = vec4((albedo * lambert + specular * specColor) * light.color, color.a * tex.a);
     }
 }

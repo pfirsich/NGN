@@ -4,39 +4,13 @@
 namespace ngn {
     // These values are only accurate because we make sure that they are set when the program starts
     bool RenderStateBlock::currentDepthWrite = true;
-    RenderStateBlock::DepthFunc RenderStateBlock::currentDepthFunc = RenderStateBlock::DepthFunc::LESS;
-    RenderStateBlock::FaceDirections RenderStateBlock::currentCullFaces = RenderStateBlock::FaceDirections::BACK;
-    RenderStateBlock::FaceOrientation RenderStateBlock::currentFrontFace = RenderStateBlock::FaceOrientation::CCW;
+    DepthFunc RenderStateBlock::currentDepthFunc = DepthFunc::LESS;
+    FaceDirections RenderStateBlock::currentCullFaces = FaceDirections::BACK;
+    FaceOrientation RenderStateBlock::currentFrontFace = FaceOrientation::CCW;
     bool RenderStateBlock::currentBlendEnabled = false;
     RenderStateBlock::BlendFactor RenderStateBlock::currentBlendSrcFactor = RenderStateBlock::BlendFactor::ONE;
     RenderStateBlock::BlendFactor RenderStateBlock::currentBlendDstFactor = RenderStateBlock::BlendFactor::ZERO;
     RenderStateBlock::BlendEq RenderStateBlock::currentBlendEquation = RenderStateBlock::BlendEq::ADD;
-
-    void RenderStateBlock::setBlendMode(BlendMode mode) {
-        switch(mode) {
-            case BlendMode::REPLACE:
-                mBlendEnabled = false;
-                break;
-            case BlendMode::ADD:
-                mBlendEnabled = true;
-                mBlendEquation = BlendEq::ADD;
-                mBlendSrcFactor = BlendFactor::ONE;
-                mBlendDstFactor = BlendFactor::ONE;
-                break;
-            case BlendMode::MODULATE:
-                mBlendEnabled = true;
-                mBlendEquation = BlendEq::ADD;
-                mBlendSrcFactor = BlendFactor::DST_COLOR;
-                mBlendDstFactor = BlendFactor::ZERO;
-                break;
-            case BlendMode::SCREEN:
-                mBlendEnabled = true;
-                mBlendEquation = BlendEq::ADD;
-                mBlendSrcFactor = BlendFactor::ONE;
-                mBlendDstFactor = BlendFactor::ONE_MINUS_SRC_COLOR;
-                break;
-        }
-    }
 
     void RenderStateBlock::apply(bool force) const {
         if(mDepthWrite != currentDepthWrite || force) {
@@ -72,20 +46,23 @@ namespace ngn {
         if(mBlendEnabled != currentBlendEnabled || force) {
             if(mBlendEnabled) {
                 glEnable(GL_BLEND);
-                if(mBlendSrcFactor != currentBlendSrcFactor || mBlendDstFactor != currentBlendDstFactor || force) {
-                    glBlendFunc(static_cast<GLenum>(mBlendSrcFactor),
-                                static_cast<GLenum>(mBlendDstFactor));
-                    currentBlendSrcFactor = mBlendSrcFactor;
-                    currentBlendDstFactor = mBlendDstFactor;
-                }
-                if(mBlendEquation != currentBlendEquation || force) {
-                    glBlendEquation(static_cast<GLenum>(mBlendEquation));
-                    currentBlendEquation = mBlendEquation;
-                }
             } else {
                 glDisable(GL_BLEND);
             }
             currentBlendEnabled = mBlendEnabled;
+        }
+
+        if(mBlendEnabled) {
+            if(mBlendSrcFactor != currentBlendSrcFactor || mBlendDstFactor != currentBlendDstFactor || force) {
+                glBlendFunc(static_cast<GLenum>(mBlendSrcFactor),
+                            static_cast<GLenum>(mBlendDstFactor));
+                currentBlendSrcFactor = mBlendSrcFactor;
+                currentBlendDstFactor = mBlendDstFactor;
+            }
+            if(mBlendEquation != currentBlendEquation || force) {
+                glBlendEquation(static_cast<GLenum>(mBlendEquation));
+                currentBlendEquation = mBlendEquation;
+            }
         }
     }
 }
