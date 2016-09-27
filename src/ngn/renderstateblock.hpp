@@ -9,14 +9,14 @@ namespace ngn {
         // If the depth test is disabled the depth buffer will not be written to.
         // If you want to write unconditionally (not test), use ALWAYS!
         DISABLED = 0,
-        NEVER = GL_NEVER,
-        LESS = GL_LESS,
-        EQUAL = GL_EQUAL,
-        LEQUAL = GL_LEQUAL,
-        GREATER = GL_GREATER,
-        NOTEQUAL = GL_NOTEQUAL,
-        GEQUAL = GL_GEQUAL,
-        ALWAYS = GL_ALWAYS
+        NEVER = GL_NEVER, // 0x0200
+        LESS = GL_LESS, // 0x0201
+        EQUAL = GL_EQUAL, // 0x0202
+        LEQUAL = GL_LEQUAL, // 0x0203
+        GREATER = GL_GREATER, // 0x0204
+        NOTEQUAL = GL_NOTEQUAL, // 0x0205
+        GEQUAL = GL_GEQUAL, // 0x0206
+        ALWAYS = GL_ALWAYS // 0x0207
     };
 
     enum class FaceDirections : GLenum {

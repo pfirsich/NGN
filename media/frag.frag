@@ -11,6 +11,9 @@ out vec4 fragColor;
 uniform vec4 color;
 uniform sampler2D baseTex;
 uniform float shininess = 128.0;
+uniform vec3 ambient = vec3(0.1);
+uniform vec3 emissive = vec3(0.0);
+
 uniform bool ambientPass;
 
 const int LIGHT_TYPE_POINT = 0;
@@ -36,12 +39,13 @@ vec3 toGamma(in vec3 col) {
 
 void main() {
     vec4 tex = texture2D(baseTex, vsOut.texCoord);
-    vec3 albedo =  toLinear(color.rgb * tex.rgb);
-    vec3 specColor = toLinear(vec3(1.0, 1.0, 1.0));
-    vec3 ambiColor = toLinear(vec3(1.0, 1.0, 1.0) * 0.1);
+    tex.rgb = toLinear(tex.rgb);
+
+    vec3 albedo =  color.rgb * tex.rgb;
+    vec3 specColor = vec3(1.0, 1.0, 1.0);
 
     if(ambientPass) {
-        fragColor = vec4(albedo * ambiColor, color.a * tex.a);
+        fragColor = vec4(emissive + albedo * ambient, color.a * tex.a);
     } else {
         vec3 N = normalize(vsOut.normal); // renormalize because of interpolation?
         vec3 E = normalize(vsOut.eye);

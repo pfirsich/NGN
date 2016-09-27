@@ -38,14 +38,15 @@ namespace ngn {
         };
 
         inline void renderRenderQueue(std::vector<RenderQueueEntry>& queue) {
-            LOG_DEBUG("------- render\n");
+            //LOG_DEBUG("------- render");
             for(auto& entry : queue) {
                 entry.stateBlock.apply();
                 entry.shaderProgram->bind();
                 for(auto block : entry.uniformBlocks) block->apply();
                 entry.perEntryUniforms.apply();
-                LOG_DEBUG("blend enabled: %d, factors: 0x%X, 0x%X\n", RenderStateBlock::currentBlendEnabled,
-                    static_cast<int>(RenderStateBlock::currentBlendSrcFactor), static_cast<int>(RenderStateBlock::currentBlendDstFactor));
+                //LOG_DEBUG("blend enabled: %d, factors: 0x%X, 0x%X, depth write: %d, depth func: 0x%X", RenderStateBlock::currentBlendEnabled,
+                //    static_cast<int>(RenderStateBlock::currentBlendSrcFactor), static_cast<int>(RenderStateBlock::currentBlendDstFactor),
+                //    RenderStateBlock::currentDepthWrite, static_cast<int>(RenderStateBlock::currentDepthFunc));
                 entry.mesh->draw();
             }
         }

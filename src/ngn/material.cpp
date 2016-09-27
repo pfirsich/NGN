@@ -11,26 +11,31 @@ namespace ngn {
         switch(mode) {
             case BlendMode::REPLACE:
                 mStateBlock.setBlendEnabled(false);
+                mStateBlock.setDepthWrite(true);
                 break;
             case BlendMode::TRANSLUCENT:
                 mStateBlock.setBlendEnabled(true);
                 mStateBlock.setBlendEquation(RenderStateBlock::BlendEq::ADD);
                 mStateBlock.setBlendFactors(RenderStateBlock::BlendFactor::SRC_ALPHA, RenderStateBlock::BlendFactor::ONE_MINUS_SRC_ALPHA);
+                mStateBlock.setDepthWrite(false);
                 break;
             case BlendMode::ADD:
                 mStateBlock.setBlendEnabled(true);
                 mStateBlock.setBlendEquation(RenderStateBlock::BlendEq::ADD);
                 mStateBlock.setBlendFactors(RenderStateBlock::BlendFactor::ONE, RenderStateBlock::BlendFactor::ONE);
+                mStateBlock.setDepthWrite(false);
                 break;
             case BlendMode::MODULATE:
                 mStateBlock.setBlendEnabled(true);
                 mStateBlock.setBlendEquation(RenderStateBlock::BlendEq::ADD);
                 mStateBlock.setBlendFactors(RenderStateBlock::BlendFactor::DST_COLOR, RenderStateBlock::BlendFactor::ZERO);
+                mStateBlock.setDepthWrite(false);
                 break;
             case BlendMode::SCREEN:
                 mStateBlock.setBlendEnabled(true);
                 mStateBlock.setBlendEquation(RenderStateBlock::BlendEq::ADD);
                 mStateBlock.setBlendFactors(RenderStateBlock::BlendFactor::ONE, RenderStateBlock::BlendFactor::ONE_MINUS_SRC_COLOR);
+                mStateBlock.setDepthWrite(false);
                 break;
         }
         validate();

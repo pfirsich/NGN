@@ -14,7 +14,7 @@ namespace ngn {
 
     void RenderStateBlock::apply(bool force) const {
         if(mDepthWrite != currentDepthWrite || force) {
-            glDepthMask(mDepthWrite);
+            glDepthMask(mDepthWrite ? GL_TRUE : GL_FALSE);
             currentDepthWrite = mDepthWrite;
         }
 

@@ -66,8 +66,8 @@ namespace ngn {
 
     void Renderer::render(SceneNode* root, Camera* camera, bool regenerateQueue) {
         updateState();
-        if(autoClear) clear();
         stateBlock.apply();
+        if(autoClear) clear();
 
         static std::vector<SceneNode*> linearizedSceneGraph;
         if(linearizedSceneGraph.capacity() == 0) linearizedSceneGraph.reserve(131072);
@@ -128,7 +128,7 @@ namespace ngn {
             // build render queue
             renderQueue.clear();
 
-            LOG_DEBUG("----- frame\n");
+            //LOG_DEBUG("----- frame");
 
             for(bool drawTransparent = false; ; drawTransparent = !drawTransparent) {
                 // ambient pass
@@ -146,10 +146,7 @@ namespace ngn {
                             renderQueue.back().uniformBlocks.push_back(&(rendererData->uniforms));
 
                             queueEntry.perEntryUniforms.setInteger("ambientPass", 1);
-                            if(queueEntry.stateBlock.getBlendEnabled()) {
-                                //queueEntry.stateBlock.setDepthWrite(false);
-                            }
-                            LOG_DEBUG("ambient (obj %d) - transparent: %d\n", node->getId(), drawTransparent);
+                            //LOG_DEBUG("ambient (obj %d) - transparent: %d\n", node->getId(), drawTransparent);
                         }
                     }
                 }
@@ -183,17 +180,14 @@ namespace ngn {
 
                                     std::pair<RenderStateBlock::BlendFactor, RenderStateBlock::BlendFactor> blendFactors = queueEntry.stateBlock.getBlendFactors();
                                     blendFactors.second = RenderStateBlock::BlendFactor::ONE;
-
-                                    if(drawTransparent) {
-                                        //queueEntry.stateBlock.setDepthWrite(false);
-                                    } else {
+                                    if(!drawTransparent) {
                                         blendFactors.first = RenderStateBlock::BlendFactor::ONE;
                                     }
                                     queueEntry.stateBlock.setBlendFactors(blendFactors);
                                     queueEntry.stateBlock.setBlendEnabled(true);
-                                    queueEntry.stateBlock.setDepthTest(queueEntry.stateBlock.getAdditionalPassDepthFunc());
 
-                                    LOG_DEBUG("light %d (obj %d) - transparent: %d\n", light->getId(), node->getId(), drawTransparent);
+                                    queueEntry.stateBlock.setDepthTest(queueEntry.stateBlock.getAdditionalPassDepthFunc());
+                                    //LOG_DEBUG("light %d (obj %d) - transparent: %d\n", light->getId(), node->getId(), drawTransparent);
                                 }
                             }
                         }
