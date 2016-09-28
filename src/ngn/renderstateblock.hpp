@@ -78,9 +78,9 @@ namespace ngn {
         static BlendFactor currentBlendDstFactor;
         static BlendEq currentBlendEquation;
 
-        RenderStateBlock() : mDepthWrite(currentDepthWrite), mDepthFunc(currentDepthFunc), mCullFaces(currentCullFaces),
-                             mFrontFace(currentFrontFace), mBlendEnabled(currentBlendEnabled), mBlendSrcFactor(currentBlendSrcFactor),
-                             mBlendDstFactor(currentBlendDstFactor), mBlendEquation(currentBlendEquation) {}
+        RenderStateBlock() : mDepthWrite(true), mDepthFunc(DepthFunc::LESS), mCullFaces(FaceDirections::BACK),
+                             mFrontFace(FaceOrientation::CCW), mBlendEnabled(false), mBlendSrcFactor(BlendFactor::ONE),
+                             mBlendDstFactor(BlendFactor::ZERO), mBlendEquation(BlendEq::ADD) {}
 
         bool getDepthWrite() const {return mDepthWrite;}
         void setDepthWrite(bool write) {mDepthWrite = write;}

@@ -66,7 +66,8 @@ namespace ngn {
 
     void Renderer::render(SceneNode* root, Camera* camera, bool regenerateQueue) {
         updateState();
-        stateBlock.apply();
+        // make sure depth write is enabled before we clear
+        glDepthMask((RenderStateBlock::currentDepthWrite = true) ? GL_TRUE : GL_FALSE);
         if(autoClear) clear();
 
         static std::vector<SceneNode*> linearizedSceneGraph;

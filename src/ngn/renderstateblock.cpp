@@ -2,10 +2,10 @@
 #include "log.hpp"
 
 namespace ngn {
-    // These values are only accurate because we make sure that they are set when the program starts
+    // These values represent the OpenGL default values
     bool RenderStateBlock::currentDepthWrite = true;
-    DepthFunc RenderStateBlock::currentDepthFunc = DepthFunc::LESS;
-    FaceDirections RenderStateBlock::currentCullFaces = FaceDirections::BACK;
+    DepthFunc RenderStateBlock::currentDepthFunc = DepthFunc::DISABLED;
+    FaceDirections RenderStateBlock::currentCullFaces = FaceDirections::NONE;
     FaceOrientation RenderStateBlock::currentFrontFace = FaceOrientation::CCW;
     bool RenderStateBlock::currentBlendEnabled = false;
     RenderStateBlock::BlendFactor RenderStateBlock::currentBlendSrcFactor = RenderStateBlock::BlendFactor::ONE;

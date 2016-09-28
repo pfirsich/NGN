@@ -73,8 +73,6 @@ namespace ngn {
 
         bool scissorTest;
 
-        RenderStateBlock stateBlock;
-
         // x, y, width, height
         glm::ivec4 viewport;
         glm::ivec4 scissor;
@@ -82,9 +80,6 @@ namespace ngn {
         Renderer() : autoClear(true), autoClearColor(true), autoClearDepth(true), autoClearStencil(false),
                 clearColor(currentClearColor), clearDepth(currentClearDepth), clearStencil(currentClearStencil), scissorTest(currentScissorTest),
                 viewport(currentViewport), scissor(currentScissor) {
-            stateBlock.setCullFaces(FaceDirections::BACK);
-            stateBlock.setDepthTest(DepthFunc::LESS);
-            stateBlock.apply(true);
             mRendererIndex = nextRendererIndex++;
             if(mRendererIndex >= SceneNode::MAX_RENDERDATA_COUNT)
                 LOG_CRITICAL("More than SceneNode::MAX_RENDERDATA_COUNT(%d) renderers!", SceneNode::MAX_RENDERDATA_COUNT);

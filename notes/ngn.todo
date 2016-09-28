@@ -41,6 +41,9 @@ Low-Level:
     Also depth sorting for transparent objects
     For opaque geometry I want to draw all ambient passes first, so I can have a semi depth-prepass for shading
     For transparent geometry it is only correct to draw all passes for a single object after another and not first all ambient, then all lighting passes
+    http://realtimecollisiondetection.net/blog/?p=86
+    http://www.gamedev.net/topic/661114-temporal-coherence-and-render-queue-sorting/
+    http://www.gamedev.net/topic/636389-advanced-render-queue-api/
 
     › Custom Ambient Lighting
         Fixed color
@@ -97,11 +100,6 @@ Mid-Level:
     › Skinning
     › Instancing (in the SceneGraph)
     › Post-Process Pipeline
-
-    › Draw call sorting
-    http://realtimecollisiondetection.net/blog/?p=86
-    http://www.gamedev.net/topic/661114-temporal-coherence-and-render-queue-sorting/
-    http://www.gamedev.net/topic/636389-advanced-render-queue-api/
 
     › Uniform Buffer Objects (maybe not?)
     http://stackoverflow.com/questions/32267727/efficiently-update-uniform-buffer-objects-with-instancing-and-culling
