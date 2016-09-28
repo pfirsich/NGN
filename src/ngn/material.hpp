@@ -58,6 +58,7 @@ namespace ngn {
         ShaderProgram* mShader;
 
         Material(ShaderProgram* shader) : mLit(true), mBlendMode(BlendMode::REPLACE), mShader(shader) {}
+        Material(const Material& base) : UniformList(base), mLit(base.mLit), mBlendMode(base.mBlendMode), mStateBlock(base.mStateBlock), mShader(base.mShader) {}
 
         void setLit(bool lit = true) {mLit = lit;}
         void setUnlit(bool unlit = true) {mLit = !unlit;}

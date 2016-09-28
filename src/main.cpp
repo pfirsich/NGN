@@ -79,6 +79,13 @@ int main(int argc, char** args) {
         return false;
     }
 
+    ngn::Material baseMaterial(shader);
+    baseMaterial.setTexture("baseTex", whitePixel);
+    baseMaterial.setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    baseMaterial.setVector3("ambient", glm::vec3(0.1f));
+    baseMaterial.setVector3("emissive", glm::vec3(0.0f));
+    baseMaterial.setFloat("shininess", 512.0f);
+
     ngn::VertexFormat vFormat;
     vFormat.add(ngn::AttributeType::POSITION, 3, ngn::AttributeDataType::F32);
     vFormat.add(ngn::AttributeType::NORMAL, 3, ngn::AttributeDataType::F32);
@@ -94,41 +101,31 @@ int main(int argc, char** args) {
         obj->setMesh(mesh);
         ironman.add(obj);
     }
-    ironman.setMaterial(new ngn::Material(shader), true);
-    ironman.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    ironman.getMaterial()->setTexture("baseTex", whitePixel);
-    ironman.getMaterial()->setFloat("shininess", 512.0f);
-    ironman.getMaterial()->setVector3("ambient", glm::vec3(0.1f));
+    ironman.setMaterial(&baseMaterial);
     ironman.setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
     ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
     scene.add(&ironman);
 
     ngn::Object sphere;
     sphere.setMesh(ngn::sphereMesh(5.0f, 32, 32, vFormat));
-    sphere.setMaterial(new ngn::Material(shader), true);
-    sphere.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    sphere.getMaterial()->setTexture("baseTex", whitePixel);
-    sphere.getMaterial()->setVector3("ambient", glm::vec3(0.1f));
+    sphere.setMaterial(&baseMaterial);
     sphere.getMaterial()->setFloat("shininess", 512.0f);
     sphere.setPosition(glm::vec3(-20.0f, 10.0f, 0.0f));
     scene.add(&sphere);
 
     ngn::Object ground;
     ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
-    ground.setMaterial(new ngn::Material(shader), true);
+    ground.setMaterial(new ngn::Material(baseMaterial), true);
     ground.getMaterial()->setVector4("color", glm::vec4(0.5f, 1.0f, 0.5f, 1.0f));
-    ground.getMaterial()->setTexture("baseTex", whitePixel);
-    ground.getMaterial()->setVector3("ambient", glm::vec3(0.1f));
     ground.getMaterial()->setFloat("shininess", 64.0);
     scene.add(&ground);
 
     ngn::Object cube;
     cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
-    cube.setMaterial(new ngn::Material(shader), true);
+    cube.setMaterial(new ngn::Material(baseMaterial), true);
     cube.getMaterial()->setTexture("baseTex", new ngn::Texture("media/sq.png"));
     cube.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
-    cube.getMaterial()->setFloat("shininess", 256.0);
-    //cube.getMaterial()->setVector3("ambient", glm::vec3(1.0f, 1.0f, 1.0f));
+    //cube.getMaterial()->setVector3("ambient", glm::vec3(1.0f));
     cube.getMaterial()->setBlendMode(ngn::Material::BlendMode::TRANSLUCENT);
     //cube.getMaterial()->setUnlit();
     //cube.getMaterial()->setDepthTest(ngn::DepthFunc::GREATER);
@@ -146,12 +143,13 @@ int main(int argc, char** args) {
     pointLight.setLightData(new ngn::LightData, true);
     pointLight.getLightData()->setType(ngn::LightData::LightType::POINT);
     pointLight.getLightData()->setRange(50.0f);
-    pointLight.getLightData()->setColor(glm::vec3(1.0f, 0.5f, 0.5f));
+    pointLight.getLightData()->setColor(glm::vec3(1.0f, 0.25f, 0.25f));
 
-    /*pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, vFormat));
-    pointLight.setMaterial(new ngn::Material(shader), true);
-    pointLight.getMaterial()->setTexture("baseTex", whitePixel);
-    pointLight.getMaterial()->setVector4("color", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));*/
+    pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, vFormat));
+    pointLight.setMaterial(new ngn::Material(baseMaterial), true);
+    pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pointLight.getMaterial()->setVector3("emissive", pointLight.getLightData()->getColor());
+    pointLight.getMaterial()->setUnlit();
     scene.add(&pointLight);
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));

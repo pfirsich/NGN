@@ -28,6 +28,20 @@ namespace ngn {
             bool dirty;
 
             ParamData(ParamType type) : type(type), count(0), constData(nullptr), ownedData(nullptr), dirty(false) {}
+
+            size_t getSize() const { // in bytes
+                switch(type) {
+                    case ParamType::FLOAT: return count * sizeof(float);
+                    case ParamType::INT:   return count * sizeof(int);
+                    case ParamType::VECF2: return count * sizeof(glm::vec2);
+                    case ParamType::VECF3: return count * sizeof(glm::vec3);
+                    case ParamType::VECF4: return count * sizeof(glm::vec4);
+                    case ParamType::MATF2: return count * sizeof(glm::mat2);
+                    case ParamType::MATF3: return count * sizeof(glm::mat3);
+                    case ParamType::MATF4: return count * sizeof(glm::mat4);
+                }
+                return 0; // Just so gcc doesn't whine
+            }
         };
 
         std::map<std::string, ParamData> mParameters;
@@ -78,9 +92,23 @@ namespace ngn {
         }
     public:
         UniformBlock() {}
+
         virtual ~UniformBlock() {
             for(auto& param : mParameters) {
                 deleteParam(param.second);
+            }
+        }
+
+        UniformBlock(const UniformBlock& other) {
+            mTextures = other.mTextures;
+            mParameters = other.mParameters;
+            for(auto& param : mParameters) {
+                const void* temp = param.second.ownedData;
+                if(temp) {
+                    size_t size = param.second.getSize();
+                    param.second.ownedData = new uint8_t[size];
+                    std::memcpy(param.second.ownedData, temp, size);
+                }
             }
         }
 
@@ -155,6 +183,9 @@ namespace ngn {
 
     class UniformList : public UniformBlock {
     public:
+        UniformList() : UniformBlock() {}
+        UniformList(const UniformList& other) : UniformBlock(other) {}
+
         void apply();
     };
 }

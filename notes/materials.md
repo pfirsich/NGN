@@ -424,3 +424,10 @@ RenderStateBlock.addState<RenderStateBlock::DepthTest>(true);
 RenderStateBlock.removeState<RenderStateBlock>();
 RenderStateBlock.getState<RenderStateBlock>().set(false);
 
+Unreal Materials:
+https://docs.unrealengine.com/latest/INT/Engine/Rendering/Materials/MaterialProperties/index.html
+https://docs.unrealengine.com/latest/INT/Engine/Rendering/Materials/HowTo/Refraction/
+
+Es scheint als gebe es hier keine Möglichkeit, wie in Unity, für jeden Renderer/Pass einen eigenen, vollen Satz Shader (frag+vert) anzugeben, man hat nur die high-level-abstraction (mit surface und lighting model)
+
+Shader permuations: http://www.gamedev.net/topic/675184-shader-permutations/

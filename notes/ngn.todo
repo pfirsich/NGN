@@ -31,10 +31,12 @@ Low-Level:
     Maybe some day support a custom blend mode, but for now *don't* expose blend factors to engine users
     Pull some types out of renderstateblock and make only a select number of exposed parameters available as material properties
     => renderstateblock private and the possibility for sanitizing properties
-    › Blending seems to be buggy - ADD, MODULATE and SCREEN in particular
+    ✔ Blending seems to be buggy - ADD, MODULATE and SCREEN in particular @done (27.09.16 21:12)
+    › Materials
+    › Deferred Shading
+    › PBR
     › Multiple passes
     For Cusutom depth functions to make sense, this is necessary.
-    › Materials
     › Draw call sorting
     Also depth sorting for transparent objects
     For opaque geometry I want to draw all ambient passes first, so I can have a semi depth-prepass for shading
@@ -101,6 +103,13 @@ Mid-Level:
     http://www.gamedev.net/topic/661114-temporal-coherence-and-render-queue-sorting/
     http://www.gamedev.net/topic/636389-advanced-render-queue-api/
 
+    › Uniform Buffer Objects (maybe not?)
+    http://stackoverflow.com/questions/32267727/efficiently-update-uniform-buffer-objects-with-instancing-and-culling
+    http://www.gamedev.net/topic/655969-speed-gluniform-vs-uniform-buffer-objects/
+    https://www.opengl.org/discussion_boards/showthread.php/178326-Uniform-Buffer-Object-Performance
+    https://devtalk.nvidia.com/default/topic/752037/ubo-performance/?offset=2
+    The gain seems to be minimal. Optimize the regular glUniform-pipeline (less strings!)
+
 High-Level:
     › Alternative Szenen-Repräsentation für Game logic:
     http://gamedev.stackexchange.com/questions/8210/scene-graph-as-object-container
@@ -109,6 +118,8 @@ High-Level:
     › Scripting
 
     Default Renderer:
+        › Fog
+            https://people.eecs.berkeley.edu/~ravir/papers/singlescat/scattering.pdf
         › Derivative Mapping
             http://johnwhigham.blogspot.de/2015/03/derivative-mapping.html
             http://www.rorydriscoll.com/2012/01/11/derivative-maps/
@@ -146,6 +157,30 @@ High-Level:
             https://seblagarde.wordpress.com/2014/04/14/dontnod-physically-based-rendering-chart-for-unreal-engine-4/
             http://www.gamedev.net/topic/669443-pbr-g-buffer-parameters-metalness/
             Man kann 2 Bit für Metalness benutzen und irgendwo ein Array mit den 4 möglichen Metalness values hinterlegen.
+            https://supertuxkart.net/Antarctica:_Physically_Based_Shading
+            http://www.codinglabs.net/article_physically_based_rendering_cook_torrance.aspx
+            http://www.gamedev.net/topic/669443-pbr-g-buffer-parameters-metalness/
+            http://computergraphics.stackexchange.com/questions/1513/how-physically-based-is-the-diffuse-and-specular-distinction
+            http://blog.selfshadow.com/publications/s2015-shading-course/#course_content
+            http://blog.selfshadow.com/publications/s2015-shading-course/hoffman/s2015_pbs_physics_math_slides.pdf <- das soll sehr geil sein und physik und so
+            http://blog.selfshadow.com/publications/s2015-shading-course/activision/s2015_pbs_approx_models_slides.pdf
+            https://seblagarde.wordpress.com/2011/08/17/feeding-a-physical-based-lighting-mode/
+            http://blog.selfshadow.com/publications/s2012-shading-course/#course_content
+            http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_slides_v2.pdf
+            http://blog.selfshadow.com/publications/s2012-shading-course/hoffman/s2012_pbs_physics_math_slides.pdf
+            https://unity3d.com/learn/tutorials/topics/graphics/unity-5-lighting-and-rendering
+            Beim Link hierüber auch gute Informationen über Reflection Probes und Realtime-GI
+
+            https://seblagarde.wordpress.com/2011/08/17/feeding-a-physical-based-lighting-mode/
+            http://renderwonk.com/publications/s2010-shading-course/hoffman/s2010_physically_based_shading_hoffman_b_notes.pdf
+
+            REAL good shit
+            https://www.allegorithmic.com/pbr-guide
+            https://www.allegorithmic.com/system/files/software/download/build/PBR_Guide_Vol.1.pdf
+            https://www.allegorithmic.com/system/files/software/download/build/PBR_volume_02_rev05.pdf
+
+        › Subsurface Scattering
+            http://blog.selfshadow.com/publications/s2015-shading-course/burley/s2015_pbs_disney_bsdf_slides.pdf
         › Skybox
             http://threejs.org/examples/webgl_shaders_sky.html
         › Picking
@@ -192,6 +227,15 @@ High-Level:
             Das beste scheint hier aber immer zu sein entweder die Geometry von Artists machen zu lassen, dafür hab ich nicht die Kapazität
             http://www.gdcvault.com/play/1017837/Why-Render-Hidden-Objects-Cull
         › Lighting
+            http://www.3dgep.com/texturing-and-lighting-with-opengl-and-glsl/
+            http://ruh.li/GraphicsPhongBlinnPhong.html
+
+            http://ruh.li/GraphicsOrenNayar.html <- geil, junge
+            http://ruh.li/GraphicsWard.html <- auch geil
+            http://ruh.li/GraphicsCookTorrance.html
+            http://simonstechblog.blogspot.de/2011/12/microfacet-brdf.html
+
+            http://www.codinglabs.net/article_physically_based_rendering_cook_torrance.aspx
             http://sunandblackcat.com/tipFullView.php?l=eng&topicid=31&topic=Advanced-GLSL-Lighting-Models
             http://threejs.org/examples/webgl_lights_hemisphere.html
             https://www.reddit.com/r/gamedev/comments/4iusfg/realtime_shading_with_area_light_sources_with/

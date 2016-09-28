@@ -328,3 +328,7 @@ Vielleicht öfter mal Deferred und Forward Rendering mischen. Hair or Skin in Cr
 
 
 Jedes GL command muss eigentlich in einem bestimmtem GL context passieren. Ich bin nicht sicher, ob man sich den Stress wirklich machen will. Vielleicht window zum singleton machen oder so?
+
+-----------
+
+Fast Hashing: https://cyan4973.github.io/xxHash/
