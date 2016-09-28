@@ -431,3 +431,42 @@ https://docs.unrealengine.com/latest/INT/Engine/Rendering/Materials/HowTo/Refrac
 Es scheint als gebe es hier keine Möglichkeit, wie in Unity, für jeden Renderer/Pass einen eigenen, vollen Satz Shader (frag+vert) anzugeben, man hat nur die high-level-abstraction (mit surface und lighting model)
 
 Shader permuations: http://www.gamedev.net/topic/675184-shader-permutations/
+
+--------------------------------------
+
+```c++
+class Pass {
+    BlendMode mBlendMode;
+    RenderStateBlock mStateBlock;
+};
+
+class Material : public UniformList {
+    RenderStateBlock mStateBlock;
+    std::vector<std::pair<PassIndex, Pass> > mPasses;
+
+    ShaderProgram* getShader(PassIndex pass)
+};
+```
+
+im shader dann:
+```c++
+#define NGN_PASS_FORWARD_AMBIENT 1
+#define NGN_PASS_FORWARD_LIGHT 2
+
+#define NGN_PASS_RENDERER_DEFERRED(x) (x >= 100)
+#define NGN_PASS_DEFERRED_GBUFFER 100
+#define NGN_PASS_DEFERRED_LIGHTING 101
+
+[...]
+#define NGN_PASS NGN_PASS_FORWARD_AMBIENT
+[...]
+#if NGN_PASS == NGN_PASS_FORWARD_AMBIENT
+stuff
+#endif
+```
+
+Dann gibt es z.B. ein BaseBlinnPhongMaterial, dass einen surface-type und ein standard-lightingmodel + main implementiert.
+
+Wenn ein Material davon erbt, kann man dann Funktionen überschreiben
+
+Weil man nicht für jedes Material separat shader program objects cachen möchte, sollte man diese Generierung an eine Extra-Klasse delegieren, die Shader-Klasse
