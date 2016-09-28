@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <cstdio>
-#include <map>
+#include <unordered_map>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -48,7 +48,7 @@ namespace ngn {
     public:
 
         static Id nextId;
-        static std::map<Id, SceneNode*> nodeIdMap;
+        static std::unordered_map<Id, SceneNode*> nodeIdMap;
 
         static SceneNode* getById(Id id) {
             auto it = nodeIdMap.find(id);

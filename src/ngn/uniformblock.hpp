@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstring>
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <utility>
 
@@ -44,7 +44,7 @@ namespace ngn {
             }
         };
 
-        std::map<std::string, ParamData> mParameters;
+        std::unordered_map<std::string, ParamData> mParameters;
         std::vector<std::pair<std::string, const Texture*> > mTextures;
 
         void deleteParam(ParamData& param) {

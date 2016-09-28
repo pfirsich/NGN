@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #include <glad/glad.h>
@@ -30,8 +30,8 @@ namespace ngn {
         GLuint mProgramObject;
         std::vector<GLuint> mShaderObjects;
         Status mStatus;
-        std::map<std::string, ShaderVariableLocation> mAttributeLocations;
-        std::map<std::string, ShaderVariableLocation> mUniformLocations;
+        std::unordered_map<std::string, ShaderVariableLocation> mAttributeLocations;
+        std::unordered_map<std::string, ShaderVariableLocation> mUniformLocations;
 
     public:
         ShaderProgram();

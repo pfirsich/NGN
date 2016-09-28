@@ -2,7 +2,7 @@
 
 namespace ngn {
     SceneNode::Id SceneNode::nextId = 0;
-    std::map<SceneNode::Id, SceneNode*> SceneNode::nodeIdMap;
+    std::unordered_map<SceneNode::Id, SceneNode*> SceneNode::nodeIdMap;
 
     void SceneNode::updateTRSFromMatrix() {
         mPosition = glm::vec3(mMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));

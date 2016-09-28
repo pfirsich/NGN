@@ -1,5 +1,5 @@
 #include <ctime>
-#include <map>
+#include <unordered_map>
 #include <cstdarg>
 #include <cstdio>
 
@@ -20,7 +20,7 @@ namespace ngn {
         loggingHandlers.emplace_back(new FileLoggingHandler("log.txt", LogLevel::LVL_INFO));
     }
 
-    std::string formatString(const std::string& format, const std::map<std::string, std::string>& argMap) {
+    std::string formatString(const std::string& format, const std::unordered_map<std::string, std::string>& argMap) {
         std::string ret = "";
         for(std::string::size_type i = 0; i < format.size(); ++i) {
             if(format[i] == '{') {
@@ -62,7 +62,7 @@ namespace ngn {
     }
 
     void log(LogLevel level, const char* filename, int line, const char* format, ...) {
-        std::map<std::string, std::string> formatArguments;
+        std::unordered_map<std::string, std::string> formatArguments;
         unsigned intLevel = static_cast<unsigned>(level);
         formatArguments["levelname"] = intLevel < 5 ? levelNameMap[intLevel] : std::to_string(intLevel);
         formatArguments["filename"] = filename;
