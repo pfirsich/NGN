@@ -30,7 +30,7 @@ namespace ngn {
         return 1.0f * (SDL_GetPerformanceCounter() - start) / freq;
     }
 
-    void Window::create(const char* title, int width, int height, bool fullscreen, bool vsync, Uint32 createWindowFlags) {
+    void Window::create(const char* title, int width, int height, bool fullscreen, bool vsync, int msaaSamples, Uint32 createWindowFlags) {
         if(!firstCreation) {
             if(SDL_Init(SDL_INIT_VIDEO) < 0) {
                 LOG_CRITICAL("SDL_Init failed! - '%s'\n", SDL_GetError());
@@ -42,6 +42,12 @@ namespace ngn {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
+
+        LOG_DEBUG("samples: %d", msaaSamples);
+        if(msaaSamples > 0) {
+            SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+            SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaaSamples);
+        }
 
         Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | createWindowFlags | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
         mSDLWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
@@ -68,6 +74,7 @@ namespace ngn {
         }
 
         glEnable(GL_FRAMEBUFFER_SRGB);
+        if(msaaSamples > 0) glEnable(GL_MULTISAMPLE);
     }
 
     void Window::makeCurrent() const {

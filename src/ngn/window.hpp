@@ -26,12 +26,12 @@ namespace ngn {
         using ResizeSignalType = Signal<void(int, int)>; ResizeSignalType resizeSignal;
 
         Window() : mSDLWindow(nullptr) {}
-        Window(const char* title, int width, int height, bool fullscreen = false, bool vsync = true, Uint32 createWindowFlags = 0) {
-            create(title, width, height, fullscreen, vsync, createWindowFlags);
+        Window(const char* title, int width, int height, bool fullscreen = false, bool vsync = true, int msaaSamples = 0, Uint32 createWindowFlags = 0) {
+            create(title, width, height, fullscreen, vsync, msaaSamples, createWindowFlags);
         }
         ~Window() {SDL_DestroyWindow(mSDLWindow);}
 
-        void create(const char* title, int width, int height, bool fullscreen = false, bool vsync = true, Uint32 createWindowFlags = 0);
+        void create(const char* title, int width, int height, bool fullscreen = false, bool vsync = true, int msaaSamples = 0, Uint32 createWindowFlags = 0);
 
         void makeCurrent() const;
         void update();

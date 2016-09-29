@@ -59,7 +59,7 @@ void moveCamera(ngn::Camera& camera, float dt) {
 int main(int argc, char** args) {
     ngn::setupDefaultLogging();
 
-    ngn::Window window("ngn test", 1600, 900);
+    ngn::Window window("ngn test", 1600, 900, false, false, 8);
     ngn::Renderer renderer;
     ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
 
