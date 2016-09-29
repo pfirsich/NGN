@@ -65,8 +65,6 @@ Low-Level:
     just as the alpha component is linear
     so probably make this convention as well.
 
-    › Debug MODULATE and SCREEN?
-
     › light culling
     › batch lights (render multiple per pass)
     › Asset Manager
