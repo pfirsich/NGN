@@ -188,6 +188,9 @@ namespace ngn {
                                     queueEntry.stateBlock.setBlendEnabled(true);
 
                                     queueEntry.stateBlock.setDepthTest(queueEntry.stateBlock.getAdditionalPassDepthFunc());
+                                    // If the ambient pass already wrote depth, we don't have to do it again
+                                    // If it didn't then we certainly don't want to do it now
+                                    queueEntry.stateBlock.setDepthWrite(false);
                                     //LOG_DEBUG("light %d (obj %d) - transparent: %d\n", light->getId(), node->getId(), drawTransparent);
                                 }
                             }
