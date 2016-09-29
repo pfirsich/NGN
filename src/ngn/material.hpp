@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "shader.hpp"
+#include "shaderprogram.hpp"
 #include "renderstateblock.hpp"
 #include "uniformblock.hpp"
 #include "texture.hpp"

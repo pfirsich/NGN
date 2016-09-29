@@ -8,7 +8,7 @@
 
 #include "mesh_vertexdata.hpp"
 #include "mesh_vertexaccessor.hpp"
-#include "shader.hpp"
+#include "shaderprogram.hpp"
 #include "log.hpp"
 
 namespace ngn {

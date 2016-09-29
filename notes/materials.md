@@ -469,4 +469,25 @@ Dann gibt es z.B. ein BaseBlinnPhongMaterial, dass einen surface-type und ein st
 
 Wenn ein Material davon erbt, kann man dann Funktionen überschreiben
 
-Weil man nicht für jedes Material separat shader program objects cachen möchte, sollte man diese Generierung an eine Extra-Klasse delegieren, die Shader-Klasse
+Weil man nicht für jedes Material separat shader program objects cachen möchte, sollte man diese Generierung an eine Extra-Klasse delegieren, die Shader-Klasse, die auch eine Resource repräsentieren, sodass diese per Filename gecached werden und man eigentlich keine doppelten Shader bauen müssen sollte.
+
+```c++
+class Shader {
+    std::vector<ShaderVariable> uniforms;
+    std::vector<ShaderVariable> inVariables;
+    std::vector<Shader*> includes;  
+};
+```
+
+Um Funktionen überschreiben zu können, kann man vielleicht einfach #pragma verwenden (wobei alle directives ignoriert werden, die der compiler nicht kennt - laut spec)
+
+#pragma ngn slot:surface
+SurfaceOutput surface() {
+    
+}
+
+Und dann muss man einfach vorher festlegen, dass man alles von der ersten geschweiften klammer bis zur nächsten matchenden verwendet. - vermutlich indem man keine regex oder sowas benutzt, sondern einfach durch den string geht, checkt ob man in einem comment ist und dann klammern zählt, wenn man es nicht ist. 
+
+Dann speichert man diese Funktionen in einer "slots"-liste, die nach dem includen überschrieben werden können.
+
+Das funktionier eher so, dass man sich einfach merkt wo die sind und, wenn man einen slot überschreibt, der schon in einem include war, dann wird der einfach aus dem include rausgeschnitten. ein slot ist also ein name + start/end-index

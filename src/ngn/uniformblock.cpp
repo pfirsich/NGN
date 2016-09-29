@@ -1,5 +1,5 @@
 #include "uniformblock.hpp"
-#include "shader.hpp"
+#include "shaderprogram.hpp"
 
 namespace ngn {
     void UniformList::apply() {

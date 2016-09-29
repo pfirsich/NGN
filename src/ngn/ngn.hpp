@@ -3,7 +3,7 @@
 #include "camera.hpp"
 #include "mesh.hpp"
 #include "window.hpp"
-#include "shader.hpp"
+#include "shaderprogram.hpp"
 #include "log.hpp"
 #include "signal.hpp"
 #include "uniformblock.hpp"
@@ -12,3 +12,4 @@
 #include "material.hpp"
 #include "texture.hpp"
 #include "renderer.hpp"
+#include "shader.hpp"

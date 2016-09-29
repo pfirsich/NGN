@@ -74,10 +74,44 @@ int main(int argc, char** args) {
     uint32_t data = 0xFFFFFFFF;
     whitePixel->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 4, 1, 1, 4, false);
 
+    ngn::Shader baseMaterialVertexShader;
+    baseMaterialVertexShader.addUniform("modelview", "mat4");
+    baseMaterialVertexShader.addUniform("projection", "mat4");
+    baseMaterialVertexShader.addUniform("normalMatrix", "mat3");
+    baseMaterialVertexShader.addInVariable("attrPosition", "vec3", {{"location", "NGN_ATTR_POSITION"}});
+    baseMaterialVertexShader.addInVariable("attrNormal", "vec3", {{"location", "NGN_ATTR_NORMAL"}});
+    baseMaterialVertexShader.addInVariable("attrTexCoord", "vec2", {{"location", "NGN_ATTR_TEXCOORD0"}});
+    baseMaterialVertexShader.loadSourceFromFile("media/shaders/ngn/basicBase.vert");
+    LOG_DEBUG("%s", baseMaterialVertexShader.getFullString().c_str());
+
+    ngn::Shader baseMaterialFragmentShaderBASE;
+    baseMaterialFragmentShaderBASE.loadSourceFromFile("media/shaders/ngn/basicBase.frag");
+
+    ngn::Shader baseMaterialFragmentShaderLightingModel;
+    baseMaterialFragmentShaderLightingModel.loadSourceFromFile("media/shaders/ngn/basicBlinnPhongLightingModel.glsl");
+
+    ngn::Shader baseMaterialFragmentShader;
+    baseMaterialFragmentShader.include(&baseMaterialFragmentShaderBASE);
+    baseMaterialFragmentShader.include(&baseMaterialFragmentShaderLightingModel);
+    baseMaterialFragmentShader.setSource(R"(
+#pragma ngn slot:surface
+SurfaceProperties surface() {
+    SurfaceProperties ret;
+    vec4 tex = texture2D(baseTex, vsOut.texCoord);
+    tex.rgb = toLinear(tex.rgb);
+    ret.albedo = color.rgb * tex.rgb;
+    ret.alpha = color.a * tex.a;
+    ret.normal = normalize(vsOut.normal); // renormalize because of interpolation?
+    ret.emission = emissive;
+    ret.specularPower = shininess;
+    return ret;
+})");
+    LOG_DEBUG("frag: %s", baseMaterialFragmentShader.getFullString().c_str());
+
     ngn::ShaderProgram *shader = new ngn::ShaderProgram();
-    if(!shader->compileAndLinkFromFiles("media/frag.frag", "media/vert.vert")) {
-        return false;
-    }
+    if(!shader->compileFragShaderFromString(baseMaterialFragmentShader.getFullString().c_str())) return 1;
+    if(!shader->compileVertShaderFromString(baseMaterialVertexShader.getFullString().c_str())) return 1;
+    if(!shader->link()) return 1;
 
     ngn::Material baseMaterial(shader);
     baseMaterial.setTexture("baseTex", whitePixel);

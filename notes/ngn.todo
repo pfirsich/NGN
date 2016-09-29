@@ -32,7 +32,14 @@ Low-Level:
     Pull some types out of renderstateblock and make only a select number of exposed parameters available as material properties
     => renderstateblock private and the possibility for sanitizing properties
     ✔ Blending seems to be buggy - ADD, MODULATE and SCREEN in particular @done (27.09.16 21:12)
-    › Materials
+    Materials:
+        YAML integrieren, VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
+        Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
+        dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
+        ✔ Shader class that can include variables, has overwriteable function slots and is aware of uniforms/attributes @done (29.09.16 04:33)
+        › Extend Material class so that it handles all the passes and associated defines properly
+        › Integrate both into one another
+        › YAML loading for both
     › Deferred Shading
     › PBR
     › Multiple passes
@@ -71,10 +78,6 @@ Low-Level:
     the values can have different handlers, ones that just save the last written value, ones that average, ones that average in a window, etc.
     maybe every value has the option to query all these metrics
     for binds, recompiles, etc. - I need text output!
-    › Materials
-    YAML integrieren, VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
-    Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
-    dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
 
     › Vertex Format
     2_10_10_10 für Normals, 2›USHORT für TexCoord
@@ -169,6 +172,14 @@ High-Level:
             https://unity3d.com/learn/tutorials/topics/graphics/unity-5-lighting-and-rendering
             Beim Link hierüber auch gute Informationen über Reflection Probes und Realtime-GI
 
+            https://seblagarde.wordpress.com/2013/04/29/memo-on-fresnel-equations/
+
+            http://www.filmicworlds.com/2014/03/17/fresnel-f0-is-not-direct-reflectance/ Super guter Shit über F0
+
+            https://seblagarde.wordpress.com/2011/08/17/hello-world/
+
+            https://www.reddit.com/r/opengl/comments/3pro68/implementing_pbr/
+
             http://www.marmoset.co/toolbag/learn/pbr-conversion
 
             https://seblagarde.wordpress.com/2011/08/17/feeding-a-physical-based-lighting-mode/
@@ -194,6 +205,8 @@ High-Level:
             http://www.slideshare.net/TiagoAlexSousa/rendering-technologies-from-crysis-3-gdc-2013
             http://tomgillen.blogspot.de/2010/07/gbuffer-layout.html
             https://urho3d.github.io/documentation/HEAD/_rendering_modes.html
+            siehe: intBitsToFloat und floatBitsToInt!
+            http://stefan-s.net/?p=66 - gBuffer Layout in Unity 5
         › Bloom
             Unreal Bloom - http://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
         › HDR

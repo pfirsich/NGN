@@ -1,5 +1,3 @@
-#version 330 core
-
 in VSOUT {
     vec2 texCoord;
     vec3 normal;
@@ -41,37 +39,18 @@ struct SurfaceProperties {
     float alpha;
 };
 
+#pragma ngn slot:surface
 SurfaceProperties surface() {
-    SurfaceProperties ret;
-    vec4 tex = texture2D(baseTex, vsOut.texCoord);
-    tex.rgb = toLinear(tex.rgb);
-    ret.albedo = color.rgb * tex.rgb;
-    ret.alpha = color.a * tex.a;
-    ret.normal = normalize(vsOut.normal); // renormalize because of interpolation?
-    ret.emission = emissive;
-    ret.specularPower = shininess;
-    return ret;
+    THIS WILL ALWAYS BE OVERWRITTEN
+    I CAN WRITE ANYTHING I WANT IN HERE // }
+    /* } */
 }
 
-vec4 lightingModel(in SurfaceProperties surface, in vec3 eyeDir, in vec3 lightDir, in float lightAtten) {
-    float rimLight = smoothstep(0.35, 1.0, 1.0 - max(dot(eyeDir, surface.normal), 0.0)) * 0.8;
-    rimLight = 0.0;
-    float lambert = max(dot(lightDir, surface.normal), 0.0) + rimLight;
+// this is how you declare an empty slot! "{}"! only forward declaring it will not work (yet)
+#pragma ngn slot:lightingModel
+vec4 lightingModel(in SurfaceProperties surface, in vec3 eyeDir, in vec3 lightDir, in float lightAtten) {}
 
-    //vec3 reflectEye = normalize(reflect(-eyeDir, surface.normal));
-    //float specular = pow(max(dot(lightDir, reflectEye), 0.0), surface.specularPower);
-
-    // blinn
-    float specular = 0.0;
-    if(dot(lightDir, surface.normal) > 0.0) {
-        vec3 half = normalize(eyeDir + lightDir);
-        specular = pow(max(dot(surface.normal, half), 0.0), shininess);
-    }
-
-    const vec3 specColor = vec3(1.0, 1.0, 1.0);
-    return vec4((surface.albedo * lambert + specular * specColor) * light.color * lightAtten, surface.alpha);
-}
-
+#pragma ngn slot:frag
 void main() {
     SurfaceProperties _surf = surface();
 
