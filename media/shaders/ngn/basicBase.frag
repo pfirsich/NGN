@@ -46,9 +46,9 @@ SurfaceProperties surface() {
     /* } */
 }
 
-// this is how you declare an empty slot! "{}"! only forward declaring it will not work (yet)
+// you may forward declare open slots, or provide an empty body "{}".
 #pragma ngn slot:lightingModel
-vec4 lightingModel(in SurfaceProperties surface, in vec3 eyeDir, in vec3 lightDir, in float lightAtten) {}
+vec4 lightingModel(in SurfaceProperties surface, in vec3 eyeDir, in vec3 lightDir, in float lightAtten);
 
 #pragma ngn slot:frag
 void main() {

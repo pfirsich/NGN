@@ -71,45 +71,51 @@ namespace ngn {
                             pragmaInfo.nextBlockStart = i;
                             break;
                         }
+                        // If we find a ';' before we find a '{', it's probably a forward declaration
+                        if(str[i] == ';') {
+                            break;
+                        }
                     }
                     if(pragmaInfo.nextBlockStart == std::string::npos) {
-                        i = pragmaInfo.nextLineStart;
-                        continue;
-                    }
-
-                    bool inComment = false;
-                    bool multilineComment = false;
-                    int braceCounter = 0;
-                    for(; i < str.length(); ++i) {
-                        if(str[i] == '{' && !inComment) braceCounter += 1;
-                        if(str[i] == '}' && !inComment) {
-                            braceCounter -= 1;
-                            if(braceCounter == 0) {
-                                pragmaInfo.nextBlockEnd = i;
-                                pragmaInfo.lineNextBlockEnd = getLineInString(str, i);
-                                break;
+                        // If forward declared, pretend it's a block that has size 0 right after the declaration
+                        pragmaInfo.nextBlockStart = i;
+                        pragmaInfo.nextBlockEnd = i;
+                        pragmaInfo.lineNextBlockEnd = getLineInString(str, i);
+                    } else {
+                        bool inComment = false;
+                        bool multilineComment = false;
+                        int braceCounter = 0;
+                        for(; i < str.length(); ++i) {
+                            if(str[i] == '{' && !inComment) braceCounter += 1;
+                            if(str[i] == '}' && !inComment) {
+                                braceCounter -= 1;
+                                if(braceCounter == 0) {
+                                    pragmaInfo.nextBlockEnd = i;
+                                    pragmaInfo.lineNextBlockEnd = getLineInString(str, i);
+                                    break;
+                                }
+                            }
+                            if(str.substr(i, 2) == "//") {
+                                inComment = true;
+                                multilineComment = false;
+                            }
+                            if(str.substr(i, 2) == "/*") {
+                                inComment = true;
+                                multilineComment = true;
+                            }
+                            if(inComment) {
+                                if(multilineComment) {
+                                    if(str.substr(i, 2) == "*/") inComment = false;
+                                } else {
+                                    if(str[i] == '\n') inComment = false;
+                                }
                             }
                         }
-                        if(str.substr(i, 2) == "//") {
-                            inComment = true;
-                            multilineComment = false;
-                        }
-                        if(str.substr(i, 2) == "/*") {
-                            inComment = true;
-                            multilineComment = true;
-                        }
-                        if(inComment) {
-                            if(multilineComment) {
-                                if(str.substr(i, 2) == "*/") inComment = false;
-                            } else {
-                                if(str[i] == '\n') inComment = false;
-                            }
-                        }
-                    }
 
-                    if(pragmaInfo.nextBlockEnd == std::string::npos) {
-                        LOG_ERROR("Found no matching '}' to '{' of the block after pragma '%s'", pragmaInfo.name.c_str());
-                        return false;
+                        if(pragmaInfo.nextBlockEnd == std::string::npos) {
+                            LOG_ERROR("Found no matching '}' to '{' of the block after pragma '%s'", pragmaInfo.name.c_str());
+                            return false;
+                        }
                     }
 
                     mPragmas.push_back(pragmaInfo);
