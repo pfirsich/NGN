@@ -27,7 +27,7 @@ namespace ngn {
             Mesh* mesh;
             RenderStateBlock stateBlock;
 
-            RenderQueueEntry(Material* mat, Material::Pass* pass, Mesh* _mesh) {
+            inline RenderQueueEntry(Material* mat, Material::Pass* pass, Mesh* _mesh) {
                 shaderProgram = pass->getShaderProgram();
                 uniformBlocks.push_back(mat);
                 mesh = _mesh;
@@ -39,7 +39,7 @@ namespace ngn {
             //LOG_DEBUG("------- render");
             for(auto& entry : queue) {
                 entry.stateBlock.apply();
-                entry.shaderProgram->bind();
+                if(entry.shaderProgram) entry.shaderProgram->bind();
                 for(auto block : entry.uniformBlocks) block->apply();
                 entry.perEntryUniforms.apply();
                 //LOG_DEBUG("blend enabled: %d, factors: 0x%X, 0x%X, depth write: %d, depth func: 0x%X", RenderStateBlock::currentBlendEnabled,
