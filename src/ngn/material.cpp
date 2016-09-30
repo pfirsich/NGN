@@ -1,8 +1,9 @@
 #include "material.hpp"
+#include "renderer.hpp"
 
 namespace ngn {
     void Material::validate() const {
-        if(mLit && (mBlendMode == BlendMode::MODULATE || mBlendMode == BlendMode::SCREEN))
+        if((mBlendMode == BlendMode::MODULATE || mBlendMode == BlendMode::SCREEN) && (hasPass(Renderer::LIGHT_PASS)))
             LOG_WARNING("Blend mode MODULATE and SCREEN don't work properly with lit materials!");
     }
 

@@ -450,6 +450,7 @@ class Material : public UniformList {
 
 im shader dann:
 ```c++
+// Diese defines sollten irgendwie vom renderer bereitgestellt werden
 #define NGN_PASS_FORWARD_AMBIENT 1
 #define NGN_PASS_FORWARD_LIGHT 2
 

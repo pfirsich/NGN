@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <vector>
 
@@ -11,9 +13,9 @@ namespace ngn {
     class Shader {
     public:
         struct ShaderVariable {
-            enum class ShaderVariableType {
+            /*enum class ShaderVariableType {
                 FLOAT, BOOL, INT, VEC2, VEC3, VEC4, TEXTURE
-            };
+            };*/
 
             std::string name;
             std::string type;
@@ -38,18 +40,25 @@ namespace ngn {
         };
 
     private:
+        static bool staticInitialized;
+
         std::vector<ShaderVariable> mUniforms;
         std::vector<ShaderVariable> mInVariables;
         std::vector<const Shader*> mIncludes;
         std::vector<PragmaInfo> mPragmas;
         std::string mSource;
 
+        static void staticInitialize();
+
         bool parsePragmas(const std::string& str);
         std::vector<std::string> getPragmaSlots() const;
 
     public:
-        Shader() {}
+        static std::string globalShaderPreamble; // I really don't like this
 
+        Shader() {if(!staticInitialized) staticInitialize();}
+
+        //TODO: Avoid multiple inclusion of the same shader
         void include(const Shader* shdr) {mIncludes.push_back(shdr);}
 
         void addUniform(const std::string& name, const std::string& type, std::vector<std::pair<std::string, std::string> > layoutQualifiers = {}) {
@@ -65,7 +74,7 @@ namespace ngn {
 
         std::vector<PragmaInfo> getPragmas() const {return mPragmas;}
 
-        std::string getFullString(const std::vector<std::string>& overrideSlots = {}, bool versionString = true) const;
+        std::string getFullString(const std::string& preamble = "", const std::vector<std::string>& overrideSlots = {}, bool globalPreamble = true) const;
 
         bool loadFromFile(const char* file);
         bool loadSourceFromFile(const char* file);

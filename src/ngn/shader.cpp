@@ -3,8 +3,47 @@
 
 #include "log.hpp"
 #include "shader.hpp"
+#include "mesh_vertexattribute.hpp"
 
 namespace ngn {
+    bool Shader::staticInitialized = false;
+    // I really don't like this
+    // Also I'm not a fan of the values being hardcoded here. But there is not actually helpful way of doing this programmatically
+    std::string Shader::globalShaderPreamble = "#version 330 core\n\n";
+
+
+    void Shader::staticInitialize() {
+        // ¯\_(ツ)_/¯
+        #define STRINGIFY_ATTR_DEFINE(x) ("NGN_ATTR_" #x " " + std::to_string(static_cast<int>(AttributeType::x)))
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(POSITION) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(NORMAL) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(TANGENT) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(BITANGENT) + "\n";
+
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(COLOR0) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(COLOR1) + "\n";
+
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(BONEINDICES) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(BONEWEIGHTS) + "\n";
+
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(TEXCOORD0) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(TEXCOORD1) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(TEXCOORD2) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(TEXCOORD3) + "\n";
+
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM0) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM1) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM2) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM3) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM4) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM5) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM6) + "\n";
+        globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM7) + "\n";
+        globalShaderPreamble += "\n";
+
+        staticInitialized = true;
+    }
+
     std::string Shader::ShaderVariable::getString(const std::string& qualifier) const {
         std::string ret;
 
@@ -145,35 +184,11 @@ namespace ngn {
         }
     }
 
-    const char* PREAMBLE = R"(
-#version 330 core
-
-#define NGN_ATTR_POSITION 0
-#define NGN_ATTR_NORMAL 1
-#define NGN_ATTR_TANGENT 2
-#define NGN_ATTR_BITANGENT 3
-#define NGN_ATTR_COLOR0 4
-#define NGN_ATTR_COLOR1 5
-#define NGN_ATTR_BONEINDICES 6
-#define NGN_ATTR_BONEWEIGHTS 7
-#define NGN_ATTR_TEXCOORD0 8
-#define NGN_ATTR_TEXCOORD1 9
-#define NGN_ATTR_TEXCOORD2 10
-#define NGN_ATTR_TEXCOORD3 11
-#define NGN_ATTR_CUSTOM0 12
-#define NGN_ATTR_CUSTOM1 13
-#define NGN_ATTR_CUSTOM2 14
-#define NGN_ATTR_CUSTOM3 15
-#define NGN_ATTR_CUSTOM4 16
-#define NGN_ATTR_CUSTOM5 17
-#define NGN_ATTR_CUSTOM6 18
-#define NGN_ATTR_CUSTOM7 19
-)";
-
-    std::string Shader::getFullString(const std::vector<std::string>& overrideSlots, bool versionString) const {
+    std::string Shader::getFullString(const std::string& preamble, const std::vector<std::string>& overrideSlots, bool globalPreamble) const {
         //LOG_DEBUG("dbg");
         // If you don't specify the version, it will assume OpenGL 1.1
-        std::string ret = versionString ? PREAMBLE : "";
+        std::string ret = globalPreamble ? globalShaderPreamble : "";
+        ret += preamble;
 
         std::vector<std::string> slots(overrideSlots);
         for(auto& pragma : mPragmas) slots.emplace_back(pragma.name);
@@ -181,7 +196,7 @@ namespace ngn {
         std::vector<std::string> parts;
         for(int i = mIncludes.size() - 1; i >= 0; i -= 1) {
             const Shader* include = mIncludes[i];
-            parts.insert(parts.begin(), include->getFullString(slots, false));
+            parts.insert(parts.begin(), include->getFullString("", slots, false));
             mergeIntoVectorSet(slots, include->getPragmaSlots());
         }
         for(auto& part : parts) ret += part + "\n";

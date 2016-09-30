@@ -27,13 +27,11 @@ namespace ngn {
             Mesh* mesh;
             RenderStateBlock stateBlock;
 
-            RenderQueueEntry(SceneNode* node) {
-                Material* mat = node->getMaterial();
-                assert(mat != nullptr); // Rendering a mesh without a material is impossible
-                shaderProgram = mat->mShader;
-                mesh = node->getMesh();
-                stateBlock = mat->mStateBlock;
+            RenderQueueEntry(Material* mat, Material::Pass* pass, Mesh* _mesh) {
+                shaderProgram = pass->getShaderProgram();
                 uniformBlocks.push_back(mat);
+                mesh = _mesh;
+                stateBlock = pass->getStateBlock();
             }
         };
 
@@ -54,6 +52,9 @@ namespace ngn {
     private:
         int mRendererIndex;
 
+        static bool staticInitialized;
+        static void staticInitialize();
+
     public:
         // Variables that store the current GL state
         static glm::vec4 currentClearColor;
@@ -64,6 +65,11 @@ namespace ngn {
         static bool currentScissorTest;
 
         static int nextRendererIndex;
+
+        // If other renderers start defining these, they have to take care of not clashing with others themselves
+        // Also it helps if their values are consecutive, so the staticInitialize-method can also easily implement a renderer query define
+        static const int AMBIENT_PASS = 0;
+        static const int LIGHT_PASS = 1;
 
         bool autoClear, autoClearColor, autoClearDepth, autoClearStencil;
 
@@ -80,6 +86,7 @@ namespace ngn {
         Renderer() : autoClear(true), autoClearColor(true), autoClearDepth(true), autoClearStencil(false),
                 clearColor(currentClearColor), clearDepth(currentClearDepth), clearStencil(currentClearStencil), scissorTest(currentScissorTest),
                 viewport(currentViewport), scissor(currentScissor) {
+            if(!staticInitialized) staticInitialize();
             mRendererIndex = nextRendererIndex++;
             if(mRendererIndex >= SceneNode::MAX_RENDERDATA_COUNT)
                 LOG_CRITICAL("More than SceneNode::MAX_RENDERDATA_COUNT(%d) renderers!", SceneNode::MAX_RENDERDATA_COUNT);

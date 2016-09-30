@@ -42,6 +42,8 @@ Low-Level:
             › Maybe let the Material tell the Shader it's uniforms?
             Probably not, since it's nice to separate logic (uniforms) and data (material values)
         › YAML loading for both
+
+    › Replace pointers with references if nullptr is not an option! - For returns and parameters!
     › Deferred Shading
     › PBR
     › Multiple passes
@@ -98,6 +100,11 @@ Low-Level:
     https://open.gl/framebuffers
 
     › getSurfaceArea für Meshes
+
+    › Implement multiple windows properly / GLContext abstraction, properly track state accordingly
+    At the moment every window creates it's own context and they cannot be shared between different windows
+    Also the OGL state (ShaderProgram, Texture, RenderStateBlock) is handled in static variables, there should be a current-context global and that should contain the state. Also shader caches and uniform locations and stuff have to be context aware.
+    https://forums.libsdl.org/viewtopic.php?t=9884&sid=0c6cf97b3791991ba61f169498385a70
 
 Mid-Level:
     › Skinning

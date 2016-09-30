@@ -82,9 +82,13 @@ int main(int argc, char** args) {
     baseMaterialVertexShader.addInVariable("attrNormal", "vec3", {{"location", "NGN_ATTR_NORMAL"}});
     baseMaterialVertexShader.addInVariable("attrTexCoord", "vec2", {{"location", "NGN_ATTR_TEXCOORD0"}});
     baseMaterialVertexShader.loadSourceFromFile("media/shaders/ngn/basicBase.vert");
-    LOG_DEBUG("%s", baseMaterialVertexShader.getFullString().c_str());
 
     ngn::Shader baseMaterialFragmentShaderBASE;
+    baseMaterialFragmentShaderBASE.addUniform("color", "vec4");
+    baseMaterialFragmentShaderBASE.addUniform("baseTex", "sampler2D");
+    baseMaterialFragmentShaderBASE.addUniform("shininess", "float");
+    baseMaterialFragmentShaderBASE.addUniform("ambient", "vec3");
+    baseMaterialFragmentShaderBASE.addUniform("emissive", "vec3");
     baseMaterialFragmentShaderBASE.loadSourceFromFile("media/shaders/ngn/basicBase.frag");
 
     ngn::Shader baseMaterialFragmentShaderLightingModel;
@@ -106,19 +110,15 @@ SurfaceProperties surface() {
     ret.specularPower = shininess;
     return ret;
 })");
-    LOG_DEBUG("frag: %s", baseMaterialFragmentShader.getFullString().c_str());
 
-    ngn::ShaderProgram *shader = new ngn::ShaderProgram();
-    if(!shader->compileFragShaderFromString(baseMaterialFragmentShader.getFullString().c_str())) return 1;
-    if(!shader->compileVertShaderFromString(baseMaterialVertexShader.getFullString().c_str())) return 1;
-    if(!shader->link()) return 1;
-
-    ngn::Material baseMaterial(shader);
+    ngn::Material baseMaterial(baseMaterialFragmentShader, baseMaterialVertexShader);
     baseMaterial.setTexture("baseTex", whitePixel);
     baseMaterial.setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     baseMaterial.setVector3("ambient", glm::vec3(0.1f));
     baseMaterial.setVector3("emissive", glm::vec3(0.0f));
     baseMaterial.setFloat("shininess", 512.0f);
+    baseMaterial.addPass(ngn::Renderer::AMBIENT_PASS);
+    baseMaterial.addPass(ngn::Renderer::LIGHT_PASS);
 
     ngn::VertexFormat vFormat;
     vFormat.add(ngn::AttributeType::POSITION, 3, ngn::AttributeDataType::F32);
@@ -183,7 +183,8 @@ SurfaceProperties surface() {
     pointLight.setMaterial(new ngn::Material(baseMaterial), true);
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pointLight.getMaterial()->setVector3("emissive", pointLight.getLightData()->getColor());
-    pointLight.getMaterial()->setUnlit();
+    pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);
+    //pointLight.getMaterial()->setUnlit();
     scene.add(&pointLight);
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));

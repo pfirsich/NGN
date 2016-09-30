@@ -1,6 +1,7 @@
 #include <stack>
 
 #include "renderer.hpp"
+#include "shader.hpp"
 
 namespace ngn {
     // These values represent the OpenGL default values
@@ -15,6 +16,15 @@ namespace ngn {
     bool Renderer::currentScissorTest = false;
 
     int Renderer::nextRendererIndex = 0;
+    bool Renderer::staticInitialized = false;
+
+    void Renderer::staticInitialize() {
+        Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_AMBIENT " + std::to_string(AMBIENT_PASS) + "\n";
+        Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_LIGHT " + std::to_string(LIGHT_PASS) + "\n";
+        Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD(x) (x >= " + std::to_string(AMBIENT_PASS) + " && x <= " + std::to_string(LIGHT_PASS) + ")\n\n";
+
+        Renderer::staticInitialized = true;
+    }
 
     void Renderer::updateState() const {
         if(currentViewport != viewport) {
@@ -141,13 +151,16 @@ namespace ngn {
                         assert(mat != nullptr);
 
                         if(drawTransparent == mat->mStateBlock.getBlendEnabled()) {
-                            renderQueue.emplace_back(node);
-                            RenderQueueEntry& queueEntry = renderQueue.back();
-                            RendererData* rendererData = node->rendererData[mRendererIndex];
-                            renderQueue.back().uniformBlocks.push_back(&(rendererData->uniforms));
+                            Material::Pass* pass = mat->getPass(AMBIENT_PASS);
 
-                            queueEntry.perEntryUniforms.setInteger("ambientPass", 1);
-                            //LOG_DEBUG("ambient (obj %d) - transparent: %d\n", node->getId(), drawTransparent);
+                            if(pass) {
+                                renderQueue.emplace_back(mat, pass, mesh);
+                                RenderQueueEntry& entry = renderQueue.back();
+
+                                RendererData* rendererData = node->rendererData[mRendererIndex];
+                                entry.uniformBlocks.push_back(&(rendererData->uniforms));
+                                //LOG_DEBUG("ambient (obj %d) - transparent: %d\n", node->getId(), drawTransparent);
+                            }
                         }
                     }
                 }
@@ -159,39 +172,43 @@ namespace ngn {
                     if(mesh) {
                         Material* mat = node->getMaterial();
                         assert(mat != nullptr);
-                        if(drawTransparent == mat->mStateBlock.getBlendEnabled() && mat->getLit()) {
-                            for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
-                                // later: sort by influence and take the N most influential lights
-                                for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
-                                    SceneNode* light = lightLists[ltype][l];
-                                    LightData* lightData = light->getLightData();
+                        if(drawTransparent == mat->mStateBlock.getBlendEnabled()) {
+                            Material::Pass* pass = mat->getPass(LIGHT_PASS);
 
-                                    renderQueue.emplace_back(node);
-                                    RenderQueueEntry& queueEntry = renderQueue.back();
-                                    RendererData* rendererData = node->rendererData[mRendererIndex];
-                                    queueEntry.uniformBlocks.push_back(&(rendererData->uniforms));
+                            if(pass) {
+                                for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
+                                    // later: sort by influence and take the N most influential lights
+                                    for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
+                                        SceneNode* light = lightLists[ltype][l];
+                                        LightData* lightData = light->getLightData();
 
-                                    // TODO: Move this into a separate uniform block per light!
-                                    queueEntry.perEntryUniforms.setInteger("ambientPass", 0);
-                                    queueEntry.perEntryUniforms.setInteger("light.type", static_cast<int>(lightData->getType()));
-                                    queueEntry.perEntryUniforms.setFloat("light.range", lightData->getRange());
-                                    queueEntry.perEntryUniforms.setVector3("light.color", lightData->getColor());
-                                    queueEntry.perEntryUniforms.setVector3("light.position", glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
-                                    queueEntry.perEntryUniforms.setVector3("light.direction", glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
+                                        renderQueue.emplace_back(mat, pass, mesh);
+                                        RenderQueueEntry& entry = renderQueue.back();
 
-                                    std::pair<RenderStateBlock::BlendFactor, RenderStateBlock::BlendFactor> blendFactors = queueEntry.stateBlock.getBlendFactors();
-                                    blendFactors.second = RenderStateBlock::BlendFactor::ONE;
-                                    if(!drawTransparent) {
-                                        blendFactors.first = RenderStateBlock::BlendFactor::ONE;
+                                        RendererData* rendererData = node->rendererData[mRendererIndex];
+                                        entry.uniformBlocks.push_back(&(rendererData->uniforms));
+
+                                        // TODO: Move this into a separate uniform block per light!
+                                        entry.perEntryUniforms.setInteger("ngn_light.type",      static_cast<int>(lightData->getType()));
+                                        entry.perEntryUniforms.setFloat(  "ngn_light.range",     lightData->getRange());
+                                        entry.perEntryUniforms.setVector3("ngn_light.color",     lightData->getColor());
+                                        entry.perEntryUniforms.setVector3("ngn_light.position",  glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
+                                        entry.perEntryUniforms.setVector3("ngn_light.direction", glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
+
+                                        std::pair<RenderStateBlock::BlendFactor, RenderStateBlock::BlendFactor> blendFactors = entry.stateBlock.getBlendFactors();
+                                        blendFactors.second = RenderStateBlock::BlendFactor::ONE;
+                                        if(!drawTransparent) {
+                                            blendFactors.first = RenderStateBlock::BlendFactor::ONE;
+                                        }
+                                        entry.stateBlock.setBlendFactors(blendFactors);
+                                        entry.stateBlock.setBlendEnabled(true);
+
+                                        entry.stateBlock.setDepthTest(entry.stateBlock.getAdditionalPassDepthFunc());
+                                        // If the ambient pass already wrote depth, we don't have to do it again
+                                        // If it didn't then we certainly don't want to do it now
+                                        entry.stateBlock.setDepthWrite(false);
+                                        //LOG_DEBUG("light %d (obj %d) - transparent: %d\n", light->getId(), node->getId(), drawTransparent);
                                     }
-                                    queueEntry.stateBlock.setBlendFactors(blendFactors);
-                                    queueEntry.stateBlock.setBlendEnabled(true);
-
-                                    queueEntry.stateBlock.setDepthTest(queueEntry.stateBlock.getAdditionalPassDepthFunc());
-                                    // If the ambient pass already wrote depth, we don't have to do it again
-                                    // If it didn't then we certainly don't want to do it now
-                                    queueEntry.stateBlock.setDepthWrite(false);
-                                    //LOG_DEBUG("light %d (obj %d) - transparent: %d\n", light->getId(), node->getId(), drawTransparent);
                                 }
                             }
                         }

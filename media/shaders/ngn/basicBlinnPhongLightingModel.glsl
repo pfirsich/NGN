@@ -12,7 +12,7 @@ vec4 blinnPhongLightingModel(in SurfaceProperties surface, in vec3 eyeDir, in ve
     }
 
     const vec3 specColor = vec3(1.0, 1.0, 1.0);
-    return vec4((surface.albedo * lambert + specular * specColor) * light.color * lightAtten, surface.alpha);
+    return vec4((surface.albedo * lambert + specular * specColor) * lightAtten, surface.alpha);
 }
 
 #pragma ngn slot:lightingModel
