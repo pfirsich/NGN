@@ -4,7 +4,12 @@ in VSOUT {
     vec3 eye; // The inverse = position
 } vsOut;
 
-out vec4 ngn_fragColor;
+/*********** PUT THIS AWAY ***********/
+// for both frag and vert
+vec3 toLinear(in vec3 col) {
+    return pow(col, vec3(2.2));
+}
+/*************************************/
 
 struct SurfaceProperties {
     vec3 albedo;
@@ -14,34 +19,12 @@ struct SurfaceProperties {
     float alpha;
 };
 
-/*********** PUT THIS AWAY ***********/
-const int NGN_LIGHT_TYPE_POINT = 0;
-const int NGN_LIGHT_TYPE_DIR = 1;
-const int NGN_LIGHT_TYPE_SPOT = 2;
-
-struct ngn_LightParameters {
-    int type;
-    float range;
-    vec3 color;
-    vec3 position; // view/camera space
-    vec3 direction; // view/camera space
-};
-uniform ngn_LightParameters ngn_light;
-
-// for both frag and vert
-vec3 toLinear(in vec3 col) {
-    return pow(col, vec3(2.2));
-}
-/*************************************/
-
-#pragma ngn slot:surface
-SurfaceProperties surface() {
-    THIS WILL ALWAYS BE OVERWRITTEN
-    I CAN WRITE ANYTHING I WANT IN HERE // }
-    /* } */
-}
+out vec4 ngn_fragColor;
 
 // you may forward declare open slots, or provide an empty body "{}".
+#pragma ngn slot:surface
+SurfaceProperties surface();
+
 #pragma ngn slot:lightingModel
 vec4 lightingModel(in SurfaceProperties surface, in vec3 eyeDir, in vec3 lightDir, in float lightAtten);
 
@@ -55,7 +38,7 @@ void main() {
         vec3 E = normalize(vsOut.eye);
         vec3 L;
         float L_atten;
-        if(ngn_light.type == NGN_LIGHT_TYPE_DIR) {
+        if(ngn_light.type == NGN_LIGHT_TYPE_DIRECTIONAL) {
             L = -ngn_light.direction;
             L_atten = 1.0;
         } else if(ngn_light.type == NGN_LIGHT_TYPE_POINT) {

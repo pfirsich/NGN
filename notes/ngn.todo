@@ -37,7 +37,7 @@ Low-Level:
         Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
         dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
         ✔ Shader class that can include variables, has overwriteable function slots and is aware of uniforms/attributes @done (29.09.16 04:33)
-        › Extend Material class so that it handles all the passes and associated defines properly
+        ✔ Extend Material class so that it handles all the passes and associated defines properly @done (30.09.16 19:18)
         Integrate both into one another:
             › Maybe let the Material tell the Shader it's uniforms?
             Probably not, since it's nice to separate logic (uniforms) and data (material values)

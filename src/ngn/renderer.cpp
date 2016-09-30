@@ -22,6 +22,23 @@ namespace ngn {
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_AMBIENT " + std::to_string(AMBIENT_PASS) + "\n";
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_LIGHT " + std::to_string(LIGHT_PASS) + "\n";
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD(x) (x >= " + std::to_string(AMBIENT_PASS) + " && x <= " + std::to_string(LIGHT_PASS) + ")\n\n";
+        Shader::globalShaderPreamble += "\n";
+
+        #define STRINGIFY_LIGHT_TYPE(x) ("NGN_LIGHT_TYPE_" #x " " + std::to_string(static_cast<int>(LightData::LightType::x)))
+        Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(POINT) + "\n";
+        Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(DIRECTIONAL) + "\n";
+        Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(SPOT) + "\n";
+        Shader::globalShaderPreamble +=
+R"(struct ngn_LightParameters {
+    int type;
+    float range;
+    vec3 color;
+    vec3 position; // view/camera space
+    vec3 direction; // view/camera space
+};
+uniform ngn_LightParameters ngn_light;
+
+)";
 
         Renderer::staticInitialized = true;
     }

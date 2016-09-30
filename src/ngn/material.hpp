@@ -89,23 +89,21 @@ namespace ngn {
 
         public:
             Pass(Material& mat, int index, const Shader* frag = nullptr, const Shader* vert = nullptr) :
-                    mMaterial(mat), mPassIndex(index), mStateBlock(nullptr), mVertexShader(vert), mFragmentShader(frag), mShaderProgram(nullptr) {
+                    mMaterial(mat), mPassIndex(index), mStateBlock(nullptr), mVertexShader(vert), mFragmentShader(frag) {
                 //mFragmentShader->include(&(mMaterial.getFragmentShader()));
                 //mVertexShader->include(&(mMaterial.getVertexShader()));
+                std::string passDefine = "#define NGN_PASS " + std::to_string(mPassIndex) + "\n";
+                uint64_t permutationHash = mPassIndex;
+                if(frag == nullptr) frag = &(mMaterial.getFragmentShader());
+                if(vert == nullptr) vert = &(mMaterial.getVertexShader());
+                mShaderProgram = getShaderPermutation(permutationHash, *frag, *vert, passDefine, passDefine);
             }
 
             ~Pass() {
                 delete mStateBlock;
             }
 
-            ShaderProgram* getShaderProgram() {
-                if(mShaderProgram == nullptr) { // simple caching
-                    std::string passDefine = "#define NGN_PASS " + std::to_string(mPassIndex) + "\n";
-                    uint64_t permutationHash = mPassIndex;
-                    const Shader& frag = mFragmentShader ? *mFragmentShader : mMaterial.getFragmentShader();
-                    const Shader& vert = mVertexShader ? *mVertexShader : mMaterial.getVertexShader();
-                    mShaderProgram = getShaderPermutation(permutationHash, frag, vert, passDefine, passDefine);
-                }
+            ShaderProgram* getShaderProgram() const {
                 return mShaderProgram;
             }
 

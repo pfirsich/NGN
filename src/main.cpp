@@ -83,33 +83,20 @@ int main(int argc, char** args) {
     baseMaterialVertexShader.addInVariable("attrTexCoord", "vec2", {{"location", "NGN_ATTR_TEXCOORD0"}});
     baseMaterialVertexShader.loadSourceFromFile("media/shaders/ngn/basicBase.vert");
 
-    ngn::Shader baseMaterialFragmentShaderBASE;
-    baseMaterialFragmentShaderBASE.addUniform("color", "vec4");
-    baseMaterialFragmentShaderBASE.addUniform("baseTex", "sampler2D");
-    baseMaterialFragmentShaderBASE.addUniform("shininess", "float");
-    baseMaterialFragmentShaderBASE.addUniform("ambient", "vec3");
-    baseMaterialFragmentShaderBASE.addUniform("emissive", "vec3");
-    baseMaterialFragmentShaderBASE.loadSourceFromFile("media/shaders/ngn/basicBase.frag");
+    ngn::Shader baseFragmentShader;
+    baseFragmentShader.addUniform("color", "vec4");
+    baseFragmentShader.addUniform("baseTex", "sampler2D");
+    baseFragmentShader.addUniform("shininess", "float");
+    baseFragmentShader.addUniform("ambient", "vec3");
+    baseFragmentShader.addUniform("emissive", "vec3");
+    baseFragmentShader.loadSourceFromFile("media/shaders/ngn/basicBase.frag");
 
-    ngn::Shader baseMaterialFragmentShaderLightingModel;
-    baseMaterialFragmentShaderLightingModel.loadSourceFromFile("media/shaders/ngn/basicBlinnPhongLightingModel.glsl");
+    ngn::Shader blinnPhongShader;
+    blinnPhongShader.loadSourceFromFile("media/shaders/ngn/blinnPhongShading.glsl");
 
     ngn::Shader baseMaterialFragmentShader;
-    baseMaterialFragmentShader.include(&baseMaterialFragmentShaderBASE);
-    baseMaterialFragmentShader.include(&baseMaterialFragmentShaderLightingModel);
-    baseMaterialFragmentShader.setSource(R"(
-#pragma ngn slot:surface
-SurfaceProperties surface() {
-    SurfaceProperties ret;
-    vec4 tex = texture2D(baseTex, vsOut.texCoord);
-    tex.rgb = toLinear(tex.rgb);
-    ret.albedo = color.rgb * tex.rgb;
-    ret.alpha = color.a * tex.a;
-    ret.normal = normalize(vsOut.normal); // renormalize because of interpolation?
-    ret.emission = emissive;
-    ret.specularPower = shininess;
-    return ret;
-})");
+    baseMaterialFragmentShader.include(&baseFragmentShader);
+    baseMaterialFragmentShader.include(&blinnPhongShader);
 
     ngn::Material baseMaterial(baseMaterialFragmentShader, baseMaterialVertexShader);
     baseMaterial.setTexture("baseTex", whitePixel);

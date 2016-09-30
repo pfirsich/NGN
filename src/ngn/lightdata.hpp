@@ -11,7 +11,7 @@ namespace ngn {
             POINT = 0,
             DIRECTIONAL,
             SPOT,
-            AREA,
+            //AREA,
             // this always has to be the last element and is not an actual light type
             LIGHT_TYPES_LAST
         };
