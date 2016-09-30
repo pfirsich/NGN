@@ -35,7 +35,7 @@ namespace ngn {
 
     public:
         ShaderProgram();
-        ShaderProgram(const char* vertexShader, const char* fragmentShader);
+        ShaderProgram(const char* fragfile, const char* vertfile);
         ~ShaderProgram();
 
         bool compileShaderFromString(const char* source, ShaderType type);
@@ -59,9 +59,9 @@ namespace ngn {
         bool compileFragShaderFromFile(const char* filename) {
             return compileShaderFromFile(filename, ShaderType::FRAGMENT);
         }
-        bool compileAndLinkFromFiles(const char* frag, const char* vert) {
-            return  compileFragShaderFromFile(frag) &&
-                    compileVertShaderFromFile(vert) &&
+        bool compileAndLinkFromFiles(const char* fragfile, const char* vertfile) {
+            return  compileFragShaderFromFile(fragfile) &&
+                    compileVertShaderFromFile(vertfile) &&
                     link();
         }
 

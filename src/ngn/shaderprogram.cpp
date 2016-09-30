@@ -13,15 +13,8 @@ namespace ngn {
 
     ShaderProgram::ShaderProgram() : mStatus(Status::EMPTY) {}
 
-    ShaderProgram::ShaderProgram(const char* vertexShader, const char* fragmentShader) : mStatus(Status::EMPTY) {
-        if(vertexShader == 0) {
-            LOG_ERROR("A vertex shader HAS to be set for a shader program.");
-            return;
-        }
-        /*if(!compileShaderFromFile(vertexShader, ShaderType::VERTEX) ||
-           !compileShaderFromFile(fragmentShader, ShaderType::FRAGMENT) ||
-           !link())
-            return;*/
+    ShaderProgram::ShaderProgram(const char* fragfile, const char* vertfile) : mStatus(Status::EMPTY) {
+        compileAndLinkFromFiles(fragfile, vertfile);
     }
 
     ShaderProgram::~ShaderProgram() {
@@ -57,11 +50,14 @@ namespace ngn {
             return false;
         } else {
             mStatus = Status::LINKED;
+            LOG_DEBUG("Linked shader %d", mProgramObject);
             return true;
         }
     }
 
     bool ShaderProgram::compileShaderFromString(const char* source, ShaderProgram::ShaderType type) {
+        LOG_DEBUG("%s:\n%s", type == ShaderType::FRAGMENT ? "fragment" : "vertex", source);
+
         if(mStatus != Status::EMPTY && mStatus != Status::UNLINKED) {
             LOG_ERROR("To compile and attach a shader, the status must be EMPTY or UNLINKED");
         }
