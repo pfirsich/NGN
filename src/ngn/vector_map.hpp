@@ -3,11 +3,10 @@
 #include <vector>
 #include <utility>
 
-// Style compatible to std::map/std::unordered_map
-// not in ngn namespace
+// Style compatible to std::map/std::unordered_map and in global namespace
 
 template<typename key_type, typename mapped_type>
-class small_map {
+class vector_map {
 public:
     class iterator;
 friend class iterator;
@@ -18,17 +17,17 @@ private:
 
 public:
     class iterator {
-    friend class small_map;
+    friend class vector_map;
     private:
-        small_map* map;
+        vector_map* map;
         size_t index;
 
-        iterator(small_map& m, size_t index) : map(&m), index(0);
     public:
-        iterator() : map(nullptr), index(0); // this is .end()!
-        iterator(small_map& m) : map(&m), index(0);
+        // default values represent .end()!
+        iterator(vector_map* m = nullptr, size_t index = 0) : map(m), index(index) {}
         // copy constructor and destructor should be fine
 
+        // TODO: make sure that ++(--end()) == end()
         iterator& operator++() { // prefix
             ++index;
             if(index >= map->size()) {
@@ -47,18 +46,25 @@ public:
         bool operator!=(const iterator& rhs) {return map != rhs.map || index != rhs.index;}
 
         value_type& operator*() {
-            if(map == nullptr) return mapped_type();
+            assert(map != nullptr);
             return map->mValues[index];
+        }
+
+        // http://stackoverflow.com/questions/4928557/how-do-i-create-and-use-a-class-arrow-operator
+        value_type* operator->() {
+            assert(map != nullptr);
+            return &(map->mValues[index]);
         }
     };
 
-    // default (copy) constructors are fine
+    vector_map() {}
+    // default constructors are fine
 
     // initializer lists
-    small_map(std::initializer_list<value_type> init) : mValues(init) {}
+    vector_map(std::initializer_list<value_type> init) : mValues(init) {}
 
-    iterator begin() {return iterator(this, 0);}
-    iterator end() {return iterator(nullptr, 0);}
+    iterator begin() const {return iterator(this, 0);}
+    iterator end() const {return iterator();}
 
     size_t size() const {return mValues.size();}
     bool empty() const {return size() == 0;}
@@ -68,14 +74,14 @@ public:
         for(size_t i = 0; i < mValues.size(); ++i) {
             if(mValues[i].first == key) return iterator(this, i);
         }
-        return iterator(nullptr, 0);
+        return iterator();
     }
 
     std::pair<iterator, bool> insert(const value_type& val) {
         iterator it = find(val.first);
         if(it == end()) {
             mValues.push_back(val);
-            return iterator(this, mValues.size() - 1);
+            return std::make_pair(iterator(this, mValues.size() - 1), true);
         } else {
             return std::make_pair(it, false);
         }
@@ -87,12 +93,12 @@ public:
     }
 
     // For the sake of me, this will not throw an exception when passed an unknown key, rather it behaves just like operator[]!
-    mapped_type& at(const key_type& key) {return this->operator[](key);}
+    mapped_type& at(const key_type& key) {return operator[](key);}
 
     size_t erase(const key_type& key) {
-        for(auto it = mValues.begin(); it != mValues.end(); ++i) {
+        for(auto it = mValues.begin(); it != mValues.end(); ++it) {
             if(it->first == key) {
-                mValues.erase(val);
+                mValues.erase(it);
                 return 1;
             }
         }
