@@ -1,0 +1,22 @@
+shader:
+    uniforms:
+        ngn_modelMatrix: mat4
+        ngn_viewMatrix: mat4
+        ngn_modelViewMatrix: mat4
+        ngn_normalMatrix: mat3
+        ngn_projectionMatrix: mat4
+        ngn_modelViewProjectionMatrix: mat4
+    attributes:
+        attrPosition:
+            type: vec3
+            layout:
+                location: NGN_ATTR_POSITION
+        attrNormal:
+            type: vec3
+            layout:
+                location: NGN_ATTR_NORMAL
+        attrTexCoord:
+            type: vec2
+            layout:
+                location: NGN_ATTR_TEXCOORD0
+    glsl: media/shaders/ngn/default.vert
