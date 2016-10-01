@@ -2,7 +2,7 @@
 #include "renderer.hpp"
 
 namespace ngn {
-    static ShaderProgram* Material::getShaderPermutation(uint64_t permutationHash, const Shader& frag, const Shader& vert, const std::string& fragDefines, const std::string& vertDefines) {
+    ShaderProgram* Material::getShaderPermutation(uint64_t permutationHash, const Shader& frag, const Shader& vert, const std::string& fragDefines, const std::string& vertDefines) {
         using keyType = std::tuple<uint64_t, const Shader*, const Shader*>;
         static std::unordered_map<keyType, ShaderProgram*, hash_tuple::hash<keyType> > shaderCache;
 
