@@ -43,7 +43,7 @@ namespace ngn {
         static bool staticInitialized;
 
         std::vector<ShaderVariable> mUniforms;
-        std::vector<ShaderVariable> mInVariables;
+        std::vector<ShaderVariable> mAttributes;
         std::vector<const Shader*> mIncludes;
         std::vector<PragmaInfo> mPragmas;
         std::string mSource;
@@ -56,7 +56,10 @@ namespace ngn {
     public:
         static std::string globalShaderPreamble; // I really don't like this
 
-        Shader() {if(!staticInitialized) staticInitialize();}
+        Shader(const char* filename = nullptr) {
+            if(!staticInitialized) staticInitialize();
+            if(filename) loadFromFile(filename);
+        }
 
         //TODO: Avoid multiple inclusion of the same shader
         void include(const Shader* shdr) {mIncludes.push_back(shdr);}
@@ -65,8 +68,8 @@ namespace ngn {
             mUniforms.emplace_back(name, type, layoutQualifiers);
         }
 
-        void addInVariable(const std::string& name, const std::string& type, std::vector<std::pair<std::string, std::string> > layoutQualifiers = {}) {
-            mInVariables.emplace_back(name, type, layoutQualifiers);
+        void addAttribute(const std::string& name, const std::string& type, std::vector<std::pair<std::string, std::string> > layoutQualifiers = {}) {
+            mAttributes.emplace_back(name, type, layoutQualifiers);
         }
 
         void setSource(const std::string& src) {mSource = src; parsePragmas(mSource);}

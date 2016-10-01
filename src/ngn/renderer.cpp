@@ -135,12 +135,12 @@ uniform ngn_LightParameters ngn_light;
                     glm::mat4 model = node->getWorldMatrix();
                     glm::mat4 modelview = viewMatrix * model;
                     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
-                    rendererData->uniforms.setMatrix4("model", model);
-                    rendererData->uniforms.setMatrix4("view", viewMatrix);
-                    rendererData->uniforms.setMatrix4("projection", projectionMatrix);
-                    rendererData->uniforms.setMatrix4("modelview", modelview);
-                    rendererData->uniforms.setMatrix3("normalMatrix", normalMatrix);
-                    rendererData->uniforms.setMatrix4("modelviewprojection", projectionMatrix * modelview);
+                    rendererData->uniforms.setMatrix4("ngn_modelMatrix", model);
+                    rendererData->uniforms.setMatrix4("ngn_viewMatrix", viewMatrix);
+                    rendererData->uniforms.setMatrix4("ngn_projectionMatrix", projectionMatrix);
+                    rendererData->uniforms.setMatrix4("ngn_modelViewMatrix", modelview);
+                    rendererData->uniforms.setMatrix3("ngn_normalMatrix", normalMatrix);
+                    rendererData->uniforms.setMatrix4("ngn_modelViewProjectionMatrix", projectionMatrix * modelview);
                 }
 
                 LightData* lightData = node->getLightData();

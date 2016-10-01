@@ -17,25 +17,7 @@ namespace ngn {
     friend class Renderer;
 
     private:
-        static ShaderProgram* getShaderPermutation(uint64_t permutationHash, const Shader& frag, const Shader& vert, const std::string& fragDefines, const std::string& vertDefines) {
-            using keyType = std::tuple<uint64_t, const Shader*, const Shader*>;
-            static std::unordered_map<keyType, ShaderProgram*, hash_tuple::hash<keyType> > shaderCache;
-
-            auto keyTuple = std::make_tuple(permutationHash, &frag, &vert);
-            auto it = shaderCache.find(keyTuple);
-            if(it == shaderCache.end()) {
-                ShaderProgram* prog = new ShaderProgram;
-                if(!prog->compileAndLinkFromStrings(frag.getFullString(fragDefines).c_str(),
-                                                    vert.getFullString(vertDefines).c_str())) {
-                    delete prog;
-                    return nullptr;
-                }
-                shaderCache.insert(std::make_pair(keyTuple, prog));
-                return prog;
-            } else {
-                return it->second;
-            }
-        }
+        static ShaderProgram* getShaderPermutation(uint64_t permutationHash, const Shader& frag, const Shader& vert, const std::string& fragDefines, const std::string& vertDefines);
 
     public:
         enum class BlendMode {
@@ -173,5 +155,8 @@ namespace ngn {
 
         FaceOrientation getFrontFace() const {return mStateBlock.getFrontFace();}
         void setFrontFace(FaceOrientation ori) {mStateBlock.setFrontFace(ori);}
+
+
+        bool loadFromFile(const char* filename);
     };
 }

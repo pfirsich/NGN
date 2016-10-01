@@ -74,31 +74,10 @@ int main(int argc, char** args) {
     uint32_t data = 0xFFFFFFFF;
     whitePixel->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 4, 1, 1, 4, false);
 
-    ngn::Shader baseMaterialVertexShader;
-    baseMaterialVertexShader.addUniform("modelview", "mat4");
-    baseMaterialVertexShader.addUniform("projection", "mat4");
-    baseMaterialVertexShader.addUniform("normalMatrix", "mat3");
-    baseMaterialVertexShader.addInVariable("attrPosition", "vec3", {{"location", "NGN_ATTR_POSITION"}});
-    baseMaterialVertexShader.addInVariable("attrNormal", "vec3", {{"location", "NGN_ATTR_NORMAL"}});
-    baseMaterialVertexShader.addInVariable("attrTexCoord", "vec2", {{"location", "NGN_ATTR_TEXCOORD0"}});
-    baseMaterialVertexShader.loadSourceFromFile("media/shaders/ngn/basicBase.vert");
+    ngn::Shader defaultVertesShader("media/shaders/ngn/defaultVertex.yml");
+    ngn::Shader blinnPhongFragmentShader("media/shaders/ngn/blinnPhongFrag.yml");
 
-    ngn::Shader baseFragmentShader;
-    baseFragmentShader.addUniform("color", "vec4");
-    baseFragmentShader.addUniform("baseTex", "sampler2D");
-    baseFragmentShader.addUniform("shininess", "float");
-    baseFragmentShader.addUniform("ambient", "vec3");
-    baseFragmentShader.addUniform("emissive", "vec3");
-    baseFragmentShader.loadSourceFromFile("media/shaders/ngn/basicBase.frag");
-
-    ngn::Shader blinnPhongShader;
-    blinnPhongShader.loadSourceFromFile("media/shaders/ngn/blinnPhongShading.glsl");
-
-    ngn::Shader baseMaterialFragmentShader;
-    baseMaterialFragmentShader.include(&baseFragmentShader);
-    baseMaterialFragmentShader.include(&blinnPhongShader);
-
-    ngn::Material baseMaterial(baseMaterialFragmentShader, baseMaterialVertexShader);
+    ngn::Material baseMaterial(blinnPhongFragmentShader, defaultVertesShader);
     baseMaterial.setTexture("baseTex", whitePixel);
     baseMaterial.setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     baseMaterial.setVector3("ambient", glm::vec3(0.1f));

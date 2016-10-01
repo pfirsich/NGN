@@ -38,10 +38,9 @@ Low-Level:
         dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
         ✔ Shader class that can include variables, has overwriteable function slots and is aware of uniforms/attributes @done (29.09.16 04:33)
         ✔ Extend Material class so that it handles all the passes and associated defines properly @done (30.09.16 19:18)
-        Integrate both into one another:
-            › Maybe let the Material tell the Shader it's uniforms?
-            Probably not, since it's nice to separate logic (uniforms) and data (material values)
+        ✔ Integrate both into one another @done (30.09.16 20:14)
         › YAML loading for both
+        The possibility to specify default textures as colors (which will then be generated)
 
     › Replace pointers with references if nullptr is not an option! - For returns and parameters!
     › Deferred Shading
@@ -178,6 +177,8 @@ High-Level:
             http://blog.selfshadow.com/publications/s2012-shading-course/hoffman/s2012_pbs_physics_math_slides.pdf
             https://unity3d.com/learn/tutorials/topics/graphics/unity-5-lighting-and-rendering
             Beim Link hierüber auch gute Informationen über Reflection Probes und Realtime-GI
+            http://joywando.com/blog/2016/9/8/lighting-shading-and-texturing-part-one-pbr
+            https://www.youtube.com/watch?v=LP7HgIMv4Qo - Allegorithmic Intro to PBR
 
             https://seblagarde.wordpress.com/2013/04/29/memo-on-fresnel-equations/
 

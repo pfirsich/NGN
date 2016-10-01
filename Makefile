@@ -9,7 +9,8 @@
 # $^ list of dependencies, unique ($+ is the non-unique list of dependencies)
 
 CC = g++
-CFLAGS = -Wall -Isrc/ -Isrc/ngn -std=gnu++11
+# Put --no-exceptions back in as soon as I don't need it anymore for YAML loading (yaml-cpp uses it)
+CFLAGS = -Wall -Isrc/ -Isrc/ngn -std=gnu++11 --no-rtti
 EXECUTABLE = build/ngnTest
 LDFLAGS =
 
@@ -40,6 +41,9 @@ CFLAGS += -Idependencies/assimp/include
 LDFLAGS += -Ldependencies/assimp/lib -lassimp -lzlibstatic
 # stb_image
 CFLAGS += -Idependencies/stb_image
+# YAML
+CFLAGS += -Idependencies/yaml-cpp
+LDFLAGS += -Ldependencies/yaml-cpp/lib -lyaml-cpp
 
 LDFLAGS += -lstdc++
 

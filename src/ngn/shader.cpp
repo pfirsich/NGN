@@ -1,6 +1,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <yaml-cpp/yaml.h>
+
 #include "log.hpp"
 #include "shader.hpp"
 #include "mesh_vertexattribute.hpp"
@@ -202,7 +204,7 @@ namespace ngn {
         for(auto& part : parts) ret += part + "\n";
         //LOG_DEBUG("includes done");
 
-        for(auto& var : mInVariables) {
+        for(auto& var : mAttributes) {
             ret += var.getString("in") + "\n";
         }
         ret += "\n";
@@ -235,6 +237,78 @@ namespace ngn {
         ret += "#line 1\n" + strippedBody;
 
         return ret;
+    }
+
+    bool loadShaderVariables(std::vector<Shader::ShaderVariable>& vars, const YAML::Node& node) {
+        if(node.Type() != YAML::NodeType::Map) {
+            LOG_ERROR("uniforms have to a sequence of maps");
+            return false;
+        }
+        for(auto it = node.begin(); it != node.end(); ++it) {
+            const std::string& name = it->first.as<std::string>();
+            if(it->second.Type() == YAML::NodeType::Scalar) {
+                vars.emplace_back(name, it->second.as<std::string>());
+            } else if(it->second.Type() == YAML::NodeType::Map) {
+                if(it->second["type"]) {
+                    std::vector<std::pair<std::string, std::string> > layout;
+                    if(it->second["layout"]) {
+                        for(auto qualifier = it->second["layout"].begin(); qualifier != it->second["layout"].end(); ++qualifier) {
+                            layout.push_back(std::make_pair(qualifier->first.as<std::string>(), qualifier->second.as<std::string>()));
+                        }
+                    }
+                    vars.emplace_back(name, it->second["type"].as<std::string>(), layout);
+                } else {
+                    LOG_ERROR("'type' has to be specified for a shader variable!");
+                    return false;
+                }
+            } else {
+                LOG_ERROR("a shader variable value has to either be a scalar (the type) or a map (including a type field)");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool Shader::loadFromFile(const char* filename) {
+        LOG_DEBUG("load");
+        YAML::Node root = YAML::LoadFile(filename);
+        if(root.IsNull()) {
+            LOG_ERROR("YAML file could not be opened/parsed.");
+            return false;
+        }
+
+        if(root.Type() == YAML::NodeType::Map && root.size() == 1 && root["shader"]) {
+            const YAML::Node& shader = root["shader"];
+
+            if(shader["uniforms"]) {
+                loadShaderVariables(mUniforms, shader["uniforms"]);
+            }
+            if(shader["attributes"]) {
+                loadShaderVariables(mAttributes, shader["attributes"]);
+            }
+            if(shader["includes"]) {
+                if(shader["includes"].Type() != YAML::NodeType::Sequence) {
+                    LOG_ERROR("'includes' should be a sequence of file paths");
+                    return false;
+                }
+                for(auto it = shader["includes"].begin(); it != shader["includes"].end(); ++it) {
+                    if(it->Type() != YAML::NodeType::Scalar) {
+                        LOG_ERROR("'includes' should be a sequence of file paths");
+                        return false;
+                    } else {
+                        LOG_WARNING("includes for shader files are not yet implemented!");
+                        //TODO: Asset manager needed!
+                    }
+                }
+            }
+            if(shader["glsl"]) {
+                if(!loadSourceFromFile(shader["glsl"].as<std::string>().c_str())) return false;
+            }
+        } else {
+            LOG_ERROR("Shader file should only contain one key 'shader'");
+            return false;
+        }
+        return true;
     }
 
     bool Shader::loadSourceFromFile(const char* filename) {
