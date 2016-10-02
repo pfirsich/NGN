@@ -1,6 +1,6 @@
 Low-Level:
     Vor Gamejam:
-    › Asset Manager
+    ✔ Asset Manager @done (02.10.16 03:08)
     › Make Texture resource
     › YAML loading for Materials
     The possibility to specify default textures as colors (which will then be generated)

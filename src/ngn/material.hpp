@@ -14,7 +14,7 @@
 
 namespace ngn {
 
-    class Material : public UniformList {
+    class Material : public UniformList, public Resource {
     friend class Renderer;
 
     private:
@@ -111,7 +111,11 @@ namespace ngn {
         static void staticInitialize();
 
     public:
-        Material() : mBlendMode(BlendMode::REPLACE) {}
+        static Material* fallback;
+
+        Material() : mBlendMode(BlendMode::REPLACE) {
+            if(!staticInitialized) staticInitialize();
+        }
 
         void setVertexShader(ResourceHandle<VertexShader>&& vert) {mVertexShader = vert;}
         void setFragmentShader(ResourceHandle<FragmentShader>&& frag) {mFragmentShader = frag;}
@@ -159,7 +163,6 @@ namespace ngn {
 
         FaceOrientation getFrontFace() const {return mStateBlock.getFrontFace();}
         void setFrontFace(FaceOrientation ori) {mStateBlock.setFrontFace(ori);}
-
 
         bool load(const char* filename);
     };

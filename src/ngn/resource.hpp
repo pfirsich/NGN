@@ -106,16 +106,15 @@ namespace ngn {
             if(mResource) mResource->claim();
         }
 
-        template<typename ...Args>
-        ResourceHandle(Args&&... args) : ResourceHandle(Resource::get(std::forward<Args>(args)...)) {}
-
-        ResourceHandle(const ResourceHandle& other) : mResource(other.mResource) {
-            if(mResource) mResource->claim();
-        }
+        ResourceHandle(const char* filename, const char* name = nullptr) : ResourceHandle(Resource::get<T>(filename, name)) {}
 
         ResourceHandle(ResourceHandle&& other) : mResource(other.mResource) {
             // this claim and other release cancel each other
             other.mResource = nullptr;
+        }
+
+        ResourceHandle(const ResourceHandle& other) : mResource(other.mResource) {
+            if(mResource) mResource->claim();
         }
 
         ~ResourceHandle() {

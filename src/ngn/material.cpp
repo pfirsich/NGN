@@ -2,6 +2,18 @@
 #include "renderer.hpp"
 
 namespace ngn {
+    bool Material::staticInitialized = false;
+    Material* Material::fallback = nullptr;
+
+    void Material::staticInitialize() {
+        Material::staticInitialized = true;
+
+        delete new Shader; // force static initialization of Shader to make sure fallbacks are initialized :/
+        Material::fallback = new Material;
+        // Our unset ResourceHandles will automatically fall back to the shader fallbacks
+        Material::fallback->addPass(Renderer::AMBIENT_PASS);
+    }
+
     ShaderProgram* Material::getShaderPermutation(uint64_t permutationHash, const Shader& frag, const Shader& vert, const std::string& fragDefines, const std::string& vertDefines) {
         using keyType = std::tuple<uint64_t, const Shader*, const Shader*>;
         static std::unordered_map<keyType, ShaderProgram*, hash_tuple::hash<keyType> > shaderCache;
@@ -60,5 +72,9 @@ namespace ngn {
                 break;
         }
         validate();
+    }
+
+    bool Material::load(const char* filename) {
+        return false;
     }
 }

@@ -100,7 +100,7 @@ int main(int argc, char** args) {
         obj->setMesh(mesh);
         ironman.add(obj);
     }
-    ironman.setMaterial(&baseMaterial);
+    ironman.setMaterial(ngn::Resource::get<ngn::Material>("media/test.yml"));
     ironman.setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
     ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
     scene.add(&ironman);
@@ -114,14 +114,14 @@ int main(int argc, char** args) {
 
     ngn::Object ground;
     ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
-    ground.setMaterial(new ngn::Material(baseMaterial), true);
+    ground.setMaterial(new ngn::Material(baseMaterial));
     ground.getMaterial()->setVector4("color", glm::vec4(0.5f, 1.0f, 0.5f, 1.0f));
     ground.getMaterial()->setFloat("shininess", 64.0);
     scene.add(&ground);
 
     ngn::Object cube;
     cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
-    cube.setMaterial(new ngn::Material(baseMaterial), true);
+    cube.setMaterial(new ngn::Material(baseMaterial));
     cube.getMaterial()->setTexture("baseTex", new ngn::Texture("media/sq.png"));
     cube.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
     //cube.getMaterial()->setVector3("ambient", glm::vec3(1.0f));
@@ -145,7 +145,7 @@ int main(int argc, char** args) {
     pointLight.getLightData()->setColor(glm::vec3(1.0f, 0.25f, 0.25f));
 
     pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, vFormat));
-    pointLight.setMaterial(new ngn::Material(baseMaterial), true);
+    pointLight.setMaterial(new ngn::Material(baseMaterial));
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pointLight.getMaterial()->setVector3("emissive", pointLight.getLightData()->getColor());
     pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);

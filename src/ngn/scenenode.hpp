@@ -12,6 +12,7 @@
 #include "mesh.hpp"
 #include "lightdata.hpp"
 #include "rendererdata.hpp"
+#include "resource.hpp"
 
 namespace ngn {
     class SceneNode {
@@ -34,7 +35,7 @@ namespace ngn {
         SceneNode* mParent;
         std::vector<SceneNode*> mChildren;
 
-        Material* mMaterial;
+        ResourceHandle<Material>* mMaterial;
         bool mMaterialOwned;
         Mesh* mMesh;
         bool mMeshOwned;
@@ -69,7 +70,7 @@ namespace ngn {
 
         virtual ~SceneNode() {
             if(mParent != nullptr) mParent->remove(this);
-            if(mMaterialOwned) delete mMaterial;
+            delete mMaterial;
             if(mMeshOwned) delete mMesh;
             if(mLightDataOwned) delete mLightData;
             for(int i = 0; i < MAX_RENDERDATA_COUNT; ++i) delete rendererData[i];
@@ -89,8 +90,16 @@ namespace ngn {
         void setMesh(Mesh* mesh, bool owned = false) {mMesh = mesh; mMeshOwned = owned;}
 
         // inherit materials
-        Material* getMaterial() {return mMaterial ? mMaterial : (mParent ? mParent->getMaterial() : nullptr);}
-        void setMaterial(Material* material, bool owned = false) {mMaterial = material; mMaterialOwned = owned;}
+        Material* getMaterial() {
+            return mMaterial ? mMaterial->getResource() : (mParent ? mParent->getMaterial() : nullptr);
+        }
+        void setMaterial(ResourceHandle<Material>&& mat) {
+            if(mMaterial) {
+                *mMaterial = mat;
+            } else {
+                mMaterial = new ResourceHandle<Material>(mat);
+            }
+        }
 
         LightData* getLightData() {return mLightData;}
         void setLightData(LightData* light, bool owned = false) {mLightData = light; mLightDataOwned = owned;}
