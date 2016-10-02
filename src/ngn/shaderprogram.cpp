@@ -8,7 +8,7 @@
 #include "log.hpp"
 
 namespace ngn {
-    ShaderProgram* ShaderProgram::currentShaderProgram = nullptr;
+    const ShaderProgram* ShaderProgram::currentShaderProgram = nullptr;
     const char* ShaderProgram::shaderTypeNames[] = {"Vertex", "Fragment"};
 
     ShaderProgram::ShaderProgram() : mStatus(Status::EMPTY) {}
@@ -94,7 +94,7 @@ namespace ngn {
         }
     }
 
-    GLint ShaderProgram::getAttributeLocation(const std::string& name) {
+    GLint ShaderProgram::getAttributeLocation(const std::string& name) const {
         auto it = mAttributeLocations.find(name);
         if(it == mAttributeLocations.end()) {
             GLint loc = glGetAttribLocation(mProgramObject, name.c_str());
@@ -108,7 +108,7 @@ namespace ngn {
         }
     }
 
-    GLint ShaderProgram::getUniformLocation(const std::string& name) {
+    GLint ShaderProgram::getUniformLocation(const std::string& name) const {
         auto it = mUniformLocations.find(name);
         if(it == mUniformLocations.end()) {
             GLint loc = glGetUniformLocation(mProgramObject, name.c_str());

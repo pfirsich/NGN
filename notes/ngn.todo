@@ -1,14 +1,23 @@
 Low-Level:
     Vor Gamejam:
     ✔ Asset Manager @done (02.10.16 03:08)
-    › Make Texture resource
+    ✔ Fix the stupid Material-"inheritance"-Bug. @done (02.10.16 20:53)
+    It seems like when a Material is copied for a single pass the reference to the material it belongs to is not updated! The new pass of the new Material is still thinking the Material it belongs to is the old one.
+    ✔ dirty-flags and recompiles for Materials and Passes, also Pass should hold ResourceHandles instead of pointers @done (02.10.16 20:53)
+    › Resource::add(name, pointer);
+    › Make Texture resourcedw
+    › Read materials.md again
+    › Read random_notes.txt and sort
     › YAML loading for Materials
     The possibility to specify default textures as colors (which will then be generated)
-    › Replace pointers with references if nullptr is not an option! - For returns and parameters!
-    › PBR
+    › New Shader Markup
+    ------ Sunday
     › FBO - https://open.gl/framebuffers
     › Deferred Shading
     Here shadow map and light culling becomes the takes of culling
+    › Proper Light Attenuation
+    › Replace pointers with references if nullptr is not an option! - For returns and parameters!
+    › PBR
     › Draw call sorting
     Also depth sorting for transparent objects
     For opaque geometry I want to draw all ambient passes first, so I can have a semi depth-prepass for shading
@@ -28,6 +37,7 @@ Low-Level:
     -------------------
     › Normmal Mapping
     › Shadows
+    Also do Spotlights first
     › Skybox
     › Picking
     › Bloom

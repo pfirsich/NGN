@@ -3,7 +3,7 @@
 
 namespace ngn {
     void UniformList::apply() {
-        ShaderProgram* current = ShaderProgram::currentShaderProgram;
+        const ShaderProgram* current = ShaderProgram::currentShaderProgram;
         if(current) {
             for(auto& param : mParameters) {
                 GLuint loc = current->getUniformLocation(param.first);

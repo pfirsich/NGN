@@ -14,16 +14,17 @@ namespace ngn {
         Material::fallback->addPass(Renderer::AMBIENT_PASS);
     }
 
-    ShaderProgram* Material::getShaderPermutation(uint64_t permutationHash, const Shader& frag, const Shader& vert, const std::string& fragDefines, const std::string& vertDefines) {
-        using keyType = std::tuple<uint64_t, const Shader*, const Shader*>;
+    ShaderProgram* Material::getShaderPermutation(uint64_t permutationHash, const FragmentShader* frag, const VertexShader* vert,
+            const std::string& fragDefines, const std::string& vertDefines) {
+        using keyType = std::tuple<uint64_t, const FragmentShader*, const VertexShader*>;
         static std::unordered_map<keyType, ShaderProgram*, hash_tuple::hash<keyType> > shaderCache;
 
-        auto keyTuple = std::make_tuple(permutationHash, &frag, &vert);
+        auto keyTuple = std::make_tuple(permutationHash, frag, vert);
         auto it = shaderCache.find(keyTuple);
         if(it == shaderCache.end()) {
             ShaderProgram* prog = new ShaderProgram;
-            if(!prog->compileAndLinkFromStrings(frag.getFullString(fragDefines).c_str(),
-                                                vert.getFullString(vertDefines).c_str())) {
+            if(!prog->compileAndLinkFromStrings(frag->getFullString(fragDefines).c_str(),
+                                                vert->getFullString(vertDefines).c_str())) {
                 delete prog;
                 return nullptr;
             }
@@ -75,6 +76,7 @@ namespace ngn {
     }
 
     bool Material::load(const char* filename) {
+        //*this = Material(); // re-initialize
         return false;
     }
 }

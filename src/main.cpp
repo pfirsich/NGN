@@ -74,9 +74,8 @@ int main(int argc, char** args) {
     uint32_t data = 0xFFFFFFFF;
     whitePixel->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 4, 1, 1, 4, false);
 
-    ngn::Material baseMaterial;
-    baseMaterial.setFragmentShader(ngn::Resource::get<ngn::FragmentShader>("media/shaders/ngn/blinnPhongFrag.yml"));
-    baseMaterial.setVertexShader(ngn::Resource::get<ngn::VertexShader>("media/shaders/ngn/defaultVertex.yml"));
+    ngn::Material baseMaterial(ngn::Resource::get<ngn::FragmentShader>("media/shaders/ngn/blinnPhongFrag.yml"),
+                               ngn::Resource::get<ngn::VertexShader>("media/shaders/ngn/defaultVertex.yml"));
     baseMaterial.setTexture("baseTex", whitePixel);
     baseMaterial.setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     baseMaterial.setVector3("ambient", glm::vec3(0.1f));
@@ -108,7 +107,6 @@ int main(int argc, char** args) {
     ngn::Object sphere;
     sphere.setMesh(ngn::sphereMesh(5.0f, 32, 32, vFormat));
     sphere.setMaterial(&baseMaterial);
-    sphere.getMaterial()->setFloat("shininess", 512.0f);
     sphere.setPosition(glm::vec3(-20.0f, 10.0f, 0.0f));
     scene.add(&sphere);
 
@@ -154,6 +152,7 @@ int main(int argc, char** args) {
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
 
+    LOG_DEBUG("blendenabled: %d", cube.getMaterial()->getStateBlock().getBlendEnabled());
     // Mainloop
     float lastTime = ngn::getTime();
     bool quit = false;
@@ -170,6 +169,7 @@ int main(int argc, char** args) {
         moveCamera(camera, dt);
 
         renderer.render(&scene, &camera, !inputState.key[SDL_SCANCODE_M]);
+
         window.updateAndSwap();
     }
 

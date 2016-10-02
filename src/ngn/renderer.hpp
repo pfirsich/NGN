@@ -21,7 +21,7 @@ namespace ngn {
     class Renderer {
     protected:
         struct RenderQueueEntry {
-            ShaderProgram* shaderProgram;
+            const ShaderProgram* shaderProgram;
             std::vector<UniformBlock*> uniformBlocks;
             UniformList perEntryUniforms;
             Mesh* mesh;

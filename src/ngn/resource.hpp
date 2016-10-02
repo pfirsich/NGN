@@ -100,20 +100,21 @@ namespace ngn {
     class ResourceHandle {
     private:
         T* mResource;
+        mutable bool mDirty;
 
     public:
-        ResourceHandle(T* res = nullptr) : mResource(res) {
+        ResourceHandle(T* res = nullptr) : mResource(res), mDirty(true) {
             if(mResource) mResource->claim();
         }
 
         ResourceHandle(const char* filename, const char* name = nullptr) : ResourceHandle(Resource::get<T>(filename, name)) {}
 
-        ResourceHandle(ResourceHandle&& other) : mResource(other.mResource) {
+        ResourceHandle(ResourceHandle&& other) : mResource(other.mResource), mDirty(true) {
             // this claim and other release cancel each other
             other.mResource = nullptr;
         }
 
-        ResourceHandle(const ResourceHandle& other) : mResource(other.mResource) {
+        ResourceHandle(const ResourceHandle& other) : mResource(other.mResource), mDirty(true) {
             if(mResource) mResource->claim();
         }
 
@@ -125,22 +126,31 @@ namespace ngn {
             if(mResource) mResource->release();
             mResource = other.mResource;
             if(mResource) mResource->claim();
+            mDirty = true;
             return *this;
         }
 
         ResourceHandle& operator=(ResourceHandle&& other) {
             mResource = other.mResource;
             other.mResource = nullptr;
+            mDirty = true;
             return *this;
         }
 
         void release() {
             if(mResource) mResource->release();
             mResource = nullptr;
+            mDirty = true;
         }
 
         bool loaded() const {
             return mResource != nullptr;
+        }
+
+        bool dirty() const {
+            bool temp = mDirty;
+            mDirty = false;
+            return temp;
         }
 
         T* getResource() {

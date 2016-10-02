@@ -18,7 +18,8 @@ namespace ngn {
     friend class Renderer;
 
     private:
-        static ShaderProgram* getShaderPermutation(uint64_t permutationHash, const Shader& frag, const Shader& vert, const std::string& fragDefines, const std::string& vertDefines);
+        static ShaderProgram* getShaderPermutation(uint64_t permutationHash, const FragmentShader* frag, const VertexShader* vert,
+                    const std::string& fragDefines, const std::string& vertDefines);
 
     public:
         enum class BlendMode {
@@ -62,32 +63,33 @@ namespace ngn {
 
         class Pass {
         private:
-            Material& mMaterial;
+            const Material& mMaterial;
             int mPassIndex;
             RenderStateBlock* mStateBlock;
-            const VertexShader* mVertexShader;
-            const FragmentShader* mFragmentShader;
+            ResourceHandle<FragmentShader>* mFragmentShader;
+            ResourceHandle<VertexShader>* mVertexShader;
 
-            ShaderProgram* mShaderProgram;
+            mutable const ShaderProgram* mShaderProgram; // just used as cache
 
         public:
-            Pass(Material& mat, int index, const FragmentShader* frag = nullptr, const VertexShader* vert = nullptr) :
-                    mMaterial(mat), mPassIndex(index), mStateBlock(nullptr), mVertexShader(vert), mFragmentShader(frag) {
-                //mFragmentShader->include(&(mMaterial.getFragmentShader()));
-                //mVertexShader->include(&(mMaterial.getVertexShader()));
-                std::string passDefine = "#define NGN_PASS " + std::to_string(mPassIndex) + "\n";
-                uint64_t permutationHash = mPassIndex;
-                if(frag == nullptr) frag = &(mMaterial.getFragmentShader());
-                if(vert == nullptr) vert = &(mMaterial.getVertexShader());
-                mShaderProgram = getShaderPermutation(permutationHash, *frag, *vert, passDefine, passDefine);
+            //mMaterial(mat), mPassIndex(index), mStateBlock(nullptr), mShadersDirty(true),
+            //mVertexShader(nullptr), mFragmentShader(nullptr), mShaderProgram(nullptr)
+            Pass(const Material& mat, int index) : mMaterial(mat), mPassIndex(index), mStateBlock(nullptr),
+                    mFragmentShader(nullptr), mVertexShader(nullptr), mShaderProgram(nullptr) {}
+
+            Pass(const Pass& other) = delete;
+
+            Pass(const Material& mat, const Pass& other) : mMaterial(mat), mPassIndex(other.mPassIndex), mStateBlock(nullptr),
+                    mFragmentShader(nullptr), mVertexShader(nullptr), mShaderProgram(other.mShaderProgram) {
+                if(other.mFragmentShader) mFragmentShader = new ResourceHandle<FragmentShader>(*other.mFragmentShader);
+                if(other.mVertexShader) mVertexShader = new ResourceHandle<VertexShader>(*other.mVertexShader);
+                if(other.mStateBlock) mStateBlock = new RenderStateBlock(*other.mStateBlock);
             }
 
             ~Pass() {
                 delete mStateBlock;
-            }
-
-            ShaderProgram* getShaderProgram() const {
-                return mShaderProgram;
+                delete mVertexShader;
+                delete mFragmentShader;
             }
 
             RenderStateBlock& addStateBlock() {
@@ -97,12 +99,48 @@ namespace ngn {
             const RenderStateBlock& getStateBlock() {
                 return mStateBlock ? *mStateBlock : mMaterial.getStateBlock();
             }
+
+            RenderStateBlock* getPassStateBlock() {
+                return mStateBlock;
+            }
+
+            void setFragmentShader(ResourceHandle<FragmentShader>&& frag) {
+                if(mFragmentShader) {
+                    *mFragmentShader = frag;
+                } else {
+                    mFragmentShader = new ResourceHandle<FragmentShader>(frag);
+                }
+            }
+
+            void setVertexShader(ResourceHandle<VertexShader>&& vert) {
+                if(mVertexShader) {
+                    *mVertexShader = vert;
+                } else {
+                    mVertexShader = new ResourceHandle<VertexShader>(vert);
+                }
+            }
+
+            const ResourceHandle<FragmentShader>& getFragmentShader() const {return *mFragmentShader;}
+            const ResourceHandle<VertexShader>& getVertexShader() const {return *mVertexShader;}
+
+            int getPassIndex() const {return mPassIndex;}
+
+            const ShaderProgram* getShaderProgram() const {
+                const ResourceHandle<FragmentShader>& frag = mFragmentShader ? *mFragmentShader : mMaterial.getFragmentShader();
+                const ResourceHandle<VertexShader>& vert = mVertexShader ? *mVertexShader : mMaterial.getVertexShader();
+                if(frag.dirty() || vert.dirty()) { // handles point to different resource
+                    std::string defines = "#define NGN_PASS " + std::to_string(mPassIndex) + "\n";
+                    uint64_t permutationHash = mPassIndex;
+                    mShaderProgram = getShaderPermutation(permutationHash, frag.getResource(), vert.getResource(), defines, defines);
+                }
+                return mShaderProgram;
+            }
         };
     private:
         BlendMode mBlendMode;
         std::unordered_map<int, Pass> mPasses;
-        ResourceHandle<VertexShader> mVertexShader;
         ResourceHandle<FragmentShader> mFragmentShader;
+        ResourceHandle<VertexShader> mVertexShader;
         RenderStateBlock mStateBlock;
 
         void validate() const;
@@ -117,15 +155,46 @@ namespace ngn {
             if(!staticInitialized) staticInitialize();
         }
 
-        void setVertexShader(ResourceHandle<VertexShader>&& vert) {mVertexShader = vert;}
-        void setFragmentShader(ResourceHandle<FragmentShader>&& frag) {mFragmentShader = frag;}
+        Material(ResourceHandle<FragmentShader>&& frag, ResourceHandle<VertexShader>&& vert) :
+                mBlendMode(BlendMode::REPLACE), mFragmentShader(frag), mVertexShader(vert) {
+            if(!staticInitialized) staticInitialize();
+        }
 
-        Pass& addPass(int passIndex, const FragmentShader* frag = nullptr, const VertexShader* vert = nullptr) {
+        Material(const Material& other) : UniformList(other), mBlendMode(other.mBlendMode), mFragmentShader(other.mFragmentShader),
+                mVertexShader(other.mVertexShader), mStateBlock(other.mStateBlock) {
+            if(!staticInitialized) staticInitialize();
+            for(auto& it : other.mPasses) {
+                addPass(it.second);
+            }
+        }
+
+        Material& operator=(const Material& other) = delete;
+
+        void setFragmentShader(ResourceHandle<FragmentShader>&& frag) {mFragmentShader = frag;}
+        void setVertexShader(ResourceHandle<VertexShader>&& vert) {mVertexShader = vert;}
+        const ResourceHandle<FragmentShader>& getFragmentShader() const {return mFragmentShader;}
+        const ResourceHandle<VertexShader>& getVertexShader() const {return mVertexShader;}
+        const RenderStateBlock& getStateBlock() const {return mStateBlock;}
+
+        Pass& addPass(int passIndex) {
             auto it = mPasses.find(passIndex);
             if(it != mPasses.end()) {
                 LOG_ERROR("Adding pass with index %d a second time!", passIndex);
             } else {
-                it = mPasses.insert(std::make_pair(passIndex, Pass(*this, passIndex, frag, vert))).first;
+                // I hate this so much and it's a farce that it's so hard to emplace an object into a map without invoking the copy constructor
+                it = mPasses.emplace(std::piecewise_construct, std::forward_as_tuple(passIndex),
+                                                               std::forward_as_tuple(*this, passIndex)).first;
+            }
+            return it->second;
+        }
+
+        Pass& addPass(const Pass& other) {
+            auto it = mPasses.find(other.getPassIndex());
+            if(it != mPasses.end()) {
+                LOG_ERROR("Adding pass with index %d a second time!", other.getPassIndex());
+            } else {
+                it = mPasses.emplace(std::piecewise_construct, std::forward_as_tuple(other.getPassIndex()),
+                                                               std::forward_as_tuple(*this, other)).first;
             }
             return it->second;
         }
@@ -143,10 +212,6 @@ namespace ngn {
         void removePass(int passIndex) {
             mPasses.erase(passIndex);
         }
-
-        const VertexShader& getVertexShader() const {return *mVertexShader.getResource();}
-        const FragmentShader& getFragmentShader() const {return *mFragmentShader.getResource();}
-        const RenderStateBlock& getStateBlock() const {return mStateBlock;}
 
         // Render state
         void setBlendMode(BlendMode mode);

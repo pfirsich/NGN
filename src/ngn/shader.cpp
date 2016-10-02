@@ -285,11 +285,7 @@ namespace ngn {
     }
 
     bool Shader::load(const char* filename) {
-        mUniforms.clear();
-        mAttributes.clear();
-        mIncludes.clear();
-        mPragmas.clear();
-        mSource = "";
+        *this = Shader();
 
         try {
             YAML::Node root = YAML::LoadFile(filename);

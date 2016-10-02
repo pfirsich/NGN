@@ -112,6 +112,8 @@ namespace ngn {
             }
         }
 
+        UniformBlock& operator=(const UniformBlock&) = delete;
+
         void setFloat(const char* name, float val) {
             setParam<float>(name, ParamType::FLOAT, &val, 1, true);
         }

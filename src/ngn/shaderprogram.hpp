@@ -24,14 +24,14 @@ namespace ngn {
 
         using ShaderVariableLocation = GLint;
 
-        static ShaderProgram* currentShaderProgram;
+        static const ShaderProgram* currentShaderProgram;
 
     private:
         GLuint mProgramObject;
         std::vector<GLuint> mShaderObjects;
         Status mStatus;
-        std::unordered_map<std::string, ShaderVariableLocation> mAttributeLocations;
-        std::unordered_map<std::string, ShaderVariableLocation> mUniformLocations;
+        mutable std::unordered_map<std::string, ShaderVariableLocation> mAttributeLocations; // only caches
+        mutable std::unordered_map<std::string, ShaderVariableLocation> mUniformLocations;
 
     public:
         ShaderProgram();
@@ -65,19 +65,19 @@ namespace ngn {
                     link();
         }
 
-        ShaderVariableLocation getAttributeLocation(const std::string& name);
-        ShaderVariableLocation getUniformLocation(const std::string& name);
+        ShaderVariableLocation getAttributeLocation(const std::string& name) const;
+        ShaderVariableLocation getUniformLocation(const std::string& name) const;
 
         bool link();
 
-        inline void bind() {
+        inline void bind() const {
             if(currentShaderProgram != this) {
                 glUseProgram(mProgramObject);
                 currentShaderProgram = this;
             }
         }
         // This could be static, but I want it to look like other bindables
-        void unbind() {
+        void unbind() const {
             glUseProgram(0);
             currentShaderProgram = nullptr;
         }
@@ -90,40 +90,40 @@ namespace ngn {
         }
 
         template<typename T>
-        void setUniform(const std::string& name, const T& val) {
+        void setUniform(const std::string& name, const T& val) const {
             ShaderVariableLocation loc = getUniformLocation(name);
             if(loc != -1) setUniform(loc, val);
         }
 
-        void setUniform(ShaderVariableLocation loc, int value) {
+        void setUniform(ShaderVariableLocation loc, int value) const {
             glUniform1i(loc, value);
         }
 
-        void setUniform(ShaderVariableLocation loc, float value) {
+        void setUniform(ShaderVariableLocation loc, float value) const {
             glUniform1f(loc, value);
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::vec2& val) {
+        void setUniform(ShaderVariableLocation loc, const glm::vec2& val) const {
             glUniform2fv(loc, 1, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::vec3& val) {
+        void setUniform(ShaderVariableLocation loc, const glm::vec3& val) const {
             glUniform3fv(loc, 1, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::vec4& val) {
+        void setUniform(ShaderVariableLocation loc, const glm::vec4& val) const {
             glUniform4fv(loc, 1, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::mat2& val) {
+        void setUniform(ShaderVariableLocation loc, const glm::mat2& val) const {
             glUniformMatrix2fv(loc, 1, GL_FALSE, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::mat3& val) {
+        void setUniform(ShaderVariableLocation loc, const glm::mat3& val) const {
             glUniformMatrix3fv(loc, 1, GL_FALSE, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::mat4& val) {
+        void setUniform(ShaderVariableLocation loc, const glm::mat4& val) const {
             glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(val));
         }
     };

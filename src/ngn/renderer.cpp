@@ -166,11 +166,10 @@ uniform ngn_LightParameters ngn_light;
                     if(mesh) {
                         Material* mat = node->getMaterial();
                         assert(mat != nullptr);
+                        Material::Pass* pass = mat->getPass(AMBIENT_PASS);
 
-                        if(drawTransparent == mat->mStateBlock.getBlendEnabled()) {
-                            Material::Pass* pass = mat->getPass(AMBIENT_PASS);
-
-                            if(pass) {
+                        if(pass) {
+                            if(drawTransparent == pass->getStateBlock().getBlendEnabled()) {
                                 renderQueue.emplace_back(mat, pass, mesh);
                                 RenderQueueEntry& entry = renderQueue.back();
 
@@ -189,10 +188,9 @@ uniform ngn_LightParameters ngn_light;
                     if(mesh) {
                         Material* mat = node->getMaterial();
                         assert(mat != nullptr);
-                        if(drawTransparent == mat->mStateBlock.getBlendEnabled()) {
-                            Material::Pass* pass = mat->getPass(LIGHT_PASS);
-
-                            if(pass) {
+                        Material::Pass* pass = mat->getPass(LIGHT_PASS);
+                        if(pass) {
+                            if(drawTransparent == pass->getStateBlock().getBlendEnabled()) {
                                 for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
                                     // later: sort by influence and take the N most influential lights
                                     for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
