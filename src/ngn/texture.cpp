@@ -7,6 +7,14 @@ namespace ngn {
     Texture* Texture::fallback = nullptr;
     bool Texture::staticInitialized = false;
 
+    Texture* Texture::pixelTexture(const glm::vec4& col) {
+        Texture* temp = new ngn::Texture;
+        uint32_t data = static_cast<int>(col.r * 255) <<  0 | static_cast<int>(col.g * 255) <<  8 |
+                        static_cast<int>(col.b * 255) << 16 | static_cast<int>(col.a * 255) << 24;
+        temp->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 1, 1, 4, false);
+        return temp;
+    }
+
     void Texture::staticInitialize() {
         staticInitialized = true;
 

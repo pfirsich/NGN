@@ -22,6 +22,12 @@ namespace ngn {
         int mReferenceCount;
 
     public:
+        // With this function you transfer ownership of the resource to the engine and it will be collected (free'd) if no handles are pointing to it
+        template<class T>
+        static void add(const char* name, T* res) {
+            resourceCache.insert(std::make_pair(name, reinterpret_cast<Resource*>(res)));
+        }
+
         // Use these to preload as well
         template<class T>
         static T* get(const char* filename, const char* name = nullptr) {

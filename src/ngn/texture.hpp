@@ -3,6 +3,7 @@
 #include <utility>
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include "resource.hpp"
 
@@ -57,6 +58,9 @@ namespace ngn {
 
         //TODO: const?
         static Texture* fallback;
+
+        static Texture* pixelTexture(const glm::vec4& col); // col in SRGB
+        //TODO: static Texture* pixelTextureLinear(const glm::vec4& col);
 
         // Mipmapping is default, since it's takes a little more ram, but usually it's faster and looks nicer
         Texture(GLenum target = GL_TEXTURE_2D) : mTarget(target), mTextureObject(0),

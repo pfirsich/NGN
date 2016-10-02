@@ -5,7 +5,7 @@ Low-Level:
     It seems like when a Material is copied for a single pass the reference to the material it belongs to is not updated! The new pass of the new Material is still thinking the Material it belongs to is the old one.
     ✔ dirty-flags and recompiles for Materials and Passes, also Pass should hold ResourceHandles instead of pointers @done (02.10.16 20:53)
     ✔ Make Texture resources @done (02.10.16 21:35)
-    › Resource::add(name, pointer);
+    ✔ Resource::add(name, pointer); @done (02.10.16 21:53)
     › Read materials.md again
     › Read random_notes.txt and sort
     › YAML loading for Materials
