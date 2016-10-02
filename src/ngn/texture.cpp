@@ -4,12 +4,24 @@
 
 namespace ngn {
     const Texture* Texture::currentBoundTextures[Texture::MAX_UNITS] = {nullptr};
+    Texture* Texture::fallback = nullptr;
+    bool Texture::staticInitialized = false;
 
-    void Texture::loadFromMemory(unsigned char* buffer, int len, int width, int height, int components, bool genMipmaps) {
-        if(components < 1 || components > 4) {
-            printf("Components must be >= 1 and <= 4\n");
-            return;
-        }
+    void Texture::staticInitialize() {
+        staticInitialized = true;
+
+        Texture* tex = new Texture;
+        int res = 32;
+        uint32_t* buf = new uint32_t[res*res];
+        for(int i = 0; i < res*res; ++i) buf[i] = (i + i/res) % 2 == 0 ? 0xFFFF00FF : 0xFF000000;
+        tex->loadFromMemory(reinterpret_cast<uint8_t*>(buf), res, res, 4, false);
+        tex->setMagFilter(MagFilter::NEAREST);
+        fallback = tex;
+    }
+
+    void Texture::loadFromMemory(unsigned char* buffer, int width, int height, int components, bool genMipmaps) {
+        assert(components >= 1 && components <= 4);
+
         glGenTextures(1, &mTextureObject);
         glBindTexture(mTarget, mTextureObject);
         GLint formatMap[4] = {GL_RED, GL_RG, GL_RGB, GL_RGBA};
@@ -41,7 +53,7 @@ namespace ngn {
             printf("Image file '%s' could not be loaded.\n", filename);
             return false;
         }
-        loadFromMemory(buf, w*h*c*sizeof(unsigned char), w, h, c);
+        loadFromMemory(buf, w, h, c);
         delete[] buf;
         return true;
     }

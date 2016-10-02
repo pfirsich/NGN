@@ -45,7 +45,7 @@ namespace ngn {
         };
 
         std::unordered_map<std::string, ParamData> mParameters;
-        std::vector<std::pair<std::string, const Texture*> > mTextures;
+        std::vector<std::pair<std::string, ResourceHandle<Texture> > > mTextures;
 
         void deleteParam(ParamData& param) {
             if(param.ownedData) {
@@ -170,14 +170,14 @@ namespace ngn {
             setParam<glm::mat4>(name, ParamType::MATF4, vp, count, copy);
         }
 
-        void setTexture(const char* name, const Texture* texture) {
+        void setTexture(const char* name, ResourceHandle<Texture>&& tex) {
             for(auto& elem : mTextures) {
                 if(elem.first == name) {
-                    elem.second = texture;
+                    elem.second = tex;
                     return;
                 }
             }
-            mTextures.push_back(std::make_pair(name, texture));
+            mTextures.push_back(std::make_pair(name, tex));
         }
 
         virtual void apply() = 0;

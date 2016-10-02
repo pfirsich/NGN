@@ -4,8 +4,10 @@
 
 #include <glad/glad.h>
 
+#include "resource.hpp"
+
 namespace ngn {
-    class Texture {
+    class Texture : public Resource {
     public:
         enum class WrapMode : GLenum {
             CLAMP_TO_EDGE = GL_CLAMP_TO_EDGE,
@@ -46,24 +48,34 @@ namespace ngn {
             }
         }
 
+        static bool staticInitialized;
+        static void staticInitialize();
+
     public:
         static const size_t MAX_UNITS = 16;
         static const Texture* currentBoundTextures[MAX_UNITS];
 
+        //TODO: const?
+        static Texture* fallback;
+
         // Mipmapping is default, since it's takes a little more ram, but usually it's faster and looks nicer
         Texture(GLenum target = GL_TEXTURE_2D) : mTarget(target), mTextureObject(0),
-                mSWrap(WrapMode::CLAMP_TO_EDGE), mTWrap(WrapMode::CLAMP_TO_EDGE), mMagFilter(MagFilter::LINEAR) {}
+                mSWrap(WrapMode::CLAMP_TO_EDGE), mTWrap(WrapMode::CLAMP_TO_EDGE), mMagFilter(MagFilter::LINEAR) {
+            if(!staticInitialized) staticInitialize();
+        }
         Texture(const char* filename, bool genMipmaps = true, GLenum target = GL_TEXTURE_2D) : mTarget(target), mTextureObject(0),
                 mSWrap(WrapMode::CLAMP_TO_EDGE), mTWrap(WrapMode::CLAMP_TO_EDGE), mMagFilter(MagFilter::LINEAR) {
+            if(!staticInitialized) staticInitialize();
             loadFromFile(filename, genMipmaps);
         }
         ~Texture() {
             glDeleteTextures(1, &mTextureObject);
         }
 
-        void loadFromMemory(unsigned char* buffer, int len, int width, int height, int components, bool genMipmaps = true);
+        void loadFromMemory(unsigned char* buffer, int width, int height, int components, bool genMipmaps = true);
         bool loadEncodedFromMemory(unsigned char* encBuffer, int len, bool genMipmaps = true);
         bool loadFromFile(const char* filename, bool genMipmaps = true);
+        bool load(const char* filename) {return loadFromFile(filename);}
 
         void setTarget(GLenum target) {mTarget = target;}
         GLenum getTarget() const {return mTarget;}

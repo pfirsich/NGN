@@ -23,7 +23,7 @@ namespace ngn {
             }
 
             for(size_t i = 0; i < mTextures.size(); ++i) {
-                mTextures[i].second->bind(i);
+                mTextures[i].second.getResource()->bind(i);
             }
         }
     }

@@ -72,7 +72,7 @@ int main(int argc, char** args) {
 
     ngn::Texture* whitePixel = new ngn::Texture;
     uint32_t data = 0xFFFFFFFF;
-    whitePixel->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 4, 1, 1, 4, false);
+    whitePixel->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 1, 1, 4, false);
 
     ngn::Material baseMaterial(ngn::Resource::get<ngn::FragmentShader>("media/shaders/ngn/blinnPhongFrag.yml"),
                                ngn::Resource::get<ngn::VertexShader>("media/shaders/ngn/defaultVertex.yml"));
@@ -120,7 +120,7 @@ int main(int argc, char** args) {
     ngn::Object cube;
     cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
     cube.setMaterial(new ngn::Material(baseMaterial));
-    cube.getMaterial()->setTexture("baseTex", new ngn::Texture("media/sq.png"));
+    cube.getMaterial()->setTexture("baseTex", ngn::Resource::get<ngn::Texture>("media/sq.png"));
     cube.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
     //cube.getMaterial()->setVector3("ambient", glm::vec3(1.0f));
     cube.getMaterial()->setBlendMode(ngn::Material::BlendMode::TRANSLUCENT);
