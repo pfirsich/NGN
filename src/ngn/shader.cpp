@@ -9,12 +9,19 @@
 
 namespace ngn {
     bool Shader::staticInitialized = false;
+
+    Shader* Shader::fallback = nullptr;
+    FragmentShader* FragmentShader::fallback = nullptr;
+    VertexShader* VertexShader::fallback = nullptr;
+
     // I really don't like this
     // Also I'm not a fan of the values being hardcoded here. But there is not actually helpful way of doing this programmatically
     std::string Shader::globalShaderPreamble = "#version 330 core\n\n";
 
 
     void Shader::staticInitialize() {
+        staticInitialized = true;
+
         // ¯\_(ツ)_/¯
         #define STRINGIFY_ATTR_DEFINE(x) ("NGN_ATTR_" #x " " + std::to_string(static_cast<int>(AttributeType::x)))
         globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(POSITION) + "\n";
@@ -43,7 +50,13 @@ namespace ngn {
         globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM7) + "\n";
         globalShaderPreamble += "\n";
 
-        staticInitialized = true;
+        FragmentShader::fallback = new FragmentShader;
+        FragmentShader::fallback->setSource("out vec3 fragColor;\nvoid main() {fragColor = vec3(1.0, 0.0, 0.0);}");
+
+        VertexShader::fallback = new VertexShader;
+        VertexShader::fallback->addAttribute("attrPos", "vec3", {{"location", "NGN_ATTR_POSITION"}});
+        VertexShader::fallback->addUniform("ngn_modelViewProjectionMatrix", "mat4");
+        VertexShader::fallback->setSource("void main() {gl_Position = ngn_modelViewProjectionMatrix * vec4(attrPos, 1.0);}");
     }
 
     std::string Shader::ShaderVariable::getString(const std::string& qualifier) const {
@@ -75,6 +88,8 @@ namespace ngn {
     }
 
     bool Shader::parsePragmas(const std::string& str) {
+        mPragmas.clear();
+
         bool newLine = true;
         for(size_t i = 0; i < str.length(); ++i) {
             if(newLine && str[i] == '#') { // preprocessor directive
@@ -269,46 +284,56 @@ namespace ngn {
         return true;
     }
 
-    bool Shader::loadFromFile(const char* filename) {
-        LOG_DEBUG("load");
-        YAML::Node root = YAML::LoadFile(filename);
-        if(root.IsNull()) {
-            LOG_ERROR("YAML file could not be opened/parsed.");
-            return false;
-        }
+    bool Shader::load(const char* filename) {
+        mUniforms.clear();
+        mAttributes.clear();
+        mIncludes.clear();
+        mPragmas.clear();
+        mSource = "";
 
-        if(root.Type() == YAML::NodeType::Map && root.size() == 1 && root["shader"]) {
-            const YAML::Node& shader = root["shader"];
+        try {
+            YAML::Node root = YAML::LoadFile(filename);
+            if(root.IsNull()) {
+                LOG_ERROR("YAML file could not be opened/parsed.");
+                return false;
+            }
 
-            if(shader["uniforms"]) {
-                loadShaderVariables(mUniforms, shader["uniforms"]);
-            }
-            if(shader["attributes"]) {
-                loadShaderVariables(mAttributes, shader["attributes"]);
-            }
-            if(shader["includes"]) {
-                if(shader["includes"].Type() != YAML::NodeType::Sequence) {
-                    LOG_ERROR("'includes' should be a sequence of file paths");
-                    return false;
+            if(root.Type() == YAML::NodeType::Map && root.size() == 1 && root["shader"]) {
+                const YAML::Node& shader = root["shader"];
+
+                if(shader["uniforms"]) {
+                    loadShaderVariables(mUniforms, shader["uniforms"]);
                 }
-                for(auto it = shader["includes"].begin(); it != shader["includes"].end(); ++it) {
-                    if(it->Type() != YAML::NodeType::Scalar) {
+                if(shader["attributes"]) {
+                    loadShaderVariables(mAttributes, shader["attributes"]);
+                }
+                if(shader["includes"]) {
+                    if(shader["includes"].Type() != YAML::NodeType::Sequence) {
                         LOG_ERROR("'includes' should be a sequence of file paths");
                         return false;
-                    } else {
-                        LOG_WARNING("includes for shader files are not yet implemented!");
-                        //TODO: Asset manager needed!
+                    }
+                    for(auto it = shader["includes"].begin(); it != shader["includes"].end(); ++it) {
+                        if(it->Type() != YAML::NodeType::Scalar) {
+                            LOG_ERROR("'includes' should be a sequence of file paths");
+                            return false;
+                        } else {
+                            LOG_WARNING("includes for shader files are not yet implemented!");
+                            //TODO: Asset manager needed!
+                        }
                     }
                 }
+                if(shader["glsl"]) {
+                    if(!loadSourceFromFile(shader["glsl"].as<std::string>().c_str())) return false;
+                }
+            } else {
+                LOG_ERROR("Shader file should only contain one key 'shader'");
+                return false;
             }
-            if(shader["glsl"]) {
-                if(!loadSourceFromFile(shader["glsl"].as<std::string>().c_str())) return false;
-            }
-        } else {
-            LOG_ERROR("Shader file should only contain one key 'shader'");
+            return true;
+        } catch(YAML::Exception exc) {
+            LOG_ERROR("Error loading YAML file: '%s'", exc.msg.c_str());
             return false;
         }
-        return true;
     }
 
     bool Shader::loadSourceFromFile(const char* filename) {

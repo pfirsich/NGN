@@ -1,52 +1,14 @@
 Low-Level:
-    ✔ Ins Mesh einbauen, dass man den Accessor holt. - Damit man POSITION aus mehreren Buffern holen kann. @done (27.08.16 01:55)
-    ✔ Den Flow des Mesh/Material-Flows einmal komplett aufschreiben @done (27.08.16 14:00)
-    ✔ Transforms @done (27.08.16 14:25)
-    ✔ Camera in wallsurfgame ersetzen und testen @done (28.08.16 02:19)
-    ✔ Window in wallsurfgame integrieren und dabei interessanten Kram aus core reinmergen @done (28.08.16 05:26)
-    ✔ log etwas aufräumen @done (28.08.16 06:01)
-    ✔ shader etwas aufräumen @done (28.08.16 05:35)
-    ✔ Alles ins ngn repo umziehen @done (28.08.16 06:14)
-    ✔ Refactor Meshes @done (30.08.16 12:26)
-        ✔ Rename IndexData and VertexData to IndexBuffer and VertexBuffer @done (30.08.16 01:36)
-        ✔ VBOWrapper to GLBuffer @done (30.08.16 01:36)
-        ✔ make sure VertexFormats are copied whenever used for a period of time @done (30.08.16 01:37)
-        ✔ VertexFormat.removeAttribute @done (30.08.16 01:37)
-        ✔ Mesh.supportsMaterial / hasAttributes @done (30.08.16 01:41)
-        ✔ sanity checks for VertexAttributeTypes being unique in a mesh @done (30.08.16 02:52)
-        ✔ VertexAttribute-Namen ditchen und nur den Type nehmen @done (30.08.16 12:26)
-    ✔ Area Light Test @done (31.08.16 03:54)
-        ✔ transform - fix the light geomtry @done (30.08.16 22:41)
-        ✔ normalize - choose sensible units @done (30.08.16 22:41)
-        ✔ The actual area lighting @done (31.08.16 03:54)
-    ✔ Instancing @done (31.08.16 22:54)
-    VertexAttribute.setDivisor, Mesh.draw(instances = 1)
-    ✔ SceneGraph @done (18.09.16 01:58)
-    ✔ Textures @done (18.09.16 01:58)
-    ✔ Lights @done (26.09.16 03:25)
-    ✔ Multipass Forward Renderer - with one fixed hardcoded material @done (26.09.16 03:25)
-    ✔ Handle custom depth and blend states @done (27.09.16 16:48)
-    In fact high level blend modes should not be part of a stateblock, since they are not state, but part of the material
-    Also introduce a boolean property "lit" and setLit, setUnlit
-    Maybe some day support a custom blend mode, but for now *don't* expose blend factors to engine users
-    Pull some types out of renderstateblock and make only a select number of exposed parameters available as material properties
-    => renderstateblock private and the possibility for sanitizing properties
-    ✔ Blending seems to be buggy - ADD, MODULATE and SCREEN in particular @done (27.09.16 21:12)
-    Materials:
-        YAML integrieren, VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
-        Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
-        dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
-        ✔ Shader class that can include variables, has overwriteable function slots and is aware of uniforms/attributes @done (29.09.16 04:33)
-        ✔ Extend Material class so that it handles all the passes and associated defines properly @done (30.09.16 19:18)
-        ✔ Integrate both into one another @done (30.09.16 20:14)
-        › YAML loading for both
-        The possibility to specify default textures as colors (which will then be generated)
-
+    Vor Gamejam:
+    › Asset Manager
+    › Make Texture resource
+    › YAML loading for Materials
+    The possibility to specify default textures as colors (which will then be generated)
     › Replace pointers with references if nullptr is not an option! - For returns and parameters!
-    › Deferred Shading
     › PBR
-    › Multiple passes
-    For Cusutom depth functions to make sense, this is necessary.
+    › FBO - https://open.gl/framebuffers
+    › Deferred Shading
+    Here shadow map and light culling becomes the takes of culling
     › Draw call sorting
     Also depth sorting for transparent objects
     For opaque geometry I want to draw all ambient passes first, so I can have a semi depth-prepass for shading
@@ -54,6 +16,29 @@ Low-Level:
     http://realtimecollisiondetection.net/blog/?p=86
     http://www.gamedev.net/topic/661114-temporal-coherence-and-render-queue-sorting/
     http://www.gamedev.net/topic/636389-advanced-render-queue-api/
+    › At least Frustum Culling
+    › Input
+    › SceneGraph.castRay / Bullet integration?
+    › ASSIMP-Import for whole Scenes
+    › Text
+    › Skinning
+    › Post-Process-System
+    › Scripting?
+
+    -------------------
+    › Normmal Mapping
+    › Shadows
+    › Skybox
+    › Picking
+    › Bloom
+    › Particles
+
+-------------------------------------------------------------------------------------------
+
+    › Hot Reloading for Resources
+    › Asynchronous Loading for Resources
+
+    › Make Mesh a proper Resource - after implementing proper loading
 
     › Custom Ambient Lighting
         Fixed color
@@ -70,7 +55,6 @@ Low-Level:
 
     › light culling
     › batch lights (render multiple per pass)
-    › Asset Manager
     › Input
     › Use temporal coherence for render queue
     › SceneGraph.castRay - slow, without acceleration structure (maybe kd-tree or octree later?)
@@ -79,6 +63,11 @@ Low-Level:
     the values can have different handlers, ones that just save the last written value, ones that average, ones that average in a window, etc.
     maybe every value has the option to query all these metrics
     for binds, recompiles, etc. - I need text output!
+
+    › Generate Vertex Format from Material
+    VertexFormat.require(Material/vector<AttributeType>) oder sonst irgendwie ne factory für VertexFormats bauen. Damit Types von Attributen immer passen und so, muss man vermutlich VertexFormat(Material) oder fromMaterial oder so implementieren.
+    Vielleicht auch einfach, damit man einfach default-formats bauen kann will man require(vector<AttributeType>) haben
+    dann kann an einfach VertexFormat.require({AttributeType::POSITION, AttributeType::NORMAL}); machen und muss minimal viel denken. MAterials brauchen dann aber vielleicht noch einen krasseren mechanismus.
 
     › Vertex Format
     2_10_10_10 für Normals, 2›USHORT für TexCoord
@@ -91,12 +80,6 @@ Low-Level:
     http://assimp.sourceforge.net/lib_html/structai_node.html
     http://assimp.sourceforge.net/lib_html/structai_mesh.html
     https://github.com/assimp/assimp/blob/master/samples/SimpleOpenGL/Sample_SimpleOpenGL.c
-    › SudoHack-Grid-Wall (with Instancing)
-
-    › Text
-
-    › FBO
-    https://open.gl/framebuffers
 
     › getSurfaceArea für Meshes
 
@@ -106,9 +89,7 @@ Low-Level:
     https://forums.libsdl.org/viewtopic.php?t=9884&sid=0c6cf97b3791991ba61f169498385a70
 
 Mid-Level:
-    › Skinning
     › Instancing (in the SceneGraph)
-    › Post-Process Pipeline
 
     › Uniform Buffer Objects (maybe not?)
     http://stackoverflow.com/questions/32267727/efficiently-update-uniform-buffer-objects-with-instancing-and-culling

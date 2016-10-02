@@ -74,10 +74,9 @@ int main(int argc, char** args) {
     uint32_t data = 0xFFFFFFFF;
     whitePixel->loadFromMemory(reinterpret_cast<unsigned char*>(&data), 4, 1, 1, 4, false);
 
-    ngn::Shader defaultVertesShader("media/shaders/ngn/defaultVertex.yml");
-    ngn::Shader blinnPhongFragmentShader("media/shaders/ngn/blinnPhongFrag.yml");
-
-    ngn::Material baseMaterial(blinnPhongFragmentShader, defaultVertesShader);
+    ngn::Material baseMaterial;
+    baseMaterial.setFragmentShader(ngn::Resource::get<ngn::FragmentShader>("media/shaders/ngn/blinnPhongFrag.yml"));
+    baseMaterial.setVertexShader(ngn::Resource::get<ngn::VertexShader>("media/shaders/ngn/defaultVertex.yml"));
     baseMaterial.setTexture("baseTex", whitePixel);
     baseMaterial.setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     baseMaterial.setVector3("ambient", glm::vec3(0.1f));

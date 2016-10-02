@@ -8,6 +8,7 @@
 #include "uniformblock.hpp"
 #include "texture.hpp"
 #include "shader.hpp"
+#include "resource.hpp"
 
 #include "hash_tuple.hpp"
 
@@ -64,13 +65,13 @@ namespace ngn {
             Material& mMaterial;
             int mPassIndex;
             RenderStateBlock* mStateBlock;
-            const Shader* mVertexShader;
-            const Shader* mFragmentShader;
+            const VertexShader* mVertexShader;
+            const FragmentShader* mFragmentShader;
 
             ShaderProgram* mShaderProgram;
 
         public:
-            Pass(Material& mat, int index, const Shader* frag = nullptr, const Shader* vert = nullptr) :
+            Pass(Material& mat, int index, const FragmentShader* frag = nullptr, const VertexShader* vert = nullptr) :
                     mMaterial(mat), mPassIndex(index), mStateBlock(nullptr), mVertexShader(vert), mFragmentShader(frag) {
                 //mFragmentShader->include(&(mMaterial.getFragmentShader()));
                 //mVertexShader->include(&(mMaterial.getVertexShader()));
@@ -100,19 +101,22 @@ namespace ngn {
     private:
         BlendMode mBlendMode;
         std::unordered_map<int, Pass> mPasses;
-        const Shader& mVertexShader;
-        const Shader& mFragmentShader;
+        ResourceHandle<VertexShader> mVertexShader;
+        ResourceHandle<FragmentShader> mFragmentShader;
         RenderStateBlock mStateBlock;
-        ShaderProgram* mShaderProgram;
 
         void validate() const;
 
-    public:
-        Material(const Shader& frag, const Shader& vert) : mBlendMode(BlendMode::REPLACE), mVertexShader(vert), mFragmentShader(frag) {}
-        Material(const Material& base) : UniformList(base), mBlendMode(base.mBlendMode), mPasses(base.mPasses),
-                mVertexShader(base.mVertexShader), mFragmentShader(base.mFragmentShader), mStateBlock(base.mStateBlock) {}
+        static bool staticInitialized;
+        static void staticInitialize();
 
-        Pass& addPass(int passIndex, const Shader* frag = nullptr, const Shader* vert = nullptr) {
+    public:
+        Material() : mBlendMode(BlendMode::REPLACE) {}
+
+        void setVertexShader(ResourceHandle<VertexShader>&& vert) {mVertexShader = vert;}
+        void setFragmentShader(ResourceHandle<FragmentShader>&& frag) {mFragmentShader = frag;}
+
+        Pass& addPass(int passIndex, const FragmentShader* frag = nullptr, const VertexShader* vert = nullptr) {
             auto it = mPasses.find(passIndex);
             if(it != mPasses.end()) {
                 LOG_ERROR("Adding pass with index %d a second time!", passIndex);
@@ -136,8 +140,8 @@ namespace ngn {
             mPasses.erase(passIndex);
         }
 
-        const Shader& getVertexShader() const {return mVertexShader;}
-        const Shader& getFragmentShader() const {return mFragmentShader;}
+        const VertexShader& getVertexShader() const {return *mVertexShader.getResource();}
+        const FragmentShader& getFragmentShader() const {return *mFragmentShader.getResource();}
         const RenderStateBlock& getStateBlock() const {return mStateBlock;}
 
         // Render state
@@ -157,6 +161,6 @@ namespace ngn {
         void setFrontFace(FaceOrientation ori) {mStateBlock.setFrontFace(ori);}
 
 
-        bool loadFromFile(const char* filename);
+        bool load(const char* filename);
     };
 }

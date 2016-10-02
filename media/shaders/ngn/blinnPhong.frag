@@ -38,6 +38,8 @@ vec4 blinnPhongLightingModel(in SurfaceProperties surface, in vec3 eyeDir, in ve
     return vec4((surface.albedo * lambert + specular * specColor) * lightAtten, surface.alpha);
 }
 
+// I you wanted to provide an open slot (i.e. must-overwrite), you should use a forward declaration
+
 #pragma ngn slot:lightingModel
 vec4 lightingModel(in SurfaceProperties surface, in vec3 eyeDir, in vec3 lightDir, in float lightAtten) {
     return blinnPhongLightingModel(surface, eyeDir, lightDir, lightAtten);

@@ -5,12 +5,13 @@
 
 #include "shaderprogram.hpp"
 #include "texture.hpp"
+#include "resource.hpp"
 
 namespace ngn {
     //TODO: Möglichkeit der Engine zu sagen, dass manche Parameter colors sind, sodass gamma-correction applied werden kann.
     // default texture values angeben (vermutlich einfach nur eine Farbe - also vector type)
 
-    class Shader {
+    class Shader : public Resource {
     public:
         struct ShaderVariable {
             /*enum class ShaderVariableType {
@@ -55,10 +56,11 @@ namespace ngn {
 
     public:
         static std::string globalShaderPreamble; // I really don't like this
+        static Shader* fallback;
 
         Shader(const char* filename = nullptr) {
             if(!staticInitialized) staticInitialize();
-            if(filename) loadFromFile(filename);
+            if(filename) load(filename);
         }
 
         //TODO: Avoid multiple inclusion of the same shader
@@ -79,8 +81,24 @@ namespace ngn {
 
         std::string getFullString(const std::string& preamble = "", const std::vector<std::string>& overrideSlots = {}, bool globalPreamble = true) const;
 
-        bool loadFromFile(const char* file);
+        bool load(const char* file);
         bool loadSourceFromFile(const char* file);
     };
 
+    // Just for fallbacks
+    class FragmentShader : public Shader {
+    public:
+        static FragmentShader* fallback;
+
+        template<typename ...Args>
+        FragmentShader(Args&&... args) : Shader(std::forward<Args>(args)...) {}
+    };
+
+    class VertexShader : public Shader {
+    public:
+        static VertexShader* fallback;
+
+        template<typename ...Args>
+        VertexShader(Args&&... args) : Shader(std::forward<Args>(args)...) {}
+    };
 }
