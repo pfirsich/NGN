@@ -6,7 +6,7 @@ Low-Level:
     ✔ dirty-flags and recompiles for Materials and Passes, also Pass should hold ResourceHandles instead of pointers @done (02.10.16 20:53)
     ✔ Make Texture resources @done (02.10.16 21:35)
     ✔ Resource::add(name, pointer); @done (02.10.16 21:53)
-    › Read materials.md again
+    ✔ Read materials.md again @done (03.10.16 12:28)
     ✔ Read random_notes.txt and sort @done (03.10.16 03:10)
     › YAML loading for Materials
     The possibility to specify default textures as colors (which will then be generated)
