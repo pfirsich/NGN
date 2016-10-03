@@ -13,21 +13,6 @@ namespace ngn {
 
     class Shader : public Resource {
     public:
-        struct ShaderVariable {
-            /*enum class ShaderVariableType {
-                FLOAT, BOOL, INT, VEC2, VEC3, VEC4, TEXTURE
-            };*/
-
-            std::string name;
-            std::string type;
-            std::vector<std::pair<std::string, std::string> > layoutQualifiers;
-
-            ShaderVariable(const std::string& name, const std::string& type, const std::vector<std::pair<std::string, std::string> >& layout = {}) :
-                    name(name), type(type), layoutQualifiers(layout) {}
-
-            std::string getString(const std::string& qualifier) const;
-        };
-
         struct PragmaInfo {
             std::string name;
             std::string params;
@@ -42,14 +27,11 @@ namespace ngn {
         };
 
     private:
-        static bool staticInitialized;
-
-        std::vector<ShaderVariable> mUniforms;
-        std::vector<ShaderVariable> mAttributes;
-        std::vector<const Shader*> mIncludes;
+        std::vector<ResourceHandle<Shader> > mIncludes;
         std::vector<PragmaInfo> mPragmas;
         std::string mSource;
 
+        static bool staticInitialized;
         static void staticInitialize();
 
         bool parsePragmas(const std::string& str);
@@ -65,17 +47,9 @@ namespace ngn {
         }
 
         //TODO: Avoid multiple inclusion of the same shader
-        void include(const Shader* shdr) {mIncludes.push_back(shdr);}
+        void include(ResourceHandle<Shader>&& shader) {mIncludes.push_back(shader);}
 
-        void addUniform(const std::string& name, const std::string& type, std::vector<std::pair<std::string, std::string> > layoutQualifiers = {}) {
-            mUniforms.emplace_back(name, type, layoutQualifiers);
-        }
-
-        void addAttribute(const std::string& name, const std::string& type, std::vector<std::pair<std::string, std::string> > layoutQualifiers = {}) {
-            mAttributes.emplace_back(name, type, layoutQualifiers);
-        }
-
-        void setSource(const std::string& src) {mSource = src; parsePragmas(mSource);}
+        bool setSource(const std::string& src) {mSource = src; return parsePragmas(mSource);}
         std::string getSource() const {return mSource;}
 
         std::vector<PragmaInfo> getPragmas() const {return mPragmas;}
@@ -83,7 +57,6 @@ namespace ngn {
         std::string getFullString(const std::string& preamble = "", const std::vector<std::string>& overrideSlots = {}, bool globalPreamble = true) const;
 
         bool load(const char* file);
-        bool loadSourceFromFile(const char* file);
     };
 
     // Just for fallbacks

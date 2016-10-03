@@ -4,6 +4,10 @@ out VSOUT {
     vec3 eye;
 } vsOut;
 
+layout(location = NGN_ATTR_POSITION) in vec3 attrPosition;
+layout(location = NGN_ATTR_NORMAL) in vec3 attrNormal;
+layout(location = NGN_ATTR_TEXCOORD0) in vec2 attrTexCoord;
+
 void main() {
     vsOut.texCoord = attrTexCoord;
     vsOut.normal = normalize(ngn_normalMatrix * attrNormal);

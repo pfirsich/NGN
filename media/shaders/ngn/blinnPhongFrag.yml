@@ -1,8 +1,0 @@
-shader:
-    uniforms:
-        color: vec4
-        baseTex: sampler2D
-        shininess: float
-        ambient: vec3
-        emissive: vec3
-    glsl: media/shaders/ngn/blinnPhong.frag

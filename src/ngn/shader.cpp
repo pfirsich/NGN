@@ -50,33 +50,13 @@ namespace ngn {
         globalShaderPreamble += "#define " + STRINGIFY_ATTR_DEFINE(CUSTOM7) + "\n";
         globalShaderPreamble += "\n";
 
+        Shader::fallback = new Shader; // source empty
+
         FragmentShader::fallback = new FragmentShader;
         FragmentShader::fallback->setSource("out vec3 fragColor;\nvoid main() {fragColor = vec3(1.0, 0.0, 0.0);}");
 
         VertexShader::fallback = new VertexShader;
-        VertexShader::fallback->addAttribute("attrPos", "vec3", {{"location", "NGN_ATTR_POSITION"}});
-        VertexShader::fallback->addUniform("ngn_modelViewProjectionMatrix", "mat4");
-        VertexShader::fallback->setSource("void main() {gl_Position = ngn_modelViewProjectionMatrix * vec4(attrPos, 1.0);}");
-    }
-
-    std::string Shader::ShaderVariable::getString(const std::string& qualifier) const {
-        std::string ret;
-
-        if(layoutQualifiers.size() > 0) {
-            ret += "layout(";
-            for(auto& qual : layoutQualifiers) {
-                ret += qual.first;
-                if(qual.second.length() > 0) {
-                    ret += "=" + qual.second;
-                }
-                ret += ", ";
-            }
-            ret = ret.substr(0, ret.length() - 2) + ") ";
-        }
-
-        ret += qualifier + " " + type + " " + name + ";";
-
-        return ret;
+        VertexShader::fallback->setSource("layout(location = NGN_ATTR_POSITION) in vec3 attrPos; void main() {gl_Position = ngn_modelViewProjectionMatrix * vec4(attrPos, 1.0);}");
     }
 
     int getLineInString(const std::string& str, size_t pos) {
@@ -118,6 +98,7 @@ namespace ngn {
 
     bool Shader::parsePragmas(const std::string& str) {
         mPragmas.clear();
+        mIncludes.clear();
 
         bool newLine = true;
         for(size_t i = 0; i < str.length(); ++i) {
@@ -167,8 +148,10 @@ namespace ngn {
                         if(pragmaInfo.params.length() == 0) {
                             pragmaInfo.params = funcName;
                         } else {
-                            if(funcName != pragmaInfo.params)
+                            if(funcName != pragmaInfo.params) {
                                 LOG_ERROR("slot name '%s' does not match with declared function name '%s'", pragmaInfo.params.c_str(), funcName.c_str());
+                                return false;
+                            }
                         }
 
                         // find next open curly brace
@@ -225,7 +208,13 @@ namespace ngn {
                             }
                         }
                     } else if(pragmaInfo.name == "include") {
-
+                        Shader* include = Resource::get<Shader>(pragmaInfo.params.c_str());
+                        if(include) {
+                            mIncludes.push_back(include);
+                        } else {
+                            LOG_ERROR("include '%s' could not loaded!", pragmaInfo.params.c_str());
+                            return false;
+                        }
                     } else if(pragmaInfo.name == "uniform") {
 
                     } else if(pragmaInfo.name == "attribute") {
@@ -274,24 +263,12 @@ namespace ngn {
 
         std::vector<std::string> parts;
         for(int i = mIncludes.size() - 1; i >= 0; i -= 1) {
-            const Shader* include = mIncludes[i];
+            const Shader* include = mIncludes[i].getResource();
             parts.insert(parts.begin(), include->getFullString("", slots, false));
             mergeIntoVectorSet(slots, include->getPragmaSlots());
         }
         for(auto& part : parts) ret += part + "\n";
         //LOG_DEBUG("includes done");
-
-        for(auto& var : mAttributes) {
-            ret += var.getString("in") + "\n";
-        }
-        ret += "\n";
-        //LOG_DEBUG("invariables done");
-
-        for(auto& var : mUniforms) {
-            ret += var.getString("uniform") + "\n";
-        }
-        ret += "\n";
-        //LOG_DEBUG("uniforms done");
 
         // iterate from the back, because otherwise the indices are off
         std::string strippedBody = mSource;
@@ -316,93 +293,14 @@ namespace ngn {
         return ret;
     }
 
-    bool loadShaderVariables(std::vector<Shader::ShaderVariable>& vars, const YAML::Node& node) {
-        if(node.Type() != YAML::NodeType::Map) {
-            LOG_ERROR("uniforms have to a sequence of maps");
-            return false;
-        }
-        for(auto it = node.begin(); it != node.end(); ++it) {
-            const std::string& name = it->first.as<std::string>();
-            if(it->second.Type() == YAML::NodeType::Scalar) {
-                vars.emplace_back(name, it->second.as<std::string>());
-            } else if(it->second.Type() == YAML::NodeType::Map) {
-                if(it->second["type"]) {
-                    std::vector<std::pair<std::string, std::string> > layout;
-                    if(it->second["layout"]) {
-                        for(auto qualifier = it->second["layout"].begin(); qualifier != it->second["layout"].end(); ++qualifier) {
-                            layout.push_back(std::make_pair(qualifier->first.as<std::string>(), qualifier->second.as<std::string>()));
-                        }
-                    }
-                    vars.emplace_back(name, it->second["type"].as<std::string>(), layout);
-                } else {
-                    LOG_ERROR("'type' has to be specified for a shader variable!");
-                    return false;
-                }
-            } else {
-                LOG_ERROR("a shader variable value has to either be a scalar (the type) or a map (including a type field)");
-                return false;
-            }
-        }
-        return true;
-    }
-
     bool Shader::load(const char* filename) {
-        *this = Shader();
-
-        try {
-            YAML::Node root = YAML::LoadFile(filename);
-            if(root.IsNull()) {
-                LOG_ERROR("YAML file could not be opened/parsed.");
-                return false;
-            }
-
-            if(root.Type() == YAML::NodeType::Map && root.size() == 1 && root["shader"]) {
-                const YAML::Node& shader = root["shader"];
-
-                if(shader["uniforms"]) {
-                    loadShaderVariables(mUniforms, shader["uniforms"]);
-                }
-                if(shader["attributes"]) {
-                    loadShaderVariables(mAttributes, shader["attributes"]);
-                }
-                if(shader["includes"]) {
-                    if(shader["includes"].Type() != YAML::NodeType::Sequence) {
-                        LOG_ERROR("'includes' should be a sequence of file paths");
-                        return false;
-                    }
-                    for(auto it = shader["includes"].begin(); it != shader["includes"].end(); ++it) {
-                        if(it->Type() != YAML::NodeType::Scalar) {
-                            LOG_ERROR("'includes' should be a sequence of file paths");
-                            return false;
-                        } else {
-                            LOG_WARNING("includes for shader files are not yet implemented!");
-                            //TODO: Asset manager needed!
-                        }
-                    }
-                }
-                if(shader["glsl"]) {
-                    if(!loadSourceFromFile(shader["glsl"].as<std::string>().c_str())) return false;
-                }
-            } else {
-                LOG_ERROR("Shader file should only contain one key 'shader'");
-                return false;
-            }
-            return true;
-        } catch(YAML::Exception exc) {
-            LOG_ERROR("Error loading YAML file: '%s'", exc.msg.c_str());
-            return false;
-        }
-    }
-
-    bool Shader::loadSourceFromFile(const char* filename) {
         //LOG_DEBUG("load from file: %s", filename);
         std::ifstream file(filename, std::ios_base::in);
         if(file){
             // It's absolutely ridiculous and embarrassing how hard it is to read a file into a string correctly.
             std::stringstream buffer;
             buffer << file.rdbuf();
-            setSource(buffer.str());
-            return true;
+            return setSource(buffer.str());
         } else{
             LOG_ERROR("Shader source file '%s' could not be opened.", filename);
             return false;

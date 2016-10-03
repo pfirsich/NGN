@@ -1,6 +1,6 @@
 // Includes can be anywhere in the program (their absolute position will not make a difference)
 // Their order though will make huge difference!
-#pragma ngn include some other.glsl
+#pragma ngn include media/shaders/ngn/gammaHelpers.glsl
 
 in VSOUT {
     vec2 texCoord;
@@ -8,12 +8,11 @@ in VSOUT {
     vec3 eye; // The inverse = position
 } vsOut;
 
-/*********** PUT THIS AWAY ***********/
-// for both frag and vert
-vec3 toLinear(in vec3 col) {
-    return pow(col, vec3(2.2));
-}
-/*************************************/
+uniform vec4 color;
+uniform sampler2D baseTex;
+uniform float shininess;
+uniform vec3 ambient;
+uniform vec3 emissive;
 
 struct SurfaceProperties {
     vec3 albedo;

@@ -71,8 +71,8 @@ int main(int argc, char** args) {
     window.resizeSignal.emit(size.x, size.y);
 
 
-    ngn::Material baseMaterial(ngn::Resource::get<ngn::FragmentShader>("media/shaders/ngn/blinnPhongFrag.yml"),
-                               ngn::Resource::get<ngn::VertexShader>("media/shaders/ngn/defaultVertex.yml"));
+    ngn::Material baseMaterial(ngn::Resource::get<ngn::FragmentShader>("media/shaders/ngn/blinnPhong.frag"),
+                               ngn::Resource::get<ngn::VertexShader>("media/shaders/ngn/default.vert"));
     ngn::Resource::add("whitePixel", ngn::Texture::pixelTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
     baseMaterial.setTexture("baseTex", ngn::Resource::get<ngn::Texture>("whitePixel"));
     baseMaterial.setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));

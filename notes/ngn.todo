@@ -8,7 +8,7 @@ Low-Level:
     ✔ Resource::add(name, pointer); @done (02.10.16 21:53)
     ✔ Read materials.md again @done (03.10.16 12:28)
     ✔ Read random_notes.txt and sort @done (03.10.16 03:10)
-    › Make include a pragma
+    ✔ Make include a pragma, remove uniform/attribute information from the shader and remove YAML files from it @done (03.10.16 15:46)
     › YAML loading for Materials
     The possibility to specify default textures as colors (which will then be generated)
 
