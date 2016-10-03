@@ -97,7 +97,7 @@ int main(int argc, char** args) {
         obj->setMesh(mesh);
         ironman.add(obj);
     }
-    ironman.setMaterial(ngn::Resource::get<ngn::Material>("media/test.yml"));
+    ironman.setMaterial(&baseMaterial);
     ironman.setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
     ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
     scene.add(&ironman);
@@ -166,7 +166,7 @@ int main(int argc, char** args) {
 
         moveCamera(camera, dt);
 
-        renderer.render(&scene, &camera, !inputState.key[SDL_SCANCODE_M]);
+        renderer.render(&scene, &camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
 
         window.updateAndSwap();
     }

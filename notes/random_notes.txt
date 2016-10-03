@@ -20,30 +20,16 @@ Light-Attenuation 1D-Texture! Auch einfach für schnelleren Lookup und krasse Ar
 
 ein geerbtes object für LOD, dass mehrere meshes und materials nimmt, oder gleich mehrere objects (damit man shadows und so pro lod definieren kann), dann aber transformationen ignorieren
 
-material-klasse - hält properties + maps, blending, depthTest, alphaTest, visible, backfaceculling
-ShaderMaterial, MeshLambertMaterial
-
 light-klasse (Object-derived) - color
 PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight
 light.shadow = new PCFShadowMap(), VarianceShadowMap()
 darin kann man dann mapsizes und camera und sowas alles festlegen, die instanzieren zuerst ihre eigene camera, die dann entweder PerspectiveCamera oder OrthographicCamera ist, oder DualParaboloidCamera oder sowas
-
-state-changes in Texture und Shader-class optimieren 
-bei textures separat tracken in welche unit gebindet wurde/wird
-Mehr weirde types unterstüzen in Textures
-
-transforms
-die camera-klasse soll man eigentlich nicht rendern können, ebenso soll sie auch kein mesh haben und keine children
-object aufsplitten in Transforms (->camera), HasId (->camera), Renderable (bekommt children und render-methode und hash), Tagged (->camera)
-http://en.cppreference.com/w/cpp/language/cast_operator - cast zu glm::mat4
 
 Tagged hat eine findChild-Methode und addTag/removeTag methode, findChild ist optional rekursiv
 findChild([](Tags tags){return tags.contains("dude") || tags.contains("peter");}); - sollte ne liste zurückgeben
 findChild(const char*) - gibt eigentlich nur das erste zurück?
 
 Mehr überlegen! Vielleicht will man trotzdem ids? Vielleicht will man trotzdem zusätzlich names?
-
-Vielleicht trotzdem Ids
 
 ------
 
@@ -72,8 +58,6 @@ Statt einer map[programID] ist es wohl besser einen vector zu haben, weil man ja
 ------------------------------------
 Für Instancing und und mehr Informationen vielleicht überlegen eine Zwischenabstraktion für ein Mesh-Material-Paar zu finden. z.B. Object und ObjectInstance (dieses objekt hält dann transformationen und so). 
 Oder ObjectTemplate dazwischen einfügen. Macht automatisches Instancing und bucketing einfacher.
-
-Vielleicht nennt man das Mesh/Material-Paar "Model"? Vielleicht macht man es mandatory?
 
 Dann ist ein Mesh wirklich nur ein VAO und ein Model eine Referenz auf ein Mesh und ein Material.
 Ein Object oder SceneNode hat dann ein Model und Instanzen von allen Uniforms, die dazu gehören (das heißt alle Variablen fürs Material)
@@ -332,3 +316,21 @@ Jedes GL command muss eigentlich in einem bestimmtem GL context passieren. Ich b
 -----------
 
 Fast Hashing: https://cyan4973.github.io/xxHash/
+
+------------
+
+glslang als referenz-compiler kann auch reflection, die ich verwenden kann um informationen über uniforms/attribute zu bekommen. als precompile-step oder so.
+
+vogl ist die fucking erleuchtung und supermagic
+
+https://www.reddit.com/r/videos/comments/53sqmp/the_most_visually_stunning_music_video_ive_ever/ - Das in Realtime. Bitte.
+
+# Open Questions:
+* Make Shader Prologue to a part of the shader factory/cache? With vertex and fragment specific defines (more efficient for pretty much all defines so far)
+* Use Bitmasks for hasPass?
+
+## Resolved Questions:
+* When two passes in two different materials are assigned the same Shader, problems can occure if they include the material shader themselves (no recompiles being triggered, it's hard to choose to avoid this inclusion, modifying resources from the handler, etc.) => you have to explicitely include outside yourself. It's not too much work and very often you actually don't even want to include.
+* How to overwrite vOut? => It's possible to define multiple interface blocks that are just not used, so that you just have to define an own interface block (in both places) and name it somehow different
+* How to overwrite SurfaceProperties? => You normally don't want to do this, since doing this is a rather big modification anyways and also requires a change in pretty much every line of the shader, so it's no big deal if you have to start a new file and write everything again.
+* How to define a custom ambient pass? => Just define an intermediate Material, that overwrites the Shader for the AMBIENT_PASS with whatever you like. (probably only overwrite main and leave it at that)

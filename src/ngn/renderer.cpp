@@ -29,14 +29,23 @@ namespace ngn {
         Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(DIRECTIONAL) + "\n";
         Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(SPOT) + "\n";
         Shader::globalShaderPreamble +=
-R"(struct ngn_LightParameters {
+R"(
+#extension GL_ARB_explicit_uniform_location : enable
+layout(location = 1) uniform mat4 ngn_modelMatrix;
+layout(location = 2) uniform mat4 ngn_viewMatrix;
+layout(location = 3) uniform mat4 ngn_modelViewMatrix;
+layout(location = 4) uniform mat3 ngn_normalMatrix;
+layout(location = 5) uniform mat4 ngn_projectionMatrix;
+layout(location = 6) uniform mat4 ngn_modelViewProjectionMatrix;
+
+struct ngn_LightParameters {
     int type;
     float range;
     vec3 color;
     vec3 position; // view/camera space
     vec3 direction; // view/camera space
 };
-uniform ngn_LightParameters ngn_light;
+layout(location = 7) uniform ngn_LightParameters ngn_light;
 
 )";
 
@@ -91,7 +100,7 @@ uniform ngn_LightParameters ngn_light;
         glClear(mask);
     }
 
-    void Renderer::render(SceneNode* root, Camera* camera, bool regenerateQueue) {
+    void Renderer::render(SceneNode* root, Camera* camera, bool regenerateQueue, bool doRenderQueue) {
         updateState();
         // make sure depth write is enabled before we clear
         glDepthMask((RenderStateBlock::currentDepthWrite = true) ? GL_TRUE : GL_FALSE);
@@ -233,6 +242,6 @@ uniform ngn_LightParameters ngn_light;
             }
         }
 
-        renderRenderQueue(renderQueue);
+        if(doRenderQueue) renderRenderQueue(renderQueue);
     }
 }

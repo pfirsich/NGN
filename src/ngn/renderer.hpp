@@ -100,6 +100,6 @@ namespace ngn {
         //setRenderTarget
         void clear(bool color, bool depth, bool stencil) const;
         void clear() const {clear(autoClearColor, autoClearDepth, autoClearStencil);}
-        virtual void render(SceneNode* root, Camera* camera, bool regenerateQueue = true);
+        virtual void render(SceneNode* root, Camera* camera, bool regenerateQueue = true, bool renderQueue = true);
     };
 }

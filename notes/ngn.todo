@@ -7,14 +7,17 @@ Low-Level:
     ✔ Make Texture resources @done (02.10.16 21:35)
     ✔ Resource::add(name, pointer); @done (02.10.16 21:53)
     › Read materials.md again
-    › Read random_notes.txt and sort
+    ✔ Read random_notes.txt and sort @done (03.10.16 03:10)
     › YAML loading for Materials
     The possibility to specify default textures as colors (which will then be generated)
-    › New Shader Markup
-    ------ Sunday
+    › Improve slot pragma
+    You actually have to repeat the name of the slot you define, when in fact "#pragma ngn slot" would be enough (also makes it impossible to malform these pragmas). For this function declaration parsing is necessary, but a function declaration merely is: "type identifier left_paren"
+    › Make include a pragma
+
     › FBO - https://open.gl/framebuffers
     › Deferred Shading
     Here shadow map and light culling becomes the takes of culling
+    In Deferred the lighting model is just not a slot?
     › Proper Light Attenuation
     › Replace pointers with references if nullptr is not an option! - For returns and parameters!
     › PBR
@@ -45,17 +48,29 @@ Low-Level:
 
 -------------------------------------------------------------------------------------------
 
+    › Parse uniforms/attributes from the shader files (maybe with extra markup)
+    They can be detected with "qualifiers (uniform|in) type name [= defaultvalue];" Parsing this is actually not that easy, but possible, I think?
+    To make it easier at first, maybe help by prepending a "#pragma ngn uniform" in the line before, so we know where to look (somewhere between the pragma and the next semicolon)
+    !! Alternatively use the GL-API to retrieve uniform/attribute information and make it part of the ShaderProgram and ShaderProgram::link
+    Shader YAML is then not needed anymore (thank good, less files) and it's way less bad that it's not possible to inline resources in YAML files
+
+    › Maybe optimize render queue building a little by putting it in a separate thread
+    the main thread then listens on an atomic counter containing the number of elements in the queue (which is increased by the render queue builder thread) and renders when it exceeds the already rendered number of entries
+    Alternativ kann man es pro pass machen. Man builded in mehreren Threads Renderqueues für einzelne passes (und sortiert sie vor)
+
     › Hot Reloading for Resources
     › Asynchronous Loading for Resources
 
     › Make Mesh a proper Resource - after implementing proper loading
 
-    › Custom Ambient Lighting
-        Fixed color
-        Hemisphere light - http://sunandblackcat.com/tipFullView.php?l=eng&topicid=31&topic=Advanced-GLSL-Lighting-Models
     › Predefined constants for uniform locations that are repeatedly set in render()
     There is no other way to get rid of map::find, except if all shaders start sharing locations for uniforms
-    Maybe try implementing an own map, that just does a linear search?
+    Maybe try implementing an own map, that just does a linear search
+    › Implement setX-functions for UniformBlocks that take a location instead of a name
+    And give a UniformBlock the option to change the internal type of the uniform to a location/Uniform-pair if instructed (meaning: if the locations of a certain uniform are not going to differ between all shaders on which the uniforms are going to be applied, the indirection through the map are not necessary) (should there be a global uniform location library?)
+    Probably don't just overload setX with uint as the first argument, but rather introduce a new abstraction "Uniform", that can be queried by string and can be set using setMatrix, setVector3, etc.
+    Maybe even only query the uniform locations on recompile/init, since for Materials at least the uniformslists always belong to a single shader, so caching is easily doable. This should definitely be controllable. Also (!!!) Materials rarely change their parameters, so even the calls to glUniformX can be avoided most of the time! Maybe the Material has to do extra stuff?
+    Maybe have a class that is for containing uniforms that are directly associated with a single shader and another class for uniforms that are applied per-object (transforms) or per-frame (lights etc.). This is way too complicated.
     › Helper-Functions toGamma, toLinear - look up how to do this correctly in EXT_framebuffer_srgb
     https://www.opengl.org/registry/specs/EXT/framebuffer_sRGB.txt
     C-Functions are provided in this spec
@@ -67,6 +82,7 @@ Low-Level:
     › batch lights (render multiple per pass)
     › Input
     › Use temporal coherence for render queue
+    Store a linearized scene graph permanently and sort index lists, the linearized scene graph will be updated incrementally and is always stored in traversal order. The index list remains partially sorted and you never have to sort the full thing. New elements will just be appended.
     › SceneGraph.castRay - slow, without acceleration structure (maybe kd-tree or octree later?)
     › statistics
     stripped in release, STATISTICS("name", value)
@@ -98,8 +114,11 @@ Low-Level:
     Also the OGL state (ShaderProgram, Texture, RenderStateBlock) is handled in static variables, there should be a current-context global and that should contain the state. Also shader caches and uniform locations and stuff have to be context aware.
     https://forums.libsdl.org/viewtopic.php?t=9884&sid=0c6cf97b3791991ba61f169498385a70
 
-Mid-Level:
-    › Instancing (in the SceneGraph)
+    › Custom pass system
+    At the moment a Material can be rendered in multiple predefined passes, maybe there should be a way to insert custom ones to make sure stuff gets rendered in a certain order and maybe ways so spacify if a framebuffer readback is necessary or how the objects should be sorted for that pass. Or if uniforms should be set, if it is lit, etc.
+    › Pass-Indices
+    See above. If that is not provided, maybe build a class somewhere that wraps an int and increments the value automatically. Maybe with fixed ranges for specific renderers.
+    In a single translation unit the order of initialization is defined (as defined in source), in multiple source files it's undefined, but that is irrelevant as long as it's consistent.
 
     › Uniform Buffer Objects (maybe not?)
     http://stackoverflow.com/questions/32267727/efficiently-update-uniform-buffer-objects-with-instancing-and-culling
@@ -188,6 +207,26 @@ High-Level:
             https://www.allegorithmic.com/pbr-guide
             https://www.allegorithmic.com/system/files/software/download/build/PBR_Guide_Vol.1.pdf
             https://www.allegorithmic.com/system/files/software/download/build/PBR_volume_02_rev05.pdf
+
+            ------------------
+
+            https://www.youtube.com/watch?v=OeEYEUCa4tI
+            https://www.youtube.com/watch?v=9DmRNlIJIp0
+            https://www.youtube.com/watch?v=UIt-nemQopE
+            https://www.youtube.com/watch?v=bj9P504JUAE
+            https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf
+            http://blog.selfshadow.com/publications/s2013-shading-course/
+            http://www.codinglabs.net/article_gamma_vs_linear.aspx
+            http://www.codinglabs.net/article_physically_based_rendering.aspx
+            http://www.codinglabs.net/article_physically_based_rendering_cook_torrance.aspx
+            http://www.marmoset.co/toolbag/learn/pbr-theory
+            steps of pbr:#
+            gamma correctness
+            HDR - tonemapping, then maybe bloom
+            actual pbr
+            environment probes
+            screen space reflections
+            color grading
 
         › Subsurface Scattering
             http://blog.selfshadow.com/publications/s2015-shading-course/burley/s2015_pbs_disney_bsdf_slides.pdf

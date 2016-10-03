@@ -1,11 +1,4 @@
 shader:
-    uniforms:
-        ngn_modelMatrix: mat4
-        ngn_viewMatrix: mat4
-        ngn_modelViewMatrix: mat4
-        ngn_normalMatrix: mat3
-        ngn_projectionMatrix: mat4
-        ngn_modelViewProjectionMatrix: mat4
     attributes:
         attrPosition:
             type: vec3
