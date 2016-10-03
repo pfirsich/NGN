@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include "window.hpp"
 #include "log.hpp"
 
@@ -25,9 +27,9 @@ namespace ngn {
     }
 
     float getTime() {
-        static Uint64 start = SDL_GetPerformanceCounter();
-        static Uint64 freq = SDL_GetPerformanceFrequency();
-        return 1.0f * (SDL_GetPerformanceCounter() - start) / freq;
+        static std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> diff = std::chrono::high_resolution_clock::now() - start;
+        return diff.count();
     }
 
     void Window::create(const char* title, int width, int height, bool fullscreen, bool vsync, int msaaSamples, Uint32 createWindowFlags) {
