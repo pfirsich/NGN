@@ -30,6 +30,7 @@ namespace ngn {
 
         struct PragmaInfo {
             std::string name;
+            std::string params;
             int lineStart;
             size_t pragmaStart;
             size_t nextLineStart;

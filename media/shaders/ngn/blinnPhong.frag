@@ -1,3 +1,7 @@
+// Includes can be anywhere in the program (their absolute position will not make a difference)
+// Their order though will make huge difference!
+#pragma ngn include some other.glsl
+
 in VSOUT {
     vec2 texCoord;
     vec3 normal;
@@ -40,7 +44,7 @@ vec4 blinnPhongLightingModel(in SurfaceProperties surface, in vec3 eyeDir, in ve
 
 // I you wanted to provide an open slot (i.e. must-overwrite), you should use a forward declaration
 
-#pragma ngn slot:lightingModel
+#pragma ngn slot
 vec4 lightingModel(in SurfaceProperties surface, in vec3 eyeDir, in vec3 lightDir, in float lightAtten) {
     return blinnPhongLightingModel(surface, eyeDir, lightDir, lightAtten);
 }
@@ -57,7 +61,7 @@ SurfaceProperties blinnPhongSurface() {
     return ret;
 }
 
-#pragma ngn slot:surface
+#pragma ngn slot
 SurfaceProperties surface() {
     return blinnPhongSurface();
 }
@@ -74,7 +78,7 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
     }
 }
 
-#pragma ngn slot:frag
+#pragma ngn slot
 void main() {
     SurfaceProperties _surf = surface();
 

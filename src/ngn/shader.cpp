@@ -87,19 +87,49 @@ namespace ngn {
         return line;
     }
 
+    std::string strTrim(const std::string& str) {
+        size_t start = std::string::npos, end = std::string::npos;
+        size_t len = str.length();
+        for(size_t i = 0; i < len; ++i) {
+            if(str[i] > ' ' && start == std::string::npos) start = i;
+            if(str[len-1-i] > ' ' && end == std::string::npos) end = len-i;
+        }
+        if(start == std::string::npos || end == std::string::npos) {
+            assert(start == end); // Something's fishy if only one is npos
+            return "";
+        }
+        return str.substr(start, end-start);
+    }
+    inline size_t advanceToWhitespace(const std::string& str, size_t& i) {
+        size_t len = str.length();
+        for(; i < len; ++i) if(str[i] <= ' ') break;
+        return i;
+    }
+
+    inline size_t advanceToNonWhitespace(const std::string& str, size_t& i) {
+        size_t len = str.length();
+        for(; i < len; ++i) if(str[i] > ' ') break;
+        return i;
+    }
+
+    bool inIdentifier(char c) {
+        return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+    }
+
     bool Shader::parsePragmas(const std::string& str) {
         mPragmas.clear();
 
         bool newLine = true;
         for(size_t i = 0; i < str.length(); ++i) {
             if(newLine && str[i] == '#') { // preprocessor directive
-                std::string directive("#pragma ngn ");
-                if(str.substr(i, directive.length()) == directive) {
+                std::string pragmaSig("#pragma ngn ");
+                if(str.substr(i, pragmaSig.length()) == pragmaSig) {
                     PragmaInfo pragmaInfo;
                     pragmaInfo.pragmaStart = i;
                     pragmaInfo.lineStart = getLineInString(str, i);
 
-                    i += directive.length();
+                    i += pragmaSig.length();
+                    auto nameStart = advanceToNonWhitespace(str, i);
                     // find next whitespace to extract name
                     auto nextWhitespace = std::string::npos;
                     for(; i < str.length(); ++i) {
@@ -114,68 +144,98 @@ namespace ngn {
                         LOG_ERROR("No whitespace after pragma name");
                         return false;
                     }
-                    pragmaInfo.name = str.substr(pragmaInfo.pragmaStart, nextWhitespace - pragmaInfo.pragmaStart);
+                    pragmaInfo.name = str.substr(nameStart, nextWhitespace - nameStart);
 
                     if(pragmaInfo.nextLineStart == std::string::npos) {
                         LOG_ERROR("No newline found after pragma '%s'", pragmaInfo.name.c_str());
                         return false;
                     }
 
-                    // find next open curly brace
-                    for(; i < str.length(); ++i) {
-                        if(str[i] == '{') {
-                            pragmaInfo.nextBlockStart = i;
-                            break;
-                        }
-                        // If we find a ';' before we find a '{', it's probably a forward declaration
-                        if(str[i] == ';') {
-                            break;
-                        }
-                    }
-                    if(pragmaInfo.nextBlockStart == std::string::npos) {
-                        // If forward declared, pretend it's a block that has size 0 right after the declaration
-                        pragmaInfo.nextBlockStart = i;
-                        pragmaInfo.nextBlockEnd = i;
-                        pragmaInfo.lineNextBlockEnd = getLineInString(str, i);
-                    } else {
-                        bool inComment = false;
-                        bool multilineComment = false;
-                        int braceCounter = 0;
-                        for(; i < str.length(); ++i) {
-                            if(str[i] == '{' && !inComment) braceCounter += 1;
-                            if(str[i] == '}' && !inComment) {
-                                braceCounter -= 1;
-                                if(braceCounter == 0) {
-                                    pragmaInfo.nextBlockEnd = i;
-                                    pragmaInfo.lineNextBlockEnd = getLineInString(str, i);
-                                    break;
-                                }
-                            }
-                            if(str.substr(i, 2) == "//") {
-                                inComment = true;
-                                multilineComment = false;
-                            }
-                            if(str.substr(i, 2) == "/*") {
-                                inComment = true;
-                                multilineComment = true;
-                            }
-                            if(inComment) {
-                                if(multilineComment) {
-                                    if(str.substr(i, 2) == "*/") inComment = false;
-                                } else {
-                                    if(str[i] == '\n') inComment = false;
-                                }
-                            }
+                    pragmaInfo.params = strTrim(str.substr(nextWhitespace, pragmaInfo.nextLineStart - nextWhitespace));
+
+                    if(pragmaInfo.name == "slot") {
+                        // function declaration: type name (...) ...
+                        // first advance to the start of type
+                        advanceToNonWhitespace(str, i);
+                        // advance to the first whitespace (in front of name)
+                        advanceToWhitespace(str, i);
+                        // advance to the beginning of name
+                        auto nameStart = advanceToNonWhitespace(str, i);
+                        for(; i < str.length(); ++i) if(!inIdentifier(str[i])) break;
+                        std::string funcName = str.substr(nameStart, i - nameStart);
+
+                        if(pragmaInfo.params.length() == 0) {
+                            pragmaInfo.params = funcName;
+                        } else {
+                            if(funcName != pragmaInfo.params)
+                                LOG_ERROR("slot name '%s' does not match with declared function name '%s'", pragmaInfo.params.c_str(), funcName.c_str());
                         }
 
-                        if(pragmaInfo.nextBlockEnd == std::string::npos) {
-                            LOG_ERROR("Found no matching '}' to '{' of the block after pragma '%s'", pragmaInfo.name.c_str());
-                            return false;
+                        // find next open curly brace
+                        for(; i < str.length(); ++i) {
+                            if(str[i] == '{') {
+                                pragmaInfo.nextBlockStart = i;
+                                break;
+                            }
+                            // If we find a ';' before we find a '{', it's probably a forward declaration
+                            if(str[i] == ';') {
+                                break;
+                            }
                         }
+                        if(pragmaInfo.nextBlockStart == std::string::npos) {
+                            // If forward declared, pretend it's a block that has size 0 right after the declaration
+                            pragmaInfo.nextBlockStart = i;
+                            pragmaInfo.nextBlockEnd = i;
+                            pragmaInfo.lineNextBlockEnd = getLineInString(str, i);
+                        } else {
+                            bool inComment = false;
+                            bool multilineComment = false;
+                            int braceCounter = 0;
+                            for(; i < str.length(); ++i) {
+                                if(str[i] == '{' && !inComment) braceCounter += 1;
+                                if(str[i] == '}' && !inComment) {
+                                    braceCounter -= 1;
+                                    if(braceCounter == 0) {
+                                        pragmaInfo.nextBlockEnd = i;
+                                        pragmaInfo.lineNextBlockEnd = getLineInString(str, i);
+                                        break;
+                                    }
+                                }
+                                if(str.substr(i, 2) == "//") {
+                                    inComment = true;
+                                    multilineComment = false;
+                                }
+                                if(str.substr(i, 2) == "/*") {
+                                    inComment = true;
+                                    multilineComment = true;
+                                }
+                                if(inComment) {
+                                    if(multilineComment) {
+                                        if(str.substr(i, 2) == "*/") inComment = false;
+                                    } else {
+                                        if(str[i] == '\n') inComment = false;
+                                    }
+                                }
+                            }
+
+                            if(pragmaInfo.nextBlockEnd == std::string::npos) {
+                                LOG_ERROR("Found no matching '}' to '{' of the block after pragma '%s' (%s)",
+                                    pragmaInfo.name.c_str(), pragmaInfo.params.c_str());
+                                return false;
+                            }
+                        }
+                    } else if(pragmaInfo.name == "include") {
+
+                    } else if(pragmaInfo.name == "uniform") {
+
+                    } else if(pragmaInfo.name == "attribute") {
+
                     }
 
                     mPragmas.push_back(pragmaInfo);
-                    //LOG_DEBUG("'%s': %d, %d, %d, %d", pragmaInfo.name.c_str(), pragmaInfo.pragmaStart, pragmaInfo.nextLineStart, pragmaInfo.nextBlockStart, pragmaInfo.nextBlockEnd);
+                    LOG_DEBUG("pragma '%s' ('%s'): lineStart: %d, pragmaStart: %d, nextLineStart: %d, nextBlockStart: %d, nextBlockEnd: %d, lineNextBlockEnd: %d",
+                        pragmaInfo.name.c_str(), pragmaInfo.params.c_str(), pragmaInfo.lineStart, pragmaInfo.pragmaStart,
+                        pragmaInfo.nextLineStart, pragmaInfo.nextBlockStart, pragmaInfo.nextBlockEnd, pragmaInfo.lineNextBlockEnd);
                 }
             }
 
@@ -188,7 +248,9 @@ namespace ngn {
 
     std::vector<std::string> Shader::getPragmaSlots() const {
         std::vector<std::string> ret;
-        for(auto& pragma : mPragmas) ret.push_back(pragma.name);
+        for(auto& pragma : mPragmas)
+            if(pragma.name == "slot")
+                ret.emplace_back(pragma.params);
         return ret;
     }
 
@@ -208,7 +270,7 @@ namespace ngn {
         ret += preamble;
 
         std::vector<std::string> slots(overrideSlots);
-        for(auto& pragma : mPragmas) slots.emplace_back(pragma.name);
+        mergeIntoVectorSet(slots, getPragmaSlots());
 
         std::vector<std::string> parts;
         for(int i = mIncludes.size() - 1; i >= 0; i -= 1) {
@@ -234,20 +296,20 @@ namespace ngn {
         // iterate from the back, because otherwise the indices are off
         std::string strippedBody = mSource;
         for(int i = mPragmas.size() - 1; i >= 0; i -= 1) {
-            //LOG_DEBUG("i: %d, cond: %d", i, i >= 0);
             const PragmaInfo& pragma = mPragmas[i];
-            bool keep = true;
-            for(auto& slotName : overrideSlots) {
-                if(slotName == pragma.name) keep = false;
+            if(pragma.name == "slot") {
+                bool keep = true;
+                for(auto& slotName : overrideSlots) {
+                    if(slotName == pragma.params) keep = false;
+                }
+                if(!keep) {
+                    // remove body and turn it into forward declaration (also it seems to be okay to have multiple forward declarations)
+                    //LOG_DEBUG("erase '%s'", strippedBody.substr(pragma.nextBlockStart, pragma.nextBlockEnd - pragma.nextBlockStart + 1).c_str());
+                    strippedBody.erase(pragma.nextBlockStart, pragma.nextBlockEnd - pragma.nextBlockStart + 1);
+                    // +1 because the #line directive sets the line number of the next line and +1 because the forward declaration takes one line (hopefully)
+                    strippedBody.insert(pragma.nextBlockStart, ";\n#line " + std::to_string(pragma.lineNextBlockEnd + 1 + 1));
+                }
             }
-            if(!keep) {
-                // remove body and turn it into forward declaration (also it seems to be okay to have multiple forward declarations)
-                //LOG_DEBUG("erase '%s'", strippedBody.substr(pragma.nextBlockStart, pragma.nextBlockEnd - pragma.nextBlockStart + 1).c_str());
-                strippedBody.erase(pragma.nextBlockStart, pragma.nextBlockEnd - pragma.nextBlockStart + 1);
-                // +1 because the #line directive sets the line number of the next line and +1 because the forward declaration takes one line (hopefully)
-                strippedBody.insert(pragma.nextBlockStart, ";\n#line " + std::to_string(pragma.lineNextBlockEnd + 1 + 1));
-            }
-            //LOG_DEBUG("keep '%s': %d", pragma.name.c_str(), keep);
         }
         ret += "#line 1\n" + strippedBody;
 

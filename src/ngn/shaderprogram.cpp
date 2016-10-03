@@ -56,7 +56,7 @@ namespace ngn {
     }
 
     bool ShaderProgram::compileShaderFromString(const char* source, ShaderProgram::ShaderType type) {
-        LOG_DEBUG("%s:\n%s", type == ShaderType::FRAGMENT ? "fragment" : "vertex", source);
+        //LOG_DEBUG("%s:\n%s", type == ShaderType::FRAGMENT ? "fragment" : "vertex", source);
 
         if(mStatus != Status::EMPTY && mStatus != Status::UNLINKED) {
             LOG_ERROR("To compile and attach a shader, the status must be EMPTY or UNLINKED");

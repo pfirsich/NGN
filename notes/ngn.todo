@@ -8,11 +8,9 @@ Low-Level:
     ✔ Resource::add(name, pointer); @done (02.10.16 21:53)
     ✔ Read materials.md again @done (03.10.16 12:28)
     ✔ Read random_notes.txt and sort @done (03.10.16 03:10)
+    › Make include a pragma
     › YAML loading for Materials
     The possibility to specify default textures as colors (which will then be generated)
-    › Improve slot pragma
-    You actually have to repeat the name of the slot you define, when in fact "#pragma ngn slot" would be enough (also makes it impossible to malform these pragmas). For this function declaration parsing is necessary, but a function declaration merely is: "type identifier left_paren"
-    › Make include a pragma
 
     › FBO - https://open.gl/framebuffers
     › Deferred Shading
@@ -48,11 +46,12 @@ Low-Level:
 
 -------------------------------------------------------------------------------------------
 
-    › Parse uniforms/attributes from the shader files (maybe with extra markup)
+    › Use GL reflection to get uniform/attribute information
     They can be detected with "qualifiers (uniform|in) type name [= defaultvalue];" Parsing this is actually not that easy, but possible, I think?
     To make it easier at first, maybe help by prepending a "#pragma ngn uniform" in the line before, so we know where to look (somewhere between the pragma and the next semicolon)
     !! Alternatively use the GL-API to retrieve uniform/attribute information and make it part of the ShaderProgram and ShaderProgram::link
     Shader YAML is then not needed anymore (thank good, less files) and it's way less bad that it's not possible to inline resources in YAML files
+    (This is way better anyways, since we get to know which variables have been optimized out!)
 
     › Maybe optimize render queue building a little by putting it in a separate thread
     the main thread then listens on an atomic counter containing the number of elements in the queue (which is increased by the render queue builder thread) and renders when it exceeds the already rendered number of entries
