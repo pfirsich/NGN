@@ -23,7 +23,7 @@ namespace ngn {
         NONE = 0,
         FRONT = GL_FRONT,
         BACK = GL_BACK,
-        FRONT_AND_BACK
+        //FRONT_AND_BACK = GL_FRONT_AND_BACK
     };
 
     enum class FaceOrientation : GLenum {
@@ -101,6 +101,8 @@ namespace ngn {
         std::pair<BlendFactor, BlendFactor> getBlendFactors() const {return std::make_pair(mBlendSrcFactor, mBlendDstFactor);}
         void setBlendFactors(BlendFactor src, BlendFactor dst) {mBlendSrcFactor = src; mBlendDstFactor = dst;}
         void setBlendFactors(std::pair<BlendFactor, BlendFactor> factors) {setBlendFactors(factors.first, factors.second);}
+        void setBlendSrcFactor(BlendFactor src) {mBlendSrcFactor = src;}
+        void setBlendDstFactor(BlendFactor dst) {mBlendDstFactor = dst;}
 
         BlendEq getBlendEquation() const {return mBlendEquation;}
         void setBlendEquation(BlendEq eq) {mBlendEquation = eq;}

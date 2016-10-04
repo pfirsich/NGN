@@ -9,12 +9,12 @@ Low-Level:
     ✔ Read materials.md again @done (03.10.16 12:28)
     ✔ Read random_notes.txt and sort @done (03.10.16 03:10)
     ✔ Make include a pragma, remove uniform/attribute information from the shader and remove YAML files from it @done (03.10.16 15:46)
-    › YAML loading for Materials
+    ✔ YAML loading for Materials @done (04.10.16 17:47)
     The possibility to specify default textures as colors (which will then be generated)
 
     › FBO - https://open.gl/framebuffers
     › Deferred Shading
-    Here shadow map and light culling becomes the takes of culling
+    Here shadow map and light culling becomes the task of culling
     In Deferred the lighting model is just not a slot?
     › Proper Light Attenuation
     › Replace pointers with references if nullptr is not an option! - For returns and parameters!

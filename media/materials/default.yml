@@ -1,0 +1,30 @@
+material:
+    #base: media/materials/other.yml
+    shaders:
+        fragment: media/shaders/ngn/blinnPhong.frag
+        vertex: media/shaders/ngn/default.vert
+    parameters:
+        #baseTex: !!texture media/sq.png
+        baseTex: !!pixelTexture [1.0, 1.0, 1.0, 1.0]
+        color: !!vec4 [1.0, 1.0, 1.0, 1.0]
+        ambient: !!vec3 [0.1, 0.1, 0.1]
+        emissive: !!vec3 [0.0, 0.0, 0.0]
+        shininess: !!float 512.0
+    renderstate:
+        #blendmode: ADD
+        #depthwrite:
+        #depthfunc
+        #cullfaces
+        #frontface
+        #blendenabled
+        #blendsrc
+        #blenddst
+        #blendeq
+    passes:
+        # ambient:
+        #     shaders:
+        #         fragment:
+        #     renderstate:
+        #         depthwrite:
+        ambient: {}
+        light: {}

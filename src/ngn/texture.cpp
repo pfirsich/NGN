@@ -7,6 +7,16 @@ namespace ngn {
     Texture* Texture::fallback = nullptr;
     bool Texture::staticInitialized = false;
 
+    Texture* Texture::fromFile(const char* filename, bool genMipmaps) {
+        Texture* ret = new Texture;
+        if(ret->loadFromFile(filename, genMipmaps)) {
+            return ret;
+        } else {
+            delete ret;
+            return nullptr;
+        }
+    }
+
     Texture* Texture::pixelTexture(const glm::vec4& col) {
         Texture* temp = new ngn::Texture;
         uint32_t data = static_cast<int>(col.r * 255) <<  0 | static_cast<int>(col.g * 255) <<  8 |

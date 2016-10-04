@@ -41,9 +41,11 @@ namespace ngn {
         static std::string globalShaderPreamble; // I really don't like this
         static Shader* fallback;
 
+        static Shader* fromFile(const char* filename);
+
         Shader(const char* filename = nullptr) {
             if(!staticInitialized) staticInitialize();
-            if(filename) load(filename);
+            if(filename) loadFromFile(filename);
         }
 
         //TODO: Avoid multiple inclusion of the same shader
@@ -56,7 +58,7 @@ namespace ngn {
 
         std::string getFullString(const std::string& preamble = "", const std::vector<std::string>& overrideSlots = {}, bool globalPreamble = true) const;
 
-        bool load(const char* file);
+        bool loadFromFile(const char* file);
     };
 
     // Just for fallbacks

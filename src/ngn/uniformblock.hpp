@@ -170,7 +170,7 @@ namespace ngn {
             setParam<glm::mat4>(name, ParamType::MATF4, vp, count, copy);
         }
 
-        void setTexture(const char* name, ResourceHandle<Texture>&& tex) {
+        void setTexture(const char* name, const ResourceHandle<Texture>& tex) {
             for(auto& elem : mTextures) {
                 if(elem.first == name) {
                     elem.second = tex;

@@ -93,7 +93,7 @@ namespace ngn {
         Material* getMaterial() {
             return mMaterial ? mMaterial->getResource() : (mParent ? mParent->getMaterial() : nullptr);
         }
-        void setMaterial(ResourceHandle<Material>&& mat) {
+        void setMaterial(const ResourceHandle<Material>& mat) {
             if(mMaterial) {
                 *mMaterial = mat;
             } else {

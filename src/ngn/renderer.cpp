@@ -18,6 +18,9 @@ namespace ngn {
     int Renderer::nextRendererIndex = 0;
     bool Renderer::staticInitialized = false;
 
+    const int Renderer::AMBIENT_PASS = 1;
+    const int Renderer::LIGHT_PASS = 2;
+
     void Renderer::staticInitialize() {
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_AMBIENT " + std::to_string(AMBIENT_PASS) + "\n";
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_LIGHT " + std::to_string(LIGHT_PASS) + "\n";

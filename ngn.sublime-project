@@ -1,0 +1,22 @@
+{
+	"folders":
+	[
+		{
+			"path": "/C/Users/Joel/dev/c++/ngn"
+		}
+	],
+    "settings":
+    {
+        "sublimeclang_options":
+        [
+            "-I${folder:${project_path:ngn.sublime-project}}/src/**",
+            "-I${folder:${project_path:ngn.sublime-project}}/dependencies/debug/SDL/include/SDL2",
+            "-I${folder:${project_path:ngn.sublime-project}}/dependencies/glad/include",
+            "-I${folder:${project_path:ngn.sublime-project}}/dependencies/glm",
+            "-I${folder:${project_path:ngn.sublime-project}}/dependencies/assimp/include",
+            "-I${folder:${project_path:ngn.sublime-project}}/dependencies/stb_image",
+            "-I${folder:${project_path:ngn.sublime-project}}/dependencies/yaml-cpp"
+        ]
+    }
+
+}

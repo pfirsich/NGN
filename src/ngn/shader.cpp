@@ -1,8 +1,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <yaml-cpp/yaml.h>
-
 #include "log.hpp"
 #include "shader.hpp"
 #include "mesh_vertexattribute.hpp"
@@ -208,7 +206,7 @@ namespace ngn {
                             }
                         }
                     } else if(pragmaInfo.name == "include") {
-                        Shader* include = Resource::get<Shader>(pragmaInfo.params.c_str());
+                        Shader* include = Resource::getPrepare<Shader>(pragmaInfo.params.c_str());
                         if(include) {
                             mIncludes.push_back(include);
                         } else {
@@ -293,7 +291,7 @@ namespace ngn {
         return ret;
     }
 
-    bool Shader::load(const char* filename) {
+    bool Shader::loadFromFile(const char* filename) {
         //LOG_DEBUG("load from file: %s", filename);
         std::ifstream file(filename, std::ios_base::in);
         if(file){
@@ -304,6 +302,16 @@ namespace ngn {
         } else{
             LOG_ERROR("Shader source file '%s' could not be opened.", filename);
             return false;
+        }
+    }
+
+    Shader* Shader::fromFile(const char* filename) {
+        Shader* ret = new Shader;
+        if(ret->loadFromFile(filename)) {
+            return ret;
+        } else {
+            delete ret;
+            return nullptr;
         }
     }
 }

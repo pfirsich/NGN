@@ -62,6 +62,8 @@ namespace ngn {
         static Texture* pixelTexture(const glm::vec4& col); // col in SRGB
         //TODO: static Texture* pixelTextureLinear(const glm::vec4& col);
 
+        static Texture* fromFile(const char* filename, bool genMipmaps = true);
+
         // Mipmapping is default, since it's takes a little more ram, but usually it's faster and looks nicer
         Texture(GLenum target = GL_TEXTURE_2D) : mTarget(target), mTextureObject(0),
                 mSWrap(WrapMode::CLAMP_TO_EDGE), mTWrap(WrapMode::CLAMP_TO_EDGE), mMagFilter(MagFilter::LINEAR) {
@@ -79,7 +81,6 @@ namespace ngn {
         void loadFromMemory(unsigned char* buffer, int width, int height, int components, bool genMipmaps = true);
         bool loadEncodedFromMemory(unsigned char* encBuffer, int len, bool genMipmaps = true);
         bool loadFromFile(const char* filename, bool genMipmaps = true);
-        bool load(const char* filename) {return loadFromFile(filename);}
 
         void setTarget(GLenum target) {mTarget = target;}
         GLenum getTarget() const {return mTarget;}

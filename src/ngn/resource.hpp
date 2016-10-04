@@ -23,24 +23,54 @@ namespace ngn {
 
     public:
         // With this function you transfer ownership of the resource to the engine and it will be collected (free'd) if no handles are pointing to it
-        template<class T>
+        template<class T, typename... Args>
         static void add(const char* name, T* res) {
-            resourceCache.insert(std::make_pair(name, reinterpret_cast<Resource*>(res)));
-        }
-
-        // Use these to preload as well
-        template<class T>
-        static T* get(const char* filename, const char* name = nullptr) {
-            if(!name) name = filename;
-
             auto it = resourceCache.find(name);
             if(it == resourceCache.end()) {
-                T* temp = new T;
-                if(!temp->load(filename)) {
+                resourceCache.insert(std::make_pair(name, reinterpret_cast<Resource*>(res)));
+            } else {
+                LOG_ERROR("Resource with name '%s' already loaded!", name);
+            }
+        }
+
+        template<class T, typename... Args>
+        static void prepare(const char* filename, const char* name, Args&&... args) {
+            auto it = resourceCache.find(name);
+            if(it == resourceCache.end()) {
+                // fromFile might be derived, therefore we cast
+                T* temp = static_cast<T*>(T::fromFile(filename, std::forward<Args>(args)...));
+                if(!temp) {
                     LOG_ERROR("'%s' could not be loaded.", filename);
-                    return nullptr;
+                } else {
+                    resourceCache.insert(std::make_pair(name, reinterpret_cast<Resource*>(temp)));
                 }
-                resourceCache.insert(std::make_pair(name, reinterpret_cast<Resource*>(temp)));
+            } else {
+                LOG_ERROR("Resource with name '%s' already loaded!", name);
+            }
+        }
+
+        template<class T>
+        static T* get(const char* name) {
+            auto it = resourceCache.find(name);
+            if(it == resourceCache.end()) {
+                LOG_ERROR("Resource with name '%s' unknown!", name);
+                return nullptr;
+            } else {
+                return reinterpret_cast<T*>(it->second);
+            }
+        }
+
+        template<class T, typename... Args>
+        static T* getPrepare(const char* filename, Args&&... args) {
+            auto it = resourceCache.find(filename);
+            if(it == resourceCache.end()) {
+                // fromFile might be derived, therefore we cast
+                T* temp = static_cast<T*>(T::fromFile(filename, std::forward<Args>(args)...));
+                if(!temp) {
+                    LOG_ERROR("'%s' could not be loaded.", filename);
+                } else {
+                    resourceCache.insert(std::make_pair(filename, reinterpret_cast<Resource*>(temp)));
+                }
                 return temp;
             } else {
                 return reinterpret_cast<T*>(it->second);
@@ -75,8 +105,6 @@ namespace ngn {
         void claim() {mReferenceCount++;}
         void release() {mReferenceCount--;}
         int getReferenceCount() const {return mReferenceCount;}
-
-        virtual bool load(const char* filename) = 0;
     };
 
     /*
@@ -113,7 +141,7 @@ namespace ngn {
             if(mResource) mResource->claim();
         }
 
-        ResourceHandle(const char* filename, const char* name = nullptr) : ResourceHandle(Resource::get<T>(filename, name)) {}
+        ResourceHandle(const char* filename, const char* name = nullptr) : ResourceHandle(Resource::getPrepare<T>(filename, name)) {}
 
         ResourceHandle(ResourceHandle&& other) : mResource(other.mResource), mDirty(true) {
             // this claim and other release cancel each other

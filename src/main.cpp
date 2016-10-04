@@ -70,17 +70,17 @@ int main(int argc, char** args) {
     auto size = window.getSize();
     window.resizeSignal.emit(size.x, size.y);
 
-
-    ngn::Material baseMaterial(ngn::Resource::get<ngn::FragmentShader>("media/shaders/ngn/blinnPhong.frag"),
-                               ngn::Resource::get<ngn::VertexShader>("media/shaders/ngn/default.vert"));
     ngn::Resource::add("whitePixel", ngn::Texture::pixelTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-    baseMaterial.setTexture("baseTex", ngn::Resource::get<ngn::Texture>("whitePixel"));
+    /*ngn::Material baseMaterial(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/blinnPhong.frag"),
+                               ngn::Resource::getPrepare<ngn::VertexShader>("media/shaders/ngn/default.vert"));
+    baseMaterial.setTexture("baseTex", ngn::Resource::getPrepare<ngn::Texture>("whitePixel"));
     baseMaterial.setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     baseMaterial.setVector3("ambient", glm::vec3(0.1f));
     baseMaterial.setVector3("emissive", glm::vec3(0.0f));
     baseMaterial.setFloat("shininess", 512.0f);
     baseMaterial.addPass(ngn::Renderer::AMBIENT_PASS);
-    baseMaterial.addPass(ngn::Renderer::LIGHT_PASS);
+    baseMaterial.addPass(ngn::Renderer::LIGHT_PASS);*/
+    ngn::ResourceHandle<ngn::Material> baseMaterial(ngn::Resource::getPrepare<ngn::Material>("media/materials/default.yml"));
 
     ngn::VertexFormat vFormat;
     vFormat.add(ngn::AttributeType::POSITION, 3, ngn::AttributeDataType::F32);
@@ -97,28 +97,28 @@ int main(int argc, char** args) {
         obj->setMesh(mesh);
         ironman.add(obj);
     }
-    ironman.setMaterial(&baseMaterial);
+    ironman.setMaterial(baseMaterial);
     ironman.setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
     ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
     scene.add(&ironman);
 
     ngn::Object sphere;
     sphere.setMesh(ngn::sphereMesh(5.0f, 32, 32, vFormat));
-    sphere.setMaterial(&baseMaterial);
+    sphere.setMaterial(baseMaterial);
     sphere.setPosition(glm::vec3(-20.0f, 10.0f, 0.0f));
     scene.add(&sphere);
 
     ngn::Object ground;
     ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
-    ground.setMaterial(new ngn::Material(baseMaterial));
+    ground.setMaterial(new ngn::Material(*baseMaterial.getResource()));
     ground.getMaterial()->setVector4("color", glm::vec4(0.5f, 1.0f, 0.5f, 1.0f));
     ground.getMaterial()->setFloat("shininess", 64.0);
     scene.add(&ground);
 
     ngn::Object cube;
     cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
-    cube.setMaterial(new ngn::Material(baseMaterial));
-    cube.getMaterial()->setTexture("baseTex", ngn::Resource::get<ngn::Texture>("media/sq.png"));
+    cube.setMaterial(new ngn::Material(*baseMaterial.getResource()));
+    cube.getMaterial()->setTexture("baseTex", ngn::Resource::getPrepare<ngn::Texture>("media/sq.png"));
     cube.getMaterial()->setVector4("color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
     //cube.getMaterial()->setVector3("ambient", glm::vec3(1.0f));
     cube.getMaterial()->setBlendMode(ngn::Material::BlendMode::TRANSLUCENT);
@@ -141,7 +141,7 @@ int main(int argc, char** args) {
     pointLight.getLightData()->setColor(glm::vec3(1.0f, 0.25f, 0.25f));
 
     pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, vFormat));
-    pointLight.setMaterial(new ngn::Material(baseMaterial));
+    pointLight.setMaterial(new ngn::Material(*baseMaterial.getResource()));
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pointLight.getMaterial()->setVector3("emissive", pointLight.getLightData()->getColor());
     pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);

@@ -68,8 +68,8 @@ namespace ngn {
 
         // If other renderers start defining these, they have to take care of not clashing with others themselves
         // Also it helps if their values are consecutive, so the staticInitialize-method can also easily implement a renderer query define
-        static const int AMBIENT_PASS = 0;
-        static const int LIGHT_PASS = 1;
+        static const int AMBIENT_PASS;
+        static const int LIGHT_PASS;
 
         bool autoClear, autoClearColor, autoClearDepth, autoClearStencil;
 

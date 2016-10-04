@@ -104,7 +104,7 @@ namespace ngn {
                 return mStateBlock;
             }
 
-            void setFragmentShader(ResourceHandle<FragmentShader>&& frag) {
+            void setFragmentShader(const ResourceHandle<FragmentShader>& frag) {
                 if(mFragmentShader) {
                     *mFragmentShader = frag;
                 } else {
@@ -112,7 +112,7 @@ namespace ngn {
                 }
             }
 
-            void setVertexShader(ResourceHandle<VertexShader>&& vert) {
+            void setVertexShader(const ResourceHandle<VertexShader>& vert) {
                 if(mVertexShader) {
                     *mVertexShader = vert;
                 } else {
@@ -150,30 +150,32 @@ namespace ngn {
 
     public:
         static Material* fallback;
+        static Material* fromFile(const char* filename);
 
-        Material() : mBlendMode(BlendMode::REPLACE) {
-            if(!staticInitialized) staticInitialize();
-        }
-
-        Material(ResourceHandle<FragmentShader>&& frag, ResourceHandle<VertexShader>&& vert) :
+        Material(const ResourceHandle<FragmentShader>& frag, const ResourceHandle<VertexShader>& vert) :
                 mBlendMode(BlendMode::REPLACE), mFragmentShader(frag), mVertexShader(vert) {
             if(!staticInitialized) staticInitialize();
         }
 
-        Material(const Material& other) : UniformList(other), mBlendMode(other.mBlendMode), mFragmentShader(other.mFragmentShader),
-                mVertexShader(other.mVertexShader), mStateBlock(other.mStateBlock) {
+        Material(const Material& base, const ResourceHandle<FragmentShader>& frag, const ResourceHandle<VertexShader>& vert) :
+                UniformList(base), mBlendMode(base.mBlendMode), mFragmentShader(frag), mVertexShader(vert), mStateBlock(base.mStateBlock) {
             if(!staticInitialized) staticInitialize();
-            for(auto& it : other.mPasses) {
+            for(auto& it : base.mPasses) {
                 addPass(it.second);
             }
         }
 
+        Material(const Material& base) : Material(base, base.mFragmentShader, base.mVertexShader) {}
+        Material(const Material& base, const ResourceHandle<FragmentShader>& frag) : Material(base, frag, base.mVertexShader) {}
+        Material(const Material& base, const ResourceHandle<VertexShader>& vert) : Material(base, base.mFragmentShader, vert) {}
+
         Material& operator=(const Material& other) = delete;
 
-        void setFragmentShader(ResourceHandle<FragmentShader>&& frag) {mFragmentShader = frag;}
-        void setVertexShader(ResourceHandle<VertexShader>&& vert) {mVertexShader = vert;}
+        //void setVertexShader(ResourceHandle<VertexShader>&& vert) {mVertexShader = vert;}
+        //void setFragmentShader(ResourceHandle<FragmentShader>&& frag) {mFragmentShader = frag;}
         const ResourceHandle<FragmentShader>& getFragmentShader() const {return mFragmentShader;}
         const ResourceHandle<VertexShader>& getVertexShader() const {return mVertexShader;}
+        RenderStateBlock& getStateBlock() {return mStateBlock;}
         const RenderStateBlock& getStateBlock() const {return mStateBlock;}
 
         Pass& addPass(int passIndex) {
@@ -213,22 +215,8 @@ namespace ngn {
             mPasses.erase(passIndex);
         }
 
-        // Render state
         void setBlendMode(BlendMode mode);
+        // If you modify the state block yourself (regarding blending of course) this will return the last set value
         BlendMode getBlendMode() const {return mBlendMode;}
-
-        bool getDepthWrite() const {return mStateBlock.getDepthWrite();}
-        void setDepthWrite(bool write) {mStateBlock.setDepthWrite(write);}
-
-        DepthFunc getDepthTest() const {return mStateBlock.getDepthTest();}
-        void setDepthTest(DepthFunc func = DepthFunc::LEQUAL) {mStateBlock.setDepthTest(func);}
-
-        FaceDirections getCullFaces() const {return mStateBlock.getCullFaces();}
-        void setCullFaces(FaceDirections dirs = FaceDirections::BACK) {mStateBlock.setCullFaces(dirs);}
-
-        FaceOrientation getFrontFace() const {return mStateBlock.getFrontFace();}
-        void setFrontFace(FaceOrientation ori) {mStateBlock.setFrontFace(ori);}
-
-        bool load(const char* filename);
     };
 }
