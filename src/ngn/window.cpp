@@ -1,4 +1,8 @@
 #include <chrono>
+#include <cstring>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include "window.hpp"
 #include "log.hpp"
@@ -111,5 +115,28 @@ namespace ngn {
         // trigger a flush, which will have happend in when swapping buffers anyway.
         checkGLError();
         #endif
+    }
+
+    void Window::saveScreenshot(const char* filename) {
+        glm::ivec2 size = getSize();
+        uint8_t* buf = new uint8_t[size.x*size.y*3];
+        glReadPixels(0, 0, size.x, size.y, GL_RGB, GL_UNSIGNED_BYTE, buf);
+
+        //flip y for some reason
+        int lineSize = size.x*3;
+        uint8_t* tempLine = new uint8_t[lineSize];
+        for(int i = 0; i < size.y/2; ++i) {
+            uint8_t* upperLine = buf + i*lineSize;
+            uint8_t* lowerLine = buf + (size.y - 1 - i) * lineSize;
+            std::memcpy(tempLine, upperLine, lineSize);
+            std::memcpy(upperLine, lowerLine, lineSize);
+            std::memcpy(lowerLine, tempLine, lineSize);
+        }
+        delete[] tempLine;
+
+        if(!stbi_write_png(filename, size.x, size.y, 3, buf, 0)) {
+            LOG_ERROR("Could not write screenshot '%s'", filename);
+        }
+        delete[] buf;
     }
 }

@@ -325,6 +325,10 @@ vogl ist die fucking erleuchtung und supermagic
 
 https://www.reddit.com/r/videos/comments/53sqmp/the_most_visually_stunning_music_video_ive_ever/ - Das in Realtime. Bitte.
 
+---------
+https://www.youtube.com/watch?v=8srWrgpVKJM
+Der Typ redet davon, dass man in Shadern Parametern sagen kann, dass die in der Distanz wegfallen sollen. z.b. Die Normal-Map die einfach zu blau interpoliert und ab dann einfach nicht mehr mitgesendet wird. Als performance-optimierung halt.
+
 # Open Questions:
 * Make Shader Prologue to a part of the shader factory/cache? With vertex and fragment specific defines (more efficient for pretty much all defines so far)
 * Use Bitmasks for hasPass?

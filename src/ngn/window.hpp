@@ -40,5 +40,6 @@ namespace ngn {
         glm::ivec2 getSize() {int w, h; SDL_GetWindowSize(mSDLWindow, &w, &h); return glm::ivec2(w, h);}
         SDL_Window* getHandle() const {return mSDLWindow;}
         SDL_GLContext getContext() const {return mSDLGLContext;}
+        void saveScreenshot(const char* filename); // Saves the current contents of the frontbuffer to a png(!) file
     };
 }

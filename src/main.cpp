@@ -171,5 +171,8 @@ int main(int argc, char** args) {
         window.updateAndSwap();
     }
 
+    // Make a Screenshot when we close
+    window.saveScreenshot("screenshot.png");
+
     return 0;
 }

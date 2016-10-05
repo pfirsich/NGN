@@ -12,13 +12,25 @@ Low-Level:
     ✔ YAML loading for Materials @done (04.10.16 17:47)
     The possibility to specify default textures as colors (which will then be generated)
 
+    › Proper Light Attenuation
+    Attenuation Texture - Maybe control falloff/brightness and range separately? - use inverse square?
+    I just need good generators for attenuation textures.
+    Inverse Square, Exponential, Linear
+    › Spotlights
+    Angle Attenuation als Textur mit Extra-Switch um nicht nur cos(theta) von 0 bis 1 zu mappen, sondern -1 bis 1
+    Or just inner and outer angle + smoothstep?
+    › Shadows
+    Nur Directional (aber direkt richtig) und Spot, aber auch mit rotated pcf
+    › HDR
     › FBO - https://open.gl/framebuffers
     › Deferred Shading
     Here shadow map and light culling becomes the task of culling
     In Deferred the lighting model is just not a slot?
-    › Proper Light Attenuation
-    › Replace pointers with references if nullptr is not an option! - For returns and parameters!
+    › Normal Mapping
+    http://www.j3l7h.de/talks/2008-02-18_Care_and_Feeding_of_Normal_Vectors.pdf
     › PBR
+    › Skybox
+    › Replace pointers with references if nullptr is not an option! - For returns and parameters!
     › Draw call sorting
     Also depth sorting for transparent objects
     For opaque geometry I want to draw all ambient passes first, so I can have a semi depth-prepass for shading
@@ -36,15 +48,14 @@ Low-Level:
     › Scripting?
 
     -------------------
-    › Normmal Mapping
-    › Shadows
-    Also do Spotlights first
-    › Skybox
     › Picking
     › Bloom
     › Particles
 
 -------------------------------------------------------------------------------------------
+
+    › Point light shadows
+    Not all platforms support depth cube maps -> dual paraboloid
 
     › Use GL reflection to get uniform/attribute information
     They can be detected with "qualifiers (uniform|in) type name [= defaultvalue];" Parsing this is actually not that easy, but possible, I think?
@@ -143,7 +154,6 @@ High-Level:
             http://www.rorydriscoll.com/2012/01/15/derivative-maps-vs-normal-maps/
             http://mmikkelsen3d.blogspot.de/2011/07/derivative-maps.html
         › Normal Mapping
-            http://www.j3l7h.de/talks/2008-02-18_Care_and_Feeding_of_Normal_Vectors.pdf
         › Environment Mapping
         › Ambient Occlusion
         › Distortion
@@ -153,6 +163,7 @@ High-Level:
             http://gamedev.stackexchange.com/questions/81734/how-to-calculate-directional-light-frustum-from-camera-frustum
             http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
             https://msdn.microsoft.com/en-us/library/windows/desktop/ee416324(v=vs.85).aspx
+            http://docs.cryengine.com/display/SDKDOC4/Shadows+in+CryENGINE
         › PBR
             https://www.reddit.com/r/gamedev/comments/35plnt/physically_based_light_intensity/
             http://www.marmoset.co/toolbag/learn/pbr-practice
@@ -184,6 +195,7 @@ High-Level:
             http://blog.selfshadow.com/publications/s2012-shading-course/#course_content
             http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_slides_v2.pdf
             http://blog.selfshadow.com/publications/s2012-shading-course/hoffman/s2012_pbs_physics_math_slides.pdf
+            https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf
             https://unity3d.com/learn/tutorials/topics/graphics/unity-5-lighting-and-rendering
             Beim Link hierüber auch gute Informationen über Reflection Probes und Realtime-GI
             http://joywando.com/blog/2016/9/8/lighting-shading-and-texturing-part-one-pbr
