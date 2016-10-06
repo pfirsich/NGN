@@ -147,7 +147,7 @@ namespace ngn {
     Mesh* boxMesh(float width, float height, float depth, const VertexFormat& format);
 
     // Stacks represents the number of elements on the y axis
-    Mesh* sphereMesh(float radius, int slices, int stacks, const VertexFormat& format);
+    Mesh* sphereMesh(float radius, int slices, int stacks, bool cubeProjectionTexCoords, const VertexFormat& format);
 
     // Make sure this can be used to make a "line mesh"?
     Mesh* planeMesh(float width, float height, int segmentsX, int segmentsY, const VertexFormat& format);

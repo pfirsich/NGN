@@ -241,7 +241,7 @@ namespace ngn {
     }
 
     // Stacks represents the subdivision on the y axis (excluding the poles)
-    Mesh* sphereMesh(float radius, int slices, int stacks, const VertexFormat& format) {
+    Mesh* sphereMesh(float radius, int slices, int stacks, bool cubeProjectionTexCoords, const VertexFormat& format) {
         assert(slices > 3 && stacks > 2);
         Mesh* mesh = new Mesh(Mesh::DrawMode::TRIANGLES);
         mesh->addVertexBuffer(format, slices*stacks);
@@ -269,7 +269,37 @@ namespace ngn {
                 float sliceAngle = 2.0f * glm::pi<float>() / (slices - 1) * slice;
                 position[index] = glm::vec3(glm::cos(sliceAngle) * xzRadius, y, glm::sin(sliceAngle) * xzRadius);
                 normal[index] = glm::normalize(position.get(index));
-                texCoord[index++] = glm::vec2(sliceAngle / 2.0f / glm::pi<float>(), stackAngle / glm::pi<float>());
+                if(cubeProjectionTexCoords) {
+                    // http://www.gamedev.net/topic/443878-texture-lookup-in-cube-map/
+                    glm::vec3 dir = normal.get(index);
+                    glm::vec3 absDir = glm::abs(dir);
+                    int majorDirIndex = 0;
+                    if(absDir.x >= absDir.y && absDir.x >= absDir.z) majorDirIndex = 0;
+                    if(absDir.y >= absDir.x && absDir.y >= absDir.z) majorDirIndex = 1;
+                    if(absDir.z >= absDir.x && absDir.z >= absDir.y) majorDirIndex = 2;
+                    float majorDirSign = 1.0f;
+                    if(dir[majorDirIndex] < 0.0f) majorDirSign = -1.0f;
+
+                    glm::vec3 v;
+                    switch(majorDirIndex) {
+                        case 0:
+                            v = glm::vec3(-majorDirSign * dir.z, -dir.y, dir.x);
+                            break;
+                        case 1:
+                            v = glm::vec3(dir.x, majorDirSign * dir.z, dir.y);
+                            break;
+                        case 2:
+                            v = glm::vec3(majorDirSign * dir.x, -dir.y, dir.z);
+                            break;
+                        default:
+                            assert(false);
+                            break;
+                    }
+
+                    texCoord[index++] = glm::vec2((v.x/glm::abs(v.z) + 1.0f) / 2.0f, (v.y/glm::abs(v.z) + 1.0f) / 2.0f);
+                } else {
+                    texCoord[index++] = glm::vec2(sliceAngle / 2.0f / glm::pi<float>(), stackAngle / glm::pi<float>());
+                }
             }
         }
 

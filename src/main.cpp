@@ -103,7 +103,7 @@ int main(int argc, char** args) {
     scene.add(&ironman);
 
     ngn::Object sphere;
-    sphere.setMesh(ngn::sphereMesh(5.0f, 32, 32, vFormat));
+    sphere.setMesh(ngn::sphereMesh(5.0f, 128, 128, true, vFormat));
     sphere.setMaterial(baseMaterial);
     sphere.setPosition(glm::vec3(-20.0f, 10.0f, 0.0f));
     scene.add(&sphere);
@@ -140,7 +140,7 @@ int main(int argc, char** args) {
     pointLight.getLightData()->setRange(50.0f);
     pointLight.getLightData()->setColor(glm::vec3(1.0f, 0.25f, 0.25f));
 
-    pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, vFormat));
+    pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, false, vFormat));
     pointLight.setMaterial(new ngn::Material(*baseMaterial.getResource()));
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pointLight.getMaterial()->setVector3("emissive", pointLight.getLightData()->getColor());
