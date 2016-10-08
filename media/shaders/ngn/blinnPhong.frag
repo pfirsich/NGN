@@ -73,7 +73,14 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
         lightDir = ngn_light.position + vsOut.eye;
         float dist = length(lightDir);
         lightDir = lightDir / dist;
-        lightAtten = 1.0 - smoothstep(0.0, ngn_light.range, dist);
+
+        lightAtten = dist / ngn_light.radius + 1.0;
+        lightAtten = 1.0 / (lightAtten*lightAtten);
+        // attenCutoff represents only the cutoff of the attenuation function (or the cutoff of the actual RGB values outputted)
+        // if we have light sources with luminance > 1, these values will obviously be wrong. therefore we have to rescale
+        // also note, that we use max(r,g,b) as our luminance function, but just to make sure, that no component will exceed the cutoff
+        float cutoff = ngn_light.attenCutoff / max(max(ngn_light.color.r, ngn_light.color.g), ngn_light.color.b);
+        lightAtten = (lightAtten - cutoff) / (1.0 - cutoff);
     }
 }
 

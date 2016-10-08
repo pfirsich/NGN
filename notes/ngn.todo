@@ -13,19 +13,17 @@ Low-Level:
     The possibility to specify default textures as colors (which will then be generated)
 
     › Proper Light Attenuation
-    Attenuation Texture - Maybe control falloff/brightness and range separately? - use inverse square?
-    I just need good generators for attenuation textures.
-    Inverse Square, Exponential, Linear
+    › Uniform-Optimierung
+    › FBO
     › Spotlights
-    Angle Attenuation als Textur mit Extra-Switch um nicht nur cos(theta) von 0 bis 1 zu mappen, sondern -1 bis 1
-    Or just inner and outer angle + smoothstep?
+    just inner and outer angle + smoothstep?
     › Shadows
     Nur Directional (aber direkt richtig) und Spot, aber auch mit rotated pcf
     › HDR
-    › FBO - https://open.gl/framebuffers
     › Deferred Shading
     Here shadow map and light culling becomes the task of culling
     In Deferred the lighting model is just not a slot?
+    Clustered Deferred?
     › Normal Mapping
     http://www.j3l7h.de/talks/2008-02-18_Care_and_Feeding_of_Normal_Vectors.pdf
     › PBR
@@ -53,6 +51,9 @@ Low-Level:
     › Particles
 
 -------------------------------------------------------------------------------------------
+
+    › Light Distance Attenuation Textures
+    › Spotlight Angle Attenuation Textures (1D or Cubemap or 2D texture?)
 
     › Point light shadows
     Not all platforms support depth cube maps -> dual paraboloid
@@ -94,6 +95,7 @@ Low-Level:
     › Use temporal coherence for render queue
     Store a linearized scene graph permanently and sort index lists, the linearized scene graph will be updated incrementally and is always stored in traversal order. The index list remains partially sorted and you never have to sort the full thing. New elements will just be appended.
     › SceneGraph.castRay - slow, without acceleration structure (maybe kd-tree or octree later?)
+    https://www.cs.utexas.edu/~ckm/teaching/cs354_f11/lectures/Lecture21.pdf
     › statistics
     stripped in release, STATISTICS("name", value)
     the values can have different handlers, ones that just save the last written value, ones that average, ones that average in a window, etc.
@@ -130,6 +132,7 @@ Low-Level:
     See above. If that is not provided, maybe build a class somewhere that wraps an int and increments the value automatically. Maybe with fixed ranges for specific renderers.
     In a single translation unit the order of initialization is defined (as defined in source), in multiple source files it's undefined, but that is irrelevant as long as it's consistent.
 
+
     › Uniform Buffer Objects (maybe not?)
     http://stackoverflow.com/questions/32267727/efficiently-update-uniform-buffer-objects-with-instancing-and-culling
     http://www.gamedev.net/topic/655969-speed-gluniform-vs-uniform-buffer-objects/
@@ -138,6 +141,7 @@ Low-Level:
     The gain seems to be minimal. Optimize the regular glUniform-pipeline (less strings!)
 
 High-Level:
+    › Layered Materials wie in Unreal oder Substance
     › Alternative Szenen-Repräsentation für Game logic:
     http://gamedev.stackexchange.com/questions/8210/scene-graph-as-object-container
     › Materials aus ASSIMP laden soweit möglich: http://learnopengl.com/#!Model-Loading/Model
@@ -145,6 +149,10 @@ High-Level:
     › Scripting
 
     Default Renderer:
+        › Lightmapping
+            http://www.ludicon.com/castano/blog/2016/09/lightmap-compression-in-the-witness/
+            http://www.flipcode.com/archives/Light_Mapping_Theory_and_Implementation.shtml
+            http://redframe-game.com/blog/lightmap-workflow-part-1-uv-generation/
         › Fog
             https://people.eecs.berkeley.edu/~ravir/papers/singlescat/scattering.pdf
         › Derivative Mapping
@@ -156,14 +164,9 @@ High-Level:
         › Normal Mapping
         › Environment Mapping
         › Ambient Occlusion
+            http://www.nvidia.com/object/siggraph-2008-HBAO.html
         › Distortion
-        › Shadow Mapping - Cascade? Variance?
-            http://graphicsrunner.blogspot.de/2008/07/dual-paraboloid-reflections.html
-            http://http.developer.nvidia.com/GPUGems/gpugems_ch14.html
-            http://gamedev.stackexchange.com/questions/81734/how-to-calculate-directional-light-frustum-from-camera-frustum
-            http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
-            https://msdn.microsoft.com/en-us/library/windows/desktop/ee416324(v=vs.85).aspx
-            http://docs.cryengine.com/display/SDKDOC4/Shadows+in+CryENGINE
+            http://wiki.polycount.com/wiki/DuDv_map
         › PBR
             https://www.reddit.com/r/gamedev/comments/35plnt/physically_based_light_intensity/
             http://www.marmoset.co/toolbag/learn/pbr-practice
@@ -219,6 +222,17 @@ High-Level:
             https://www.allegorithmic.com/system/files/software/download/build/PBR_Guide_Vol.1.pdf
             https://www.allegorithmic.com/system/files/software/download/build/PBR_volume_02_rev05.pdf
 
+            http://graphics.ucsd.edu/~henrik/papers/practical_microcylinder_appearance_model_for_cloth_rendering.pdf - CLOTH
+
+            http://blog.selfshadow.com/publications/s2013-shading-course/#course_content - Material system in The Order: 1886
+            https://mynameismjp.wordpress.com/2013/07/28/siggraph-follow-up/ - gehört dazu
+
+            https://www.youtube.com/watch?v=gcUo7XY_M2M - PBS Intro
+            https://www.youtube.com/watch?v=fJz0GgarVTo - Unreal Engine 4, Siggraph 2013 PBS
+
+            https://www.youtube.com/watch?v=j-A0mwsJRmk - Physics of PBR, super geil
+            => Course Notes!!!!
+
             ------------------
 
             https://www.youtube.com/watch?v=OeEYEUCa4tI
@@ -239,6 +253,12 @@ High-Level:
             screen space reflections
             color grading
 
+            ---------
+
+            http://ruh.li/GraphicsOrenNayar.html <- geil, junge
+            http://ruh.li/GraphicsWard.html <- auch geil
+            http://ruh.li/GraphicsCookTorrance.html
+            http://simonstechblog.blogspot.de/2011/12/microfacet-brdf.html
         › Subsurface Scattering
             http://blog.selfshadow.com/publications/s2015-shading-course/burley/s2015_pbs_disney_bsdf_slides.pdf
         › Skybox
@@ -256,9 +276,44 @@ High-Level:
             https://urho3d.github.io/documentation/HEAD/_rendering_modes.html
             siehe: intBitsToFloat und floatBitsToInt!
             http://stefan-s.net/?p=66 - gBuffer Layout in Unity 5
+            https://software.intel.com/sites/default/files/m/d/4/1/d/8/lauritzen_deferred_shading_siggraph_2010.pdf - Tiled und Quad-culled deferred
+            http://learnopengl.com/#!Advanced-Lighting/Deferred-Shading
         › Bloom
             Unreal Bloom - http://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
+        › Shadow Mapping - Cascade? Variance?
+            http://graphicsrunner.blogspot.de/2008/07/dual-paraboloid-reflections.html
+            http://http.developer.nvidia.com/GPUGems/gpugems_ch14.html
+            http://gamedev.stackexchange.com/questions/81734/how-to-calculate-directional-light-frustum-from-camera-frustum
+            http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
+            https://msdn.microsoft.com/en-us/library/windows/desktop/ee416324(v=vs.85).aspx
+            http://docs.cryengine.com/display/SDKDOC4/Shadows+in+CryENGINE
+            http://www.terathon.com/lengyel/Lengyel-Oblique.pdf
+            https://www.youtube.com/watch?v=9gjIghvKW44
+            http://www.realtimeshadows.com/sites/default/files/Playing%20with%20Real-Time%20Shadows_0.pdf
+            https://mynameismjp.wordpress.com/2015/02/18/shadow-sample-update/
+            http://learnopengl.com/#!Advanced-Lighting/Shadows/Shadow-Mapping
+            http://www.gamedev.net/topic/533575-cascaded-or-parallel-split-shadow-maps-bounding-box-slice-selection/
+            Culling: http://digitalrune.github.io/DigitalRune-Documentation/html/4058fb6c-8794-46cb-9d22-fb8558857179.htm
+            https://msdn.microsoft.com/de-de/library/windows/desktop/ee416324(v=vs.85).aspx - Common Techniques to Improve Shadow Depth Maps
+            http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
+            http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html - Parallel Split Shadow Maps
+            http://faculty.ycp.edu/~dbabcock/PastCourses/cs470/labs/lab16.html - PCSS
+            http://developer.download.nvidia.com/whitepapers/2008/PCSS_Integration.pdf - PCSS
+            http://www.gamedev.net/topic/503600-pcss---unusable/
+            http://www.burgerengine.com/blog/?p=27 - Exponential Shadow Maps
+            http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html - CSM
+            http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html - CSM
+            http://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf
+            https://docs.unrealengine.com/latest/INT/Resources/ContentExamples/DynamicSceneShadows/ - Unreal CSM parameters
+            http://docs.cryengine.com/display/SDKDOC4/Shadows+in+CryENGINE
+            http://http.developer.nvidia.com/GPUGems2/gpugems2_chapter17.html - Efficient Soft Shadows
+            http://www.sunandblackcat.com/tipFullView.php?l=eng&topicid=35 - Improvements for Shadow Mapping
+            http://developer.download.nvidia.com/presentations/2008/GDC/GDC08_SoftShadowMapping.pdf - Soft Shadows
+            http://www.trentreed.net/blog/exponential-shadow-maps/
         › HDR
+        http://filmicgames.com/archives/75 - Filmic Tone Mapping
+        http://learnopengl.com/#!Advanced-Lighting/HDR
+        https://mynameismjp.wordpress.com/2010/04/30/a-closer-look-at-tone-mapping/
         › Parallax Mapping?
         › Gamma Correction
             http://renderwonk.com/blog/index.php/archive/adventures-with-gamma-correct-rendering/
@@ -267,16 +322,22 @@ High-Level:
             http://learnopengl.com/#!Advanced-Lighting/Gamma-Correction
             https://www.reddit.com/r/programming/comments/53wdf6/what_every_coder_should_know_about_gamma/
             http://filmicgames.com/archives/299
+            http://blog.johnnovak.net/2016/09/21/what-every-coder-should-know-about-gamma/
         › Text Rendering
             https://www.reddit.com/r/opengl/comments/50umy2/text_rendering_in_opengl_33/
+        › Draw call sorting / Render queue
+        http://www.gamedev.net/topic/666163-render-queue-design/
+        http://www.gamedev.net/topic/674377-render-queues-why-are-they-needed/
         › Particles
             https://www.youtube.com/watch?annotation_id=annotation_2102208391&feature=iv&src_vid=7fMCTVhEzmU&v=0IrCggoJCno
             Definitiv sheets benutzen können, daraus auswählen können und animieren
             Subemitters
             https://www.youtube.com/watch?annotation_id=annotation_912057639&feature=iv&src_vid=0IrCggoJCno&v=rR_bm8f8rVE
+            http://realtimecollisiondetection.net/blog/?p=91
         › Z Prepass
             https://www.opengl.org/discussion_boards/showthread.php/183862-Depth-pre-pass-does-OpenGL-still-execute-fragment-shader-if-color-mask-is-GL_FALSE
         › Culling
+            http://www.gamedev.net/topic/626778-whats-out-there-fast-frustum-culling/
             http://docs.cryengine.com/display/SDKDOC4/Culling+Explained
             Automatic Object Splitting
             Frustum Culling
@@ -291,37 +352,35 @@ High-Level:
         › Lighting
             http://www.3dgep.com/texturing-and-lighting-with-opengl-and-glsl/
             http://ruh.li/GraphicsPhongBlinnPhong.html
-
-            http://ruh.li/GraphicsOrenNayar.html <- geil, junge
-            http://ruh.li/GraphicsWard.html <- auch geil
-            http://ruh.li/GraphicsCookTorrance.html
-            http://simonstechblog.blogspot.de/2011/12/microfacet-brdf.html
+            http://threejs.org/examples/webgl_lights_hemisphere.html
 
             http://www.codinglabs.net/article_physically_based_rendering_cook_torrance.aspx
             http://sunandblackcat.com/tipFullView.php?l=eng&topicid=31&topic=Advanced-GLSL-Lighting-Models
-            http://threejs.org/examples/webgl_lights_hemisphere.html
-            https://www.reddit.com/r/gamedev/comments/4iusfg/realtime_shading_with_area_light_sources_with/
-            https://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/ - spherical area lights, attenuation
+
+            › Area Lights
             http://www.gamedev.net/topic/640573-area-lights-forward-and-deferred/ Mehr Area lights
             http://www.gamedev.net/topic/677849-area-lights-with-deferred-renderer/
             http://www.gamedev.net/topic/552315-glsl-area-light-implementation/
-            https://urho3d.github.io/documentation/HEAD/_rendering_modes.html
-            › Area Lights
+            https://www.reddit.com/r/gamedev/comments/4iusfg/realtime_shading_with_area_light_sources_with/
             http://www.gamedev.net/topic/552315-glsl-area-light-implementation/
             http://research.microsoft.com/en-us/um/people/johnsny/papers/arealights.pdf
 
-            Attenuation
+            › Attenuation
             http://gamedev.stackexchange.com/questions/51291/deferred-rendering-and-point-light-radius
             http://www.gamedev.net/topic/474015-light-attenuation-for-deferred-shading/
-            Probably 1D attenuation texture!
             https://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/ - GOOD SHIT
+            http://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
         › Anti-Aliasing
             Temporal AA: http://threejs.org/examples/webgl_postprocessing_taa.html
+            FXAA: https://www.youtube.com/watch?v=Z9bYzpwVINA
+            www.gamedev.net/topic/618791-fxaa-in-opengl/
+            https://bartwronski.com/2014/03/15/temporal-supersampling-and-antialiasing/
         › Scripting
             https://urho3d.github.io/documentation/HEAD/_lua_scripting.html
         › GodRays - http://threejs.org/examples/webgl_postprocessing_godrays.html
         › Screen Space Reflections
         https://www.reddit.com/r/gamedev/comments/52lawa/what_exactly_are_screenspace_reflections/
+        http://roar11.com/2015/07/screen-space-glossy-reflections/
 
 Sound:
     https://www.youtube.com/watch?v=Vjm--AqG04Y

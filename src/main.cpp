@@ -137,13 +137,14 @@ int main(int argc, char** args) {
     ngn::Light pointLight;
     pointLight.setLightData(new ngn::LightData, true);
     pointLight.getLightData()->setType(ngn::LightData::LightType::POINT);
-    pointLight.getLightData()->setRange(50.0f);
-    pointLight.getLightData()->setColor(glm::vec3(1.0f, 0.25f, 0.25f));
+    pointLight.getLightData()->setRadius(1.0f);
+    glm::vec3 col(1.0f, 0.25f, 0.25f);
+    pointLight.getLightData()->setColor(100.0f * col);
 
-    pointLight.setMesh(ngn::sphereMesh(1.0f, 10, 10, false, vFormat));
+    pointLight.setMesh(ngn::sphereMesh(pointLight.getLightData()->getRadius(), 32, 32, false, vFormat));
     pointLight.setMaterial(new ngn::Material(*baseMaterial.getResource()));
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    pointLight.getMaterial()->setVector3("emissive", pointLight.getLightData()->getColor());
+    pointLight.getMaterial()->setVector3("emissive", col);
     pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);
     //pointLight.getMaterial()->setUnlit();
     scene.add(&pointLight);

@@ -43,7 +43,8 @@ layout(location = 6) uniform mat4 ngn_modelViewProjectionMatrix;
 
 struct ngn_LightParameters {
     int type;
-    float range;
+    float radius;
+    float attenCutoff;
     vec3 color;
     vec3 position; // view/camera space
     vec3 direction; // view/camera space
@@ -216,11 +217,12 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                         entry.uniformBlocks.push_back(&(rendererData->uniforms));
 
                                         // TODO: Move this into a separate uniform block per light!
-                                        entry.perEntryUniforms.setInteger("ngn_light.type",      static_cast<int>(lightData->getType()));
-                                        entry.perEntryUniforms.setFloat(  "ngn_light.range",     lightData->getRange());
-                                        entry.perEntryUniforms.setVector3("ngn_light.color",     lightData->getColor());
-                                        entry.perEntryUniforms.setVector3("ngn_light.position",  glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
-                                        entry.perEntryUniforms.setVector3("ngn_light.direction", glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
+                                        entry.perEntryUniforms.setInteger("ngn_light.type",        static_cast<int>(lightData->getType()));
+                                        entry.perEntryUniforms.setFloat(  "ngn_light.radius",      lightData->getRadius());
+                                        entry.perEntryUniforms.setFloat(  "ngn_light.attenCutoff", lightData->getAttenCutoff());
+                                        entry.perEntryUniforms.setVector3("ngn_light.color",       lightData->getColor());
+                                        entry.perEntryUniforms.setVector3("ngn_light.position",    glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
+                                        entry.perEntryUniforms.setVector3("ngn_light.direction",   glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
 
                                         std::pair<RenderStateBlock::BlendFactor, RenderStateBlock::BlendFactor> blendFactors = entry.stateBlock.getBlendFactors();
                                         blendFactors.second = RenderStateBlock::BlendFactor::ONE;
