@@ -11,19 +11,19 @@ Low-Level:
     ✔ Make include a pragma, remove uniform/attribute information from the shader and remove YAML files from it @done (03.10.16 15:46)
     ✔ YAML loading for Materials @done (04.10.16 17:47)
     The possibility to specify default textures as colors (which will then be generated)
+    ✔ Proper Light Attenuation @done (08.10.16 17:28)
+    ✔ Uniform-Optimierung @done (08.10.16 22:50)
 
-    › Proper Light Attenuation
-    › Uniform-Optimierung
     › FBO
-    › Spotlights
-    just inner and outer angle + smoothstep?
-    › Shadows
-    Nur Directional (aber direkt richtig) und Spot, aber auch mit rotated pcf
     › HDR
     › Deferred Shading
     Here shadow map and light culling becomes the task of culling
     In Deferred the lighting model is just not a slot?
     Clustered Deferred?
+    › Spotlights
+    just inner and outer angle + smoothstep?
+    › Shadows
+    Nur Directional (aber direkt richtig) und Spot, aber auch mit rotated pcf
     › Normal Mapping
     http://www.j3l7h.de/talks/2008-02-18_Care_and_Feeding_of_Normal_Vectors.pdf
     › PBR
@@ -51,6 +51,8 @@ Low-Level:
     › Particles
 
 -------------------------------------------------------------------------------------------
+
+    › Decouple Sampler state from Texture and make it part of the material?
 
     › Light Distance Attenuation Textures
     › Spotlight Angle Attenuation Textures (1D or Cubemap or 2D texture?)

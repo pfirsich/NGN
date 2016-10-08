@@ -10,6 +10,9 @@
 namespace ngn {
     const ShaderProgram* ShaderProgram::currentShaderProgram = nullptr;
     const char* ShaderProgram::shaderTypeNames[] = {"Vertex", "Fragment"};
+    std::unordered_map<std::string, ShaderProgram::UniformGUID> ShaderProgram::uniformNameGUIDMap;
+    std::vector<std::string> ShaderProgram::uniformGUIDNameMap;
+    ShaderProgram::UniformGUID ShaderProgram::nextUniformGUID = 0;
 
     ShaderProgram::ShaderProgram() : mStatus(Status::EMPTY) {}
 

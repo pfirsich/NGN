@@ -21,6 +21,22 @@ namespace ngn {
     const int Renderer::AMBIENT_PASS = 1;
     const int Renderer::LIGHT_PASS = 2;
 
+    namespace UniformGUIDs {
+        ShaderProgram::UniformGUID ngn_modelMatrixGUID;
+        ShaderProgram::UniformGUID ngn_viewMatrixGUID;
+        ShaderProgram::UniformGUID ngn_modelViewMatrixGUID;
+        ShaderProgram::UniformGUID ngn_normalMatrixGUID;
+        ShaderProgram::UniformGUID ngn_projectionMatrixGUID;
+        ShaderProgram::UniformGUID ngn_modelViewProjectionMatrixGUID;
+
+        ShaderProgram::UniformGUID ngn_light_typeGUID;
+        ShaderProgram::UniformGUID ngn_light_radiusGUID;
+        ShaderProgram::UniformGUID ngn_light_attenCutoffGUID;
+        ShaderProgram::UniformGUID ngn_light_colorGUID;
+        ShaderProgram::UniformGUID ngn_light_positionGUID;
+        ShaderProgram::UniformGUID ngn_light_directionGUID;
+    }
+
     void Renderer::staticInitialize() {
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_AMBIENT " + std::to_string(AMBIENT_PASS) + "\n";
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_LIGHT " + std::to_string(LIGHT_PASS) + "\n";
@@ -52,6 +68,20 @@ struct ngn_LightParameters {
 layout(location = 7) uniform ngn_LightParameters ngn_light;
 
 )";
+
+        UniformGUIDs::ngn_modelMatrixGUID = ShaderProgram::getUniformGUID("ngn_modelMatrix");
+        UniformGUIDs::ngn_viewMatrixGUID = ShaderProgram::getUniformGUID("ngn_viewMatrix");
+        UniformGUIDs::ngn_modelViewMatrixGUID = ShaderProgram::getUniformGUID("ngn_modelViewMatrix");
+        UniformGUIDs::ngn_normalMatrixGUID = ShaderProgram::getUniformGUID("ngn_normalMatrix");
+        UniformGUIDs::ngn_projectionMatrixGUID = ShaderProgram::getUniformGUID("ngn_projectionMatrix");
+        UniformGUIDs::ngn_modelViewProjectionMatrixGUID = ShaderProgram::getUniformGUID("ngn_modelViewProjectionMatrix");
+
+        UniformGUIDs::ngn_light_typeGUID = ShaderProgram::getUniformGUID("ngn_light.type");
+        UniformGUIDs::ngn_light_radiusGUID = ShaderProgram::getUniformGUID("ngn_light.radius");
+        UniformGUIDs::ngn_light_attenCutoffGUID = ShaderProgram::getUniformGUID("ngn_light.attenCutoff");
+        UniformGUIDs::ngn_light_colorGUID = ShaderProgram::getUniformGUID("ngn_light.color");
+        UniformGUIDs::ngn_light_positionGUID = ShaderProgram::getUniformGUID("ngn_light.position");
+        UniformGUIDs::ngn_light_directionGUID = ShaderProgram::getUniformGUID("ngn_light.direction");
 
         Renderer::staticInitialized = true;
     }
@@ -148,12 +178,12 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                     glm::mat4 model = node->getWorldMatrix();
                     glm::mat4 modelview = viewMatrix * model;
                     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
-                    rendererData->uniforms.setMatrix4("ngn_modelMatrix", model);
-                    rendererData->uniforms.setMatrix4("ngn_viewMatrix", viewMatrix);
-                    rendererData->uniforms.setMatrix4("ngn_projectionMatrix", projectionMatrix);
-                    rendererData->uniforms.setMatrix4("ngn_modelViewMatrix", modelview);
-                    rendererData->uniforms.setMatrix3("ngn_normalMatrix", normalMatrix);
-                    rendererData->uniforms.setMatrix4("ngn_modelViewProjectionMatrix", projectionMatrix * modelview);
+                    rendererData->uniforms.setMatrix4(UniformGUIDs::ngn_modelMatrixGUID, model);
+                    rendererData->uniforms.setMatrix4(UniformGUIDs::ngn_viewMatrixGUID, viewMatrix);
+                    rendererData->uniforms.setMatrix4(UniformGUIDs::ngn_projectionMatrixGUID, projectionMatrix);
+                    rendererData->uniforms.setMatrix4(UniformGUIDs::ngn_modelViewMatrixGUID, modelview);
+                    rendererData->uniforms.setMatrix3(UniformGUIDs::ngn_normalMatrixGUID, normalMatrix);
+                    rendererData->uniforms.setMatrix4(UniformGUIDs::ngn_modelViewProjectionMatrixGUID, projectionMatrix * modelview);
                 }
 
                 LightData* lightData = node->getLightData();
@@ -217,12 +247,12 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                         entry.uniformBlocks.push_back(&(rendererData->uniforms));
 
                                         // TODO: Move this into a separate uniform block per light!
-                                        entry.perEntryUniforms.setInteger("ngn_light.type",        static_cast<int>(lightData->getType()));
-                                        entry.perEntryUniforms.setFloat(  "ngn_light.radius",      lightData->getRadius());
-                                        entry.perEntryUniforms.setFloat(  "ngn_light.attenCutoff", lightData->getAttenCutoff());
-                                        entry.perEntryUniforms.setVector3("ngn_light.color",       lightData->getColor());
-                                        entry.perEntryUniforms.setVector3("ngn_light.position",    glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
-                                        entry.perEntryUniforms.setVector3("ngn_light.direction",   glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
+                                        entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_typeGUID,        static_cast<int>(lightData->getType()));
+                                        entry.perEntryUniforms.setFloat(  UniformGUIDs::ngn_light_radiusGUID,      lightData->getRadius());
+                                        entry.perEntryUniforms.setFloat(  UniformGUIDs::ngn_light_attenCutoffGUID, lightData->getAttenCutoff());
+                                        entry.perEntryUniforms.setVector3(UniformGUIDs::ngn_light_colorGUID,       lightData->getColor());
+                                        entry.perEntryUniforms.setVector3(UniformGUIDs::ngn_light_positionGUID,    glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
+                                        entry.perEntryUniforms.setVector3(UniformGUIDs::ngn_light_directionGUID,   glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
 
                                         std::pair<RenderStateBlock::BlendFactor, RenderStateBlock::BlendFactor> blendFactors = entry.stateBlock.getBlendFactors();
                                         blendFactors.second = RenderStateBlock::BlendFactor::ONE;

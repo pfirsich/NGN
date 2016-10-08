@@ -10,11 +10,10 @@
 
 #include "log.hpp"
 #include "texture.hpp"
+#include "shaderprogram.hpp"
 
 namespace ngn {
     class UniformBlock {
-    public:
-        static const size_t MAX_TEXTURE_UNITS = 16;
     protected:
         enum class ParamType {
             FLOAT, INT, VECF2, VECF3, VECF4, MATF2, MATF3, MATF4
@@ -44,8 +43,8 @@ namespace ngn {
             }
         };
 
-        std::unordered_map<std::string, ParamData> mParameters;
-        std::vector<std::pair<std::string, ResourceHandle<Texture> > > mTextures;
+        std::unordered_map<ShaderProgram::UniformGUID, ParamData> mParameters;
+        std::vector<std::pair<ShaderProgram::UniformGUID, ResourceHandle<Texture> > > mTextures;
 
         void deleteParam(ParamData& param) {
             if(param.ownedData) {
@@ -64,15 +63,15 @@ namespace ngn {
         }
 
         template<class T>
-        void setParam(const char* name, ParamType type, const T* ptr, size_t count, bool copy) {
-            auto it = mParameters.find(name);
+        void setParam(ShaderProgram::UniformGUID uniformGuid, ParamType type, const T* ptr, size_t count, bool copy) {
+            auto it = mParameters.find(uniformGuid);
             if(it != mParameters.end()) {
                 if(it->second.type != type || it->second.count != count) {
                     LOG_ERROR("Setting uniform value with a different type than previous set!");
                     return;
                 }
             } else {
-                it = mParameters.emplace(std::string(name), type).first;
+                it = mParameters.emplace(uniformGuid, type).first;
             }
 
             assert(it->second.constData == nullptr || it->second.ownedData == nullptr);
@@ -89,6 +88,11 @@ namespace ngn {
 
             it->second.count = count;
             it->second.dirty = true;
+        }
+
+        template<class T>
+        void setParam(const char* name, ParamType type, const T* ptr, size_t count, bool copy) {
+            setParam<T>(ShaderProgram::getUniformGUID(name), type, ptr, count, copy);
         }
     public:
         UniformBlock() {}
@@ -114,70 +118,89 @@ namespace ngn {
 
         UniformBlock& operator=(const UniformBlock&) = delete;
 
-        void setFloat(const char* name, float val) {
-            setParam<float>(name, ParamType::FLOAT, &val, 1, true);
+        template<class T>
+        void setFloat(const T& id, float val) {
+            setParam<float>(id, ParamType::FLOAT, &val, 1, true);
         }
-        void setFloatArray(const char* name, const float* vp, size_t count = 1, bool copy = false) {
-            setParam<float>(name, ParamType::FLOAT, vp, count, copy);
-        }
-
-        void setInteger(const char* name, int val) {
-            setParam<int>(name, ParamType::INT, &val, 1, true);
-        }
-        void setIntegerArray(const char* name, const int* vp, size_t count = 1, bool copy = false) {
-            setParam<int>(name, ParamType::INT, vp, count, copy);
+        template<class T>
+        void setFloatArray(const T& id, const float* vp, size_t count = 1, bool copy = false) {
+            setParam<float>(id, ParamType::FLOAT, vp, count, copy);
         }
 
-        void setVector2(const char* name, const glm::vec2& val){
-            setParam<glm::vec2>(name, ParamType::VECF2, &val, 1, true);
+        template<class T>
+        void setInteger(const T& id, int val) {
+            setParam<int>(id, ParamType::INT, &val, 1, true);
         }
-        void setVector2Array(const char* name, const glm::vec2* vp, size_t count = 1, bool copy = false){
-            setParam<glm::vec2>(name, ParamType::VECF2, vp, count, copy);
-        }
-
-        void setVector3(const char* name, const glm::vec3& val){
-            setParam<glm::vec3>(name, ParamType::VECF3, &val, 1, true);
-        }
-        void setVector3Array(const char* name, const glm::vec3* vp, size_t count = 1, bool copy = false){
-            setParam<glm::vec3>(name, ParamType::VECF3, vp, count, copy);
+        template<class T>
+        void setIntegerArray(const T& id, const int* vp, size_t count = 1, bool copy = false) {
+            setParam<int>(id, ParamType::INT, vp, count, copy);
         }
 
-        void setVector4(const char* name, const glm::vec4& val){
-            setParam<glm::vec4>(name, ParamType::VECF4, &val, 1, true);
+        template<class T>
+        void setVector2(const T& id, const glm::vec2& val) {
+            setParam<glm::vec2>(id, ParamType::VECF2, &val, 1, true);
         }
-        void setVector4Array(const char* name, const glm::vec4* vp, size_t count = 1, bool copy = false){
-            setParam<glm::vec4>(name, ParamType::VECF4, vp, count, copy);
-        }
-
-        void setMatrix2(const char* name, const glm::mat2& val){
-            setParam<glm::mat2>(name, ParamType::MATF2, &val, 1, true);
-        }
-        void setMatrix2Array(const char* name, const glm::mat2* vp, size_t count = 1, bool copy = false){
-            setParam<glm::mat2>(name, ParamType::MATF2, vp, count, copy);
+        template<class T>
+        void setVector2Array(const T& id, const glm::vec2* vp, size_t count = 1, bool copy = false) {
+            setParam<glm::vec2>(id, ParamType::VECF2, vp, count, copy);
         }
 
-        void setMatrix3(const char* name, const glm::mat3& val){
-            setParam<glm::mat3>(name, ParamType::MATF3, &val, 1, true);
+        template<class T>
+        void setVector3(const T& id, const glm::vec3& val) {
+            setParam<glm::vec3>(id, ParamType::VECF3, &val, 1, true);
         }
-        void setMatrix3Array(const char* name, const glm::mat3* vp, size_t count = 1, bool copy = false){
-            setParam<glm::mat3>(name, ParamType::MATF3, vp, count, copy);
-        }
-
-        void setMatrix4(const char* name, const glm::mat4& val){
-            setParam<glm::mat4>(name, ParamType::MATF4, &val, 1, true);
-        }
-        void setMatrix4Array(const char* name, const glm::mat4* vp, size_t count = 1, bool copy = false){
-            setParam<glm::mat4>(name, ParamType::MATF4, vp, count, copy);
+        template<class T>
+        void setVector3Array(const T& id, const glm::vec3* vp, size_t count = 1, bool copy = false) {
+            setParam<glm::vec3>(id, ParamType::VECF3, vp, count, copy);
         }
 
-        void setTexture(const char* name, const ResourceHandle<Texture>& tex) {
+        template<class T>
+        void setVector4(const T& id, const glm::vec4& val) {
+            setParam<glm::vec4>(id, ParamType::VECF4, &val, 1, true);
+        }
+        template<class T>
+        void setVector4Array(const T& id, const glm::vec4* vp, size_t count = 1, bool copy = false) {
+            setParam<glm::vec4>(id, ParamType::VECF4, vp, count, copy);
+        }
+
+        template<class T>
+        void setMatrix2(const T& id, const glm::mat2& val) {
+            setParam<glm::mat2>(id, ParamType::MATF2, &val, 1, true);
+        }
+        template<class T>
+        void setMatrix2Array(const T& id, const glm::mat2* vp, size_t count = 1, bool copy = false) {
+            setParam<glm::mat2>(id, ParamType::MATF2, vp, count, copy);
+        }
+
+        template<class T>
+        void setMatrix3(const T& id, const glm::mat3& val) {
+            setParam<glm::mat3>(id, ParamType::MATF3, &val, 1, true);
+        }
+        template<class T>
+        void setMatrix3Array(const T& id, const glm::mat3* vp, size_t count = 1, bool copy = false) {
+            setParam<glm::mat3>(id, ParamType::MATF3, vp, count, copy);
+        }
+
+        template<class T>
+        void setMatrix4(const T& id, const glm::mat4& val) {
+            setParam<glm::mat4>(id, ParamType::MATF4, &val, 1, true);
+        }
+        template<class T>
+        void setMatrix4Array(const T& id, const glm::mat4* vp, size_t count = 1, bool copy = false) {
+            setParam<glm::mat4>(id, ParamType::MATF4, vp, count, copy);
+        }
+
+        void setTexture(ShaderProgram::UniformGUID uniformGuid, const ResourceHandle<Texture>& tex) {
             for(auto& elem : mTextures) {
-                if(elem.first == name) {
+                if(elem.first == uniformGuid) {
                     elem.second = tex;
                     return;
                 }
             }
-            mTextures.push_back(std::make_pair(name, tex));
+            mTextures.push_back(std::make_pair(uniformGuid, tex));
+        }
+        void setTexture(const char* name, const ResourceHandle<Texture>& tex) {
+            setTexture(ShaderProgram::getUniformGUID(name), tex);
         }
 
         virtual void apply() = 0;

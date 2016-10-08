@@ -22,7 +22,8 @@ namespace ngn {
             EMPTY, UNLINKED, LINKED, COMPILE_SHADER_FAILED, LINK_FAILED
         };
 
-        using ShaderVariableLocation = GLint;
+        using UniformLocation = GLint;
+        using UniformGUID = uint32_t;
 
         static const ShaderProgram* currentShaderProgram;
 
@@ -30,10 +31,27 @@ namespace ngn {
         GLuint mProgramObject;
         std::vector<GLuint> mShaderObjects;
         Status mStatus;
-        mutable std::unordered_map<std::string, ShaderVariableLocation> mAttributeLocations; // only caches
-        mutable std::unordered_map<std::string, ShaderVariableLocation> mUniformLocations;
+        mutable std::unordered_map<std::string, UniformLocation> mAttributeLocations; // only caches
+        mutable std::unordered_map<std::string, UniformLocation> mUniformLocations;
+        // bool holds if the location is already initialized
+        mutable std::vector<UniformLocation> mUniformGUIDLocationMap;
+
+        static std::unordered_map<std::string, UniformGUID> uniformNameGUIDMap;
+        static std::vector<std::string> uniformGUIDNameMap;
+        static UniformGUID nextUniformGUID;
 
     public:
+        inline static UniformLocation getUniformGUID(const char* name) {
+            auto it = uniformNameGUIDMap.find(name);
+            if(it == uniformNameGUIDMap.end()) {
+                UniformGUID guid = nextUniformGUID++;
+                uniformNameGUIDMap[name] = guid;
+                uniformGUIDNameMap.push_back(name);
+                return guid;
+            }
+            return it->second;
+        }
+
         ShaderProgram();
         ShaderProgram(const char* fragfile, const char* vertfile);
         ~ShaderProgram();
@@ -65,8 +83,24 @@ namespace ngn {
                     link();
         }
 
-        ShaderVariableLocation getAttributeLocation(const std::string& name) const;
-        ShaderVariableLocation getUniformLocation(const std::string& name) const;
+        UniformLocation getAttributeLocation(const std::string& name) const;
+        UniformLocation getUniformLocation(const std::string& name) const;
+
+        inline UniformLocation getUniformLocation(UniformGUID guid) const {
+            int sizeDiff = guid - mUniformGUIDLocationMap.size() + 1;
+            if(sizeDiff > 0) {
+                mUniformGUIDLocationMap.reserve(sizeDiff*2);
+                for(int i = 0; i < sizeDiff - 1; ++i) mUniformGUIDLocationMap.push_back(-0xFF);
+
+                UniformLocation loc = getUniformLocation(uniformGUIDNameMap[guid]);
+                mUniformGUIDLocationMap.push_back(loc);
+                return loc;
+            } else {
+                UniformLocation loc = mUniformGUIDLocationMap[guid];
+                if(loc < -1) loc = mUniformGUIDLocationMap[guid] = getUniformLocation(uniformGUIDNameMap[guid]);
+                return loc;
+            }
+        }
 
         bool link();
 
@@ -91,39 +125,39 @@ namespace ngn {
 
         template<typename T>
         void setUniform(const std::string& name, const T& val) const {
-            ShaderVariableLocation loc = getUniformLocation(name);
+            UniformLocation loc = getUniformLocation(name);
             if(loc != -1) setUniform(loc, val);
         }
 
-        void setUniform(ShaderVariableLocation loc, int value) const {
+        void setUniform(UniformLocation loc, int value) const {
             glUniform1i(loc, value);
         }
 
-        void setUniform(ShaderVariableLocation loc, float value) const {
+        void setUniform(UniformLocation loc, float value) const {
             glUniform1f(loc, value);
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::vec2& val) const {
+        void setUniform(UniformLocation loc, const glm::vec2& val) const {
             glUniform2fv(loc, 1, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::vec3& val) const {
+        void setUniform(UniformLocation loc, const glm::vec3& val) const {
             glUniform3fv(loc, 1, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::vec4& val) const {
+        void setUniform(UniformLocation loc, const glm::vec4& val) const {
             glUniform4fv(loc, 1, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::mat2& val) const {
+        void setUniform(UniformLocation loc, const glm::mat2& val) const {
             glUniformMatrix2fv(loc, 1, GL_FALSE, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::mat3& val) const {
+        void setUniform(UniformLocation loc, const glm::mat3& val) const {
             glUniformMatrix3fv(loc, 1, GL_FALSE, glm::value_ptr(val));
         }
 
-        void setUniform(ShaderVariableLocation loc, const glm::mat4& val) const {
+        void setUniform(UniformLocation loc, const glm::mat4& val) const {
             glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(val));
         }
     };

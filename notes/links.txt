@@ -1,0 +1,40 @@
+# Exceptions
+http://www.gamedev.net/topic/674790-c-exceptions/
+
+# AAA games/engines
+http://de.slideshare.net/DICEStudio/directx-11-rendering-in-battlefield-3
+http://www.gdcvault.com/play/1023783/Low-Complexity-High-Fidelity-INSIDE
+http://c0de517e.blogspot.de/2016/08/activision-siggraph-2016.html (siehe nächster link)
+http://c0de517e.blogspot.de/2016/08/a-retrospective-on-call-of-duty.html
+http://advances.realtimerendering.com/s2016/Siggraph2016_idTech6.pdf
+
+## Frame anaylsis 
+http://www.adriancourreges.com/blog/2015/11/02/gta-v-graphics-study/
+http://www.adriancourreges.com/blog/2015/11/02/gta-v-graphics-study-part-2/
+http://www.adriancourreges.com/blog/2015/03/10/deus-ex-human-revolution-graphics-study/
+http://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/
+
+# Software
+https://github.com/ValveSoftware/vogl
+https://github.com/baldurk/renderdoc
+
+# Shader-Branching
+https://www.opengl.org/discussion_boards/showthread.php/198571-Switching-between-Texture-and-Material-(in-FragmentShader)
+https://www.reddit.com/r/opengl/comments/53dnm3/one_big_shader_or_so_many_little_shader_program/
+http://stackoverflow.com/questions/37827216/does-if-statements-slow-down-my-shader
+
+# GLSL Snippets
+That famous random-one-liner: http://stackoverflow.com/questions/12964279/whats-the-origin-of-this-glsl-rand-one-liner
+
+# C++
+https://www.reddit.com/r/gamedev/comments/54ha1j/is_there_a_resource_for_tips_on_high_performance/
+
+# Algorithms
+http://clb.demon.fi/projects/an-exact-algorithm-for-finding-minimum-oriented-bounding-boxes
+
+# Optimization
+http://lspiroengine.com/?p=96 - 3D Performance Tips (L. Spiro)
+
+# Other
+http://lspiroengine.com/?p=566 - Scene Graphs (L. Spiro)
+http://c0de517e.blogspot.de/2016/08/the-real-time-rendering-continuum.html - The Real Time Rendering Continuum (good shit)
