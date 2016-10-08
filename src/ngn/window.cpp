@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstring>
+#include <unordered_map>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -36,6 +37,38 @@ namespace ngn {
         return diff.count();
     }
 
+    std::unordered_map<GLenum, const char*> debugSourceName = {
+        {GL_DEBUG_SOURCE_API, "api"},
+        {GL_DEBUG_SOURCE_SHADER_COMPILER, "shader_compiler"},
+        {GL_DEBUG_SOURCE_WINDOW_SYSTEM, "window_system"},
+        {GL_DEBUG_SOURCE_THIRD_PARTY, "third_party"},
+        {GL_DEBUG_SOURCE_APPLICATION, "application"},
+        {GL_DEBUG_SOURCE_OTHER, "other"}
+    };
+
+    std::unordered_map<GLenum, const char*> debugTypeName = {
+        {GL_DEBUG_TYPE_ERROR,"error"},
+        {GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR,"deprecated_behavior"},
+        {GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR,"undefined_behavior"},
+        {GL_DEBUG_TYPE_PERFORMANCE,"performance"},
+        {GL_DEBUG_TYPE_PORTABILITY,"portability"},
+        {GL_DEBUG_TYPE_OTHER,"other"},
+        {GL_DEBUG_TYPE_MARKER,"marker"},
+        {GL_DEBUG_TYPE_PUSH_GROUP,"push_group"},
+        {GL_DEBUG_TYPE_POP_GROUP,"pop_group"}
+    };
+
+    std::unordered_map<GLenum, const char*> debugSeverityName = {
+        {GL_DEBUG_SEVERITY_HIGH, "high"},
+        {GL_DEBUG_SEVERITY_MEDIUM, "medium"},
+        {GL_DEBUG_SEVERITY_LOW, "low"},
+        {GL_DEBUG_SEVERITY_NOTIFICATION, "notification"}
+    };
+
+    __stdcall void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+        LOG_DEBUG("GL Debug message - source: %s, type: %s, severity: %s, message: %s", debugSourceName[source], debugTypeName[type], debugSeverityName[severity], message);
+    }
+
     void Window::create(const char* title, int width, int height, bool fullscreen, bool vsync, int msaaSamples, Uint32 createWindowFlags) {
         if(!firstCreation) {
             if(SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -48,6 +81,13 @@ namespace ngn {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
+
+        int contextFlags = 0;
+        SDL_GL_GetAttribute(SDL_GL_CONTEXT_FLAGS, &contextFlags);
+        #ifdef DEBUG
+            contextFlags |= SDL_GL_CONTEXT_DEBUG_FLAG;
+        #endif
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, contextFlags);
 
         LOG_DEBUG("samples: %d", msaaSamples);
         if(msaaSamples > 0) {
@@ -81,6 +121,21 @@ namespace ngn {
 
         glEnable(GL_FRAMEBUFFER_SRGB);
         if(msaaSamples > 0) glEnable(GL_MULTISAMPLE);
+
+        #ifdef DEBUG
+        if(GLAD_GL_KHR_debug) {
+            LOG_DEBUG("KHR_debug supported. Turning on debug output.");
+            glDebugMessageCallback(debugCallback, nullptr);
+            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+            glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
+        } else if (GLAD_GL_ARB_debug_output) {
+            LOG_DEBUG("ARB_debug_output supported. Turning on debug output.");
+            glDebugMessageCallbackARB(debugCallback, nullptr);
+            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
+        }
+
+        #endif
     }
 
     void Window::makeCurrent() const {
