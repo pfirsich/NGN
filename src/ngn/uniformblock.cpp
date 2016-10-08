@@ -23,7 +23,9 @@ namespace ngn {
             }
 
             for(size_t i = 0; i < mTextures.size(); ++i) {
+                GLuint loc = current->getUniformLocation(mTextures[i].first);
                 mTextures[i].second.getResource()->bind(i);
+                glUniform1i(loc, i);
             }
         }
     }
