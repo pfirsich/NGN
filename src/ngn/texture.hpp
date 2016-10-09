@@ -8,6 +8,8 @@
 #include "resource.hpp"
 
 namespace ngn {
+    using PixelFormat = GLenum;
+
     class Texture : public Resource {
     public:
         enum class WrapMode : GLenum {
@@ -36,7 +38,8 @@ namespace ngn {
     private:
         GLenum mTarget;
         GLuint mTextureObject;
-        int mWidth, mHeight, mComponents;
+        int mWidth, mHeight;
+        bool mImmutable;
         WrapMode mSWrap, mTWrap;
         MinFilter mMinFilter;
         MagFilter mMagFilter;
@@ -65,15 +68,20 @@ namespace ngn {
         static Texture* fromFile(const char* filename, bool genMipmaps = true);
 
         // Mipmapping is default, since it's takes a little more ram, but usually it's faster and looks nicer
-        Texture(GLenum target = GL_TEXTURE_2D) : mTarget(target), mTextureObject(0),
-                mSWrap(WrapMode::CLAMP_TO_EDGE), mTWrap(WrapMode::CLAMP_TO_EDGE), mMagFilter(MagFilter::LINEAR) {
+        Texture(GLenum target = GL_TEXTURE_2D) : mTarget(target), mTextureObject(0), mWidth(-1), mHeight(-1), mImmutable(false),
+                mSWrap(WrapMode::CLAMP_TO_EDGE), mTWrap(WrapMode::CLAMP_TO_EDGE), mMinFilter(MinFilter::LINEAR), mMagFilter(MagFilter::LINEAR) {
             if(!staticInitialized) staticInitialize();
         }
-        Texture(const char* filename, bool genMipmaps = true, GLenum target = GL_TEXTURE_2D) : mTarget(target), mTextureObject(0),
-                mSWrap(WrapMode::CLAMP_TO_EDGE), mTWrap(WrapMode::CLAMP_TO_EDGE), mMagFilter(MagFilter::LINEAR) {
-            if(!staticInitialized) staticInitialize();
+
+        // Allocate (immutable!) texture storage wit glTexStorage2D
+        Texture(PixelFormat internalFormat, int width, int height, int levels = 1, GLenum target = GL_TEXTURE_2D) : Texture(target) {
+            setStorage(internalFormat, width, height, levels);
+        }
+
+        Texture(const char* filename, bool genMipmaps = true, GLenum target = GL_TEXTURE_2D) : Texture(target) {
             loadFromFile(filename, genMipmaps);
         }
+
         ~Texture() {
             glDeleteTextures(1, &mTextureObject);
         }
@@ -81,12 +89,16 @@ namespace ngn {
         void loadFromMemory(unsigned char* buffer, int width, int height, int components, bool genMipmaps = true);
         bool loadEncodedFromMemory(unsigned char* encBuffer, int len, bool genMipmaps = true);
         bool loadFromFile(const char* filename, bool genMipmaps = true);
+        void setStorage(PixelFormat format, int width, int height, int levels = 1);
+        void updateData(GLenum format, GLenum type, const void* data, int level = 0, int width = -1, int height = -1, int x = 0, int y = 0);
+        // if you've set the base level + data, call this. this can also be called on an immutable texture
+        void updateMips() {bind(); glGenerateMipmap(mTarget);}
 
         void setTarget(GLenum target) {mTarget = target;}
         GLenum getTarget() const {return mTarget;}
         GLuint getTextureObject() const {return mTextureObject;}
         int getWidth() const {return mWidth;}
-        int  getHeight() const {return mHeight;}
+        int getHeight() const {return mHeight;}
 
         void setWrap(WrapMode u, WrapMode v) {
             setParameter(GL_TEXTURE_WRAP_S, static_cast<GLenum>(mSWrap = u));
