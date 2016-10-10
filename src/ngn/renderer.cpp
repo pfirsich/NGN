@@ -336,6 +336,19 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                             glm::mat4 toLightSpace = shadow->getCamera()->getProjectionMatrix() * shadow->getCamera()->getViewMatrix();
                                             entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowedGUID, 1);
                                             entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowBiasGUID, shadow->getBias());
+                                            /* This is some bullshit
+                                            The shadow map is bound to a specific unit (this engine is going to assume hardware with at least 16)
+                                            because I rely heavily on uniform dynamic branching instead of different shader permutations. As a result
+                                            it might happen that a shader is used, that has a uniform for a shadow map, but doesn't use it.
+                                            That shadow sampler NEEDS to have a depth texture bound for my NVIDIA driver not to whine about it.
+                                            Even if I point that sampler, when it is not in use, to a unit that does not have a texture bound (i.e. the 0-texture)
+                                            it will still whine ("Program undefined behavior warning: Sampler object 0 is bound to non-depth texture 0, yet it is used with a program that uses a shadow sampler. This is undefined behavior.")
+                                            Also if have regular sampler uniforms in my shader, that are not used currently but have a depth texture bound (from a previous pass/draw call)
+                                            then this will also result in a similar message:
+                                            "Program undefined behavior warning: Sampler object 0 has depth compare enabled. It is being used with depth texture 5, by a program that samples it with a regular sampler. This is undefined beahvior."
+                                            If I don't remove these samplers on a case-by-case basis, I have to have a depth texture bound at all times,
+                                            so as an easy fix I dedicated the unit 15 to shadow maps!
+                                            */
                                             entry.perEntryUniforms.setTexture(UniformGUIDs::ngn_light_shadowMapGUID, &shadow->mShadowMapTexture, 15);
                                             entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_light_toLightSpaceGUID, toLightSpace);
                                         } else {
