@@ -159,7 +159,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
         glClear(mask);
     }
 
-    void Renderer::render(SceneNode* root, Camera* camera, bool regenerateQueue, bool doRenderQueue) {
+    void Renderer::render(SceneNode& root, Camera& camera, bool regenerateQueue, bool doRenderQueue) {
         updateState();
         // make sure depth write is enabled before we clear
         glDepthMask((RenderStateBlock::currentDepthWrite = true) ? GL_TRUE : GL_FALSE);
@@ -176,8 +176,8 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
         for(int i = 0; i < LIGHT_TYPE_COUNT; ++i) if(lightLists[i].capacity() == 0) lightLists[i].reserve(1024);
 
         if(regenerateQueue) {
-            glm::mat4 viewMatrix(camera->getViewMatrix());
-            glm::mat4 projectionMatrix(camera->getProjectionMatrix());
+            glm::mat4 viewMatrix(camera.getViewMatrix());
+            glm::mat4 projectionMatrix(camera.getProjectionMatrix());
 
             // linearize scene graph (this should in theory not be done every frame)
             linearizedSceneGraph.clear(); // resize(0) might retain capacity?
@@ -187,7 +187,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
             for(int i = 0; i < LIGHT_TYPE_COUNT; ++i) lightLists[i].clear();
 
             std::stack<SceneNode*> traversalStack;
-            traversalStack.push(root);
+            traversalStack.push(&root);
             while(!traversalStack.empty()) {
                 SceneNode* node = traversalStack.top();
                 traversalStack.pop();
@@ -213,7 +213,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
 
                 LightData* lightData = node->getLightData();
                 if(lightData) {
-                    if(lightData->getShadow()) lightData->getShadow()->updateCamera();
+                    if(lightData->getShadow()) lightData->getShadow()->updateCamera(camera);
                     lightLists[static_cast<int>(lightData->getType())].push_back(node);
                 }
 

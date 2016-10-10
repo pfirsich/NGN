@@ -24,7 +24,7 @@ namespace ngn {
     protected:
         glm::vec3 mPosition, mScale;
         glm::quat mQuaternion;
-        glm::mat4 mMatrix;
+        mutable glm::mat4 mMatrix;
 
         void updateTRSFromMatrix();
         virtual void dirty() {mMatrixDirty = true;}
@@ -40,7 +40,7 @@ namespace ngn {
         bool mMeshOwned;
         LightData* mLightData;
 
-        bool mMatrixDirty;
+        mutable bool mMatrixDirty;
 
         static constexpr int MAX_RENDERDATA_COUNT = 4;
         RendererData* rendererData[MAX_RENDERDATA_COUNT];
@@ -70,7 +70,7 @@ namespace ngn {
         SceneNode& operator=(const SceneNode& other) = delete;
 
         virtual ~SceneNode() {
-            if(mParent != nullptr) mParent->remove(this);
+            if(mParent != nullptr) mParent->remove(*this);
             delete mMaterial;
             if(mMeshOwned) delete mMesh;
             delete mLightData;
@@ -111,15 +111,15 @@ namespace ngn {
         const std::vector<SceneNode*>& getChildren() const {return mChildren;}
 
         // you may add a node twice to the graph, which is not intended, but the overhead of checking is undesirable
-        void add(SceneNode* obj) {
-            obj->mParent = this;
-            mChildren.push_back(obj);
+        void add(SceneNode& obj) {
+            obj.mParent = this;
+            mChildren.push_back(&obj);
         }
 
-        void remove(SceneNode* obj) {
+        void remove(SceneNode& obj) {
             auto it = mChildren.begin();
             while(it != mChildren.end()) {
-                if(*it == obj) {
+                if(*it == &obj) {
                     (*it)->mParent = nullptr;
                     it = mChildren.erase(it);
                 } else {
@@ -163,7 +163,7 @@ namespace ngn {
             return ret;
         }
 
-        glm::mat4 getMatrix() {
+        glm::mat4 getMatrix() const {
             if(mMatrixDirty) {
                 mMatrix = glm::scale(glm::translate(glm::mat4(), mPosition) * glm::mat4_cast(glm::conjugate(mQuaternion)), mScale);
                 mMatrixDirty = false;
@@ -171,7 +171,7 @@ namespace ngn {
             return mMatrix;
         }
 
-        glm::mat4 getWorldMatrix() {
+        glm::mat4 getWorldMatrix() const {
             if(mParent)
                 return mParent->getWorldMatrix() * getMatrix();
             else

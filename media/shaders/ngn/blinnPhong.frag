@@ -82,27 +82,27 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
             lightAtten *= 1.0 - smoothstep(ngn_light.innerAngle, ngn_light.outerAngle, dot(-lightDir, ngn_light.direction));
         }
 
-        if(ngn_light.shadowed) {
-            vec4 fragLightSpace = ngn_light.toLightSpace * vec4(vsOut.worldPos, 1.0);
-            vec3 shadowCoords = fragLightSpace.xyz / fragLightSpace.w;
-            shadowCoords = shadowCoords * 0.5 + 0.5;
-            /*if(shadowCoords.x > 1.0 || shadowCoords.x < 0.0 || shadowCoords.y > 1.0 || shadowCoords.y < 0.0) {
-                ngn_fragColor = vec4(0.0);
-            } else {
-                ngn_fragColor = vec4(vec3(pow(shadowCoords.z, 1000.0)), 1.0); return;
-            }*/
-            shadowCoords.z -= ngn_light.shadowBias;
-            float shadow = texture(ngn_light.shadowMap, shadowCoords);
-            //ngn_fragColor = vec4(shadow); return;
-            lightAtten *= shadow;
-        }
-
         // attenCutoff represents only the cutoff of the attenuation function (or the cutoff of the actual RGB values outputted)
         // if we have light sources with luminance > 1, these values will obviously be wrong. therefore we have to rescale
         // also note, that we use max(r,g,b) as our luminance function, but just to make sure, that no component will exceed the cutoff
         float cutoff = ngn_light.attenCutoff / max(max(ngn_light.color.r, ngn_light.color.g), ngn_light.color.b);
         lightAtten = (lightAtten - cutoff) / (1.0 - cutoff);
+    }
 
+    if(ngn_light.shadowed) {
+        vec4 fragLightSpace = ngn_light.toLightSpace * vec4(vsOut.worldPos, 1.0);
+        vec3 shadowCoords = fragLightSpace.xyz / fragLightSpace.w;
+        shadowCoords = shadowCoords * 0.5 + 0.5;
+        /*if(shadowCoords.x > 1.0 || shadowCoords.x < 0.0 || shadowCoords.y > 1.0 || shadowCoords.y < 0.0) {
+            ngn_fragColor = vec4(0.0, 0.0, 1.0, 1.0); return;
+        } else {
+            //ngn_fragColor = vec4(vec3(pow(shadowCoords.z, 1000.0)), 1.0); return;
+            ngn_fragColor = vec4(shadowCoords.xy, 0.0, 1.0); return;
+        }*/
+        shadowCoords.z -= ngn_light.shadowBias;
+        float shadow = texture(ngn_light.shadowMap, shadowCoords);
+        //ngn_fragColor = vec4(shadow); return;
+        lightAtten *= shadow;
     }
 }
 

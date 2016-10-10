@@ -31,7 +31,7 @@ namespace ngn {
 
 
         public:
-            Shadow(LightData* parent, int shadowMapSize, PixelFormat format = GL_DEPTH_COMPONENT24);
+            Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, PixelFormat format = GL_DEPTH_COMPONENT24);
             ~Shadow();
 
             void setAutoCam(bool autocam) {mAutoCam = autocam;}
@@ -40,7 +40,7 @@ namespace ngn {
             void setBias(float bias) {mShadowBias = bias;}
             float getBias() const {return mShadowBias;}
 
-            void updateCamera();
+            void updateCamera(const Camera& viewCamera);
             Camera* getCamera() {return mCamera;}
         };
 

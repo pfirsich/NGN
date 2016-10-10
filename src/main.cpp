@@ -64,7 +64,7 @@ int main(int argc, char** args) {
     ngn::Renderer renderer;
     renderer.clearColor = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 
-    ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
+    ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 150.0f);
     //ngn::OrthographicCamera camera(-50.0f, 50.0f, -50.0f, 50.0f, 0.0f, 200.0f);
 
     window.resizeSignal.connect([&camera, &renderer](int w, int h) {
@@ -99,25 +99,25 @@ int main(int argc, char** args) {
     for(auto mesh : meshes) {
         ngn::Object* obj = new ngn::Object;
         obj->setMesh(mesh);
-        ironman.add(obj);
+        ironman.add(*obj);
     }
     ironman.setMaterial(baseMaterial);
     ironman.setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
     ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
-    scene.add(&ironman);
+    scene.add(ironman);
 
     ngn::Object sphere;
     sphere.setMesh(ngn::sphereMesh(5.0f, 128, 128, true, vFormat));
     sphere.setMaterial(baseMaterial);
     sphere.setPosition(glm::vec3(-20.0f, 10.0f, 0.0f));
-    scene.add(&sphere);
+    scene.add(sphere);
 
     ngn::Object ground;
     ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
     ground.setMaterial(new ngn::Material(*baseMaterial.getResource()));
     ground.getMaterial()->setVector4("color", glm::vec4(0.5f, 1.0f, 0.5f, 1.0f));
     ground.getMaterial()->setFloat("shininess", 64.0);
-    scene.add(&ground);
+    scene.add(ground);
 
     ngn::Object cube;
     cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
@@ -129,22 +129,24 @@ int main(int argc, char** args) {
     //cube.getMaterial()->setUnlit();
     //cube.getMaterial()->setDepthTest(ngn::DepthFunc::GREATER);
     cube.setPosition(glm::vec3(0.0f, 5.0f, 0.0f));
-    scene.add(&cube);
+    scene.add(cube);
 
     ngn::Light light;
     light.addLightData(ngn::LightData::LightType::DIRECTIONAL);
     light.getLightData()->setColor(glm::vec3(0.2f, 0.2f, 0.2f));
-    //light.getLightData()->addShadow(1024, 1024);
+    light.getLightData()->addShadow(4096, 4096);
     light.lookAt(glm::vec3(-0.5f, -0.5f, -1.0f));
-    //scene.add(&light);
+    //light.getLightData()->getShadow()->getCamera()->addDebugMesh();
+    scene.add(light);
 
     ngn::Light spotLight;
     spotLight.addLightData(ngn::LightData::LightType::SPOT);
     spotLight.getLightData()->setColor(200.0f * glm::vec3(0.25f, 0.25f, 1.0f));
     spotLight.lookAtPos(glm::vec3(30.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    spotLight.getLightData()->addShadow(1024);
+    spotLight.getLightData()->addShadow(2048, 2048);
     //spotLight.getLightData()->getShadow()->getCamera()->lookAtPos(glm::vec3(30.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    scene.add(&spotLight);
+    //spotlight.getLightData()->getShadow()->getCamera()->addDebugMesh();
+    scene.add(spotLight);
 
     ngn::Light pointLight;
     pointLight.addLightData(ngn::LightData::LightType::POINT);
@@ -158,7 +160,7 @@ int main(int argc, char** args) {
     pointLight.getMaterial()->setVector3("emissive", col);
     pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);
     //pointLight.getMaterial()->setUnlit();
-    scene.add(&pointLight);
+    //scene.add(pointLight);
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
 
@@ -177,8 +179,8 @@ int main(int argc, char** args) {
 
         moveCamera(camera, dt);
 
-        renderer.render(&scene, &camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
-        //renderer.render(&scene, spotLight.getLightData()->getShadow()->getCamera(), !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
+        renderer.render(scene, camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
+        //renderer.render(scene, *light.getLightData()->getShadow()->getCamera(), !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
 
         window.updateAndSwap();
         //quit = true;
