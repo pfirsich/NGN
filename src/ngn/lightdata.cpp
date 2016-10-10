@@ -27,21 +27,22 @@ namespace ngn {
                     frustumCorners[6] = inverseProject * glm::vec4( 1.0f,  1.0f,  1.0f, 1.0f);
                     frustumCorners[7] = inverseProject * glm::vec4( 1.0f, -1.0f,  1.0f, 1.0f);
 
-                    //TODO: explain this
+                    /*This is not so easy.
+                    All our 4-dimensional vectors represent points in a projective space (not actual 3d space ("affine") points)
+                    The points that are real points in the 3-dimensional space are only those that have w = 1
+                    (i.e. they correspond to the affine subspace of our projective space)
+                    If we apply homogeneous mappings on our projective points we get other projective points out, potentially even points
+                    that are *not* part of the affine subspace! In general this happens all the time, and also with the inverse of our
+                    projection matrix. Since all multiples of a projective point in homogeneous coordinates correspond to the same point
+                    ("are in the same equivalence class") ([x:y:z:w] = [kx:ky:kz:kz] for k in the field underlying our space, in this case real numbers)
+                    we can just divide by w to get the coordinates of our affine point!
+
+                    There is probably a way to understand this without knowing about projective geometry, but I think it's way harder and this was
+                    hard enough to remember already.
+                    */
                     for(int i = 0; i < 8; ++i) {
                         frustumCorners[i] = glm::vec4(glm::vec3(frustumCorners[i]) / frustumCorners[i].w, 1.0);
                     }
-
-                    // debug, cube in center of world
-                    /*const float hsize = 50.0f;
-                    frustumCorners[0] = glm::vec4(-hsize, hsize,  hsize, 1.0f);
-                    frustumCorners[1] = glm::vec4(-hsize,  0.0f,  hsize, 1.0f);
-                    frustumCorners[2] = glm::vec4( hsize,  0.0f,  hsize, 1.0f);
-                    frustumCorners[3] = glm::vec4( hsize, hsize,  hsize, 1.0f);
-                    frustumCorners[4] = glm::vec4(-hsize, hsize, -hsize, 1.0f);
-                    frustumCorners[5] = glm::vec4(-hsize,  0.0f, -hsize, 1.0f);
-                    frustumCorners[6] = glm::vec4( hsize,  0.0f, -hsize, 1.0f);
-                    frustumCorners[7] = glm::vec4( hsize, hsize, -hsize, 1.0f);*/
 
                     // transform to light space and find min/max
                     glm::mat4 toLightSpace = shadowCam->getViewMatrix();
@@ -60,6 +61,7 @@ namespace ngn {
                     worldPos = glm::inverse(toLightSpace) * worldPos;
 
                     shadowCam->setPosition(glm::vec3(glm::inverse(shadowCam->getParent()->getWorldMatrix()) * worldPos));
+                    // regarding near/far: http://stackoverflow.com/questions/14836606/opengl-orthogonal-view-near-far-values
                     shadowCam->set(min.x, max.x, min.y, max.y, 0.0f, max.z - min.z);
                     break;
                 }
