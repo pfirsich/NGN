@@ -187,6 +187,10 @@ namespace ngn {
             return temp;
         }
 
+        bool peekDirty() const {
+            return mDirty;
+        }
+
         T* getResource() {
             // Should be dynamic_cast, but I don't want RTTI :/
             if(!mResource) return T::fallback;

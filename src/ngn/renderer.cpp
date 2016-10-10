@@ -20,6 +20,7 @@ namespace ngn {
 
     const int Renderer::AMBIENT_PASS = 1;
     const int Renderer::LIGHT_PASS = 2;
+    const int Renderer::SHADOWMAP_PASS = 4;
 
     namespace UniformGUIDs {
         ShaderProgram::UniformGUID ngn_modelMatrixGUID;
@@ -35,12 +36,21 @@ namespace ngn {
         ShaderProgram::UniformGUID ngn_light_colorGUID;
         ShaderProgram::UniformGUID ngn_light_positionGUID;
         ShaderProgram::UniformGUID ngn_light_directionGUID;
+
+        ShaderProgram::UniformGUID ngn_light_innerAngleGUID;
+        ShaderProgram::UniformGUID ngn_light_outerAngleGUID;
+
+        ShaderProgram::UniformGUID ngn_light_shadowedGUID;
+        ShaderProgram::UniformGUID ngn_light_shadowMapGUID;
+        ShaderProgram::UniformGUID ngn_light_shadowBiasGUID;
+        ShaderProgram::UniformGUID ngn_light_toLightSpaceGUID;
     }
 
     void Renderer::staticInitialize() {
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_AMBIENT " + std::to_string(AMBIENT_PASS) + "\n";
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD_LIGHT " + std::to_string(LIGHT_PASS) + "\n";
         Shader::globalShaderPreamble += "#define NGN_PASS_FORWARD(x) (x >= " + std::to_string(AMBIENT_PASS) + " && x <= " + std::to_string(LIGHT_PASS) + ")\n\n";
+        Shader::globalShaderPreamble += "#define NGN_PASS_SHADOWMAP_PASS " + std::to_string(SHADOWMAP_PASS) + "\n";
         Shader::globalShaderPreamble += "\n";
 
         #define STRINGIFY_LIGHT_TYPE(x) ("NGN_LIGHT_TYPE_" #x " " + std::to_string(static_cast<int>(LightData::LightType::x)))
@@ -64,6 +74,14 @@ struct ngn_LightParameters {
     vec3 color;
     vec3 position; // view/camera space
     vec3 direction; // view/camera space
+
+    float innerAngle; // cos(angle)
+    float outerAngle; // cos(angle)
+
+    bool shadowed;
+    sampler2DShadow shadowMap;
+    float shadowBias;
+    mat4 toLightSpace;
 };
 layout(location = 7) uniform ngn_LightParameters ngn_light;
 
@@ -82,6 +100,13 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
         UniformGUIDs::ngn_light_colorGUID = ShaderProgram::getUniformGUID("ngn_light.color");
         UniformGUIDs::ngn_light_positionGUID = ShaderProgram::getUniformGUID("ngn_light.position");
         UniformGUIDs::ngn_light_directionGUID = ShaderProgram::getUniformGUID("ngn_light.direction");
+        UniformGUIDs::ngn_light_innerAngleGUID = ShaderProgram::getUniformGUID("ngn_light.innerAngle");
+        UniformGUIDs::ngn_light_outerAngleGUID = ShaderProgram::getUniformGUID("ngn_light.outerAngle");
+
+        UniformGUIDs::ngn_light_shadowedGUID = ShaderProgram::getUniformGUID("ngn_light.shadowed");
+        UniformGUIDs::ngn_light_shadowMapGUID = ShaderProgram::getUniformGUID("ngn_light.shadowMap");
+        UniformGUIDs::ngn_light_shadowBiasGUID = ShaderProgram::getUniformGUID("ngn_light.shadowBias");
+        UniformGUIDs::ngn_light_toLightSpaceGUID = ShaderProgram::getUniformGUID("ngn_light.toLightSpace");
 
         Renderer::staticInitialized = true;
     }
@@ -188,6 +213,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
 
                 LightData* lightData = node->getLightData();
                 if(lightData) {
+                    if(lightData->getShadow()) lightData->getShadow()->updateCamera();
                     lightLists[static_cast<int>(lightData->getType())].push_back(node);
                 }
 
@@ -201,6 +227,53 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
 
             //LOG_DEBUG("----- frame");
 
+            // generate shadow maps
+            glColorMask(false, false, false, false);
+            for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
+                for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
+                    SceneNode* light = lightLists[ltype][l];
+                    LightData* lightData = light->getLightData();
+                    LightData::Shadow* shadow = lightData->getShadow();
+                    if(shadow) {
+                        glm::mat4 lightViewMatrix(shadow->getCamera()->getViewMatrix());
+                        glm::mat4 lightProjectionMatrix(shadow->getCamera()->getProjectionMatrix());
+
+                        for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
+                            SceneNode* node = linearizedSceneGraph[i];
+                            Mesh* mesh = node->getMesh();
+                            if(mesh) {
+                                Material* mat = node->getMaterial();
+                                assert(mat != nullptr);
+                                Material::Pass* pass = mat->getPass(SHADOWMAP_PASS);
+                                if(!pass) pass = mat->getPass(AMBIENT_PASS);
+
+                                if(pass) {
+                                    renderQueue.emplace_back(mat, pass, mesh);
+                                    RenderQueueEntry& entry = renderQueue.back();
+
+                                    glm::mat4 model = node->getWorldMatrix();
+                                    glm::mat4 modelview = lightViewMatrix * model;
+                                    glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
+                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelMatrixGUID, model);
+                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_viewMatrixGUID, lightViewMatrix);
+                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_projectionMatrixGUID, lightProjectionMatrix);
+                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewMatrixGUID, modelview);
+                                    entry.perEntryUniforms.setMatrix3(UniformGUIDs::ngn_normalMatrixGUID, normalMatrix);
+                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewProjectionMatrixGUID, lightProjectionMatrix * modelview);
+                                }
+                            }
+                        }
+                        shadow->mShadowMap.bind();
+                        glClear(GL_DEPTH_BUFFER_BIT);
+                        if(doRenderQueue) renderRenderQueue(renderQueue);
+                        renderQueue.clear();
+                    }
+                }
+            }
+
+            Rendertarget::unbind();
+            glViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+            glColorMask(true, true, true, true);
             for(bool drawTransparent = false; ; drawTransparent = !drawTransparent) {
                 // ambient pass
                 for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
@@ -253,6 +326,21 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                         entry.perEntryUniforms.setVector3(UniformGUIDs::ngn_light_colorGUID,       lightData->getColor());
                                         entry.perEntryUniforms.setVector3(UniformGUIDs::ngn_light_positionGUID,    glm::vec3(viewMatrix * glm::vec4(light->getPosition(), 1.0f)));
                                         entry.perEntryUniforms.setVector3(UniformGUIDs::ngn_light_directionGUID,   glm::vec3(viewMatrix * glm::vec4(light->getForward(), 0.0f)));
+                                        if(lightData->getType() == LightData::LightType::SPOT) {
+                                            entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_innerAngleGUID, lightData->getInnerAngle());
+                                            entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_outerAngleGUID, lightData->getOuterAngle());
+                                        }
+
+                                        LightData::Shadow* shadow = lightData->getShadow();
+                                        if(shadow) {
+                                            glm::mat4 toLightSpace = shadow->getCamera()->getProjectionMatrix() * shadow->getCamera()->getViewMatrix();
+                                            entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowedGUID, 1);
+                                            entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowBiasGUID, shadow->getBias());
+                                            entry.perEntryUniforms.setTexture(UniformGUIDs::ngn_light_shadowMapGUID, &shadow->mShadowMapTexture, 15);
+                                            entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_light_toLightSpaceGUID, toLightSpace);
+                                        } else {
+                                            entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowedGUID, 0);
+                                        }
 
                                         std::pair<RenderStateBlock::BlendFactor, RenderStateBlock::BlendFactor> blendFactors = entry.stateBlock.getBlendFactors();
                                         blendFactors.second = RenderStateBlock::BlendFactor::ONE;

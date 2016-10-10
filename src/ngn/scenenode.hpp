@@ -36,11 +36,9 @@ namespace ngn {
         std::vector<SceneNode*> mChildren;
 
         ResourceHandle<Material>* mMaterial;
-        bool mMaterialOwned;
         Mesh* mMesh;
         bool mMeshOwned;
         LightData* mLightData;
-        bool mLightDataOwned;
 
         bool mMatrixDirty;
 
@@ -62,17 +60,20 @@ namespace ngn {
 
         SceneNode() : mPosition(0.0f, 0.0f, 0.0f), mScale(1.0f, 1.0f, 1.0f), mQuaternion(),
                 mParent(nullptr),
-                mMaterial(nullptr), mMaterialOwned(false), mMesh(nullptr), mMeshOwned(false), mLightData(nullptr), mLightDataOwned(false),
+                mMaterial(nullptr), mMesh(nullptr), mMeshOwned(false), mLightData(nullptr),
                 mMatrixDirty(true) {
             nodeIdMap[mId = nextId++] = this;
             for(int i = 0; i < MAX_RENDERDATA_COUNT; ++i) rendererData[i] = nullptr;
         }
 
+        SceneNode(const SceneNode& other) = delete;
+        SceneNode& operator=(const SceneNode& other) = delete;
+
         virtual ~SceneNode() {
             if(mParent != nullptr) mParent->remove(this);
             delete mMaterial;
             if(mMeshOwned) delete mMesh;
-            if(mLightDataOwned) delete mLightData;
+            delete mLightData;
             for(int i = 0; i < MAX_RENDERDATA_COUNT; ++i) delete rendererData[i];
         }
 
@@ -101,8 +102,9 @@ namespace ngn {
             }
         }
 
+        template<typename... Args>
+        void addLightData(Args&& ...args) {if(!mLightData) mLightData = new LightData(this, std::forward<Args>(args)...);}
         LightData* getLightData() {return mLightData;}
-        void setLightData(LightData* light, bool owned = false) {mLightData = light; mLightDataOwned = owned;}
 
         // Hierarchy
         SceneNode* getParent() {return mParent;}
@@ -163,7 +165,7 @@ namespace ngn {
 
         glm::mat4 getMatrix() {
             if(mMatrixDirty) {
-                mMatrix = glm::scale(glm::translate(glm::mat4(), mPosition) * glm::mat4_cast(mQuaternion), mScale);
+                mMatrix = glm::scale(glm::translate(glm::mat4(), mPosition) * glm::mat4_cast(glm::conjugate(mQuaternion)), mScale);
                 mMatrixDirty = false;
             }
             return mMatrix;
@@ -184,14 +186,14 @@ namespace ngn {
 
         // this works just as gluLookAt, so may put in "world space up" (this might not work sometimes, but makes everything a lot easier most of the time)
         // it also means, that the negative z-axis is aligned to face "at"
-        void lookAt(const glm::vec3& pos, const glm::vec3& at, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f)) {
+        void lookAtPos(const glm::vec3& pos, const glm::vec3& at, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f)) {
             mPosition = pos;
             mQuaternion = glm::normalize(glm::quat_cast(glm::lookAt(pos, at, up)));
             dirty();
         }
 
         void lookAt(const glm::vec3& at, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f)) {
-            lookAt(mPosition, at, up);
+            lookAtPos(mPosition, at, up);
         }
     };
 

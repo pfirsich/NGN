@@ -44,7 +44,7 @@ namespace ngn {
         };
 
         std::unordered_map<ShaderProgram::UniformGUID, ParamData> mParameters;
-        std::vector<std::pair<ShaderProgram::UniformGUID, ResourceHandle<Texture> > > mTextures;
+        std::vector<std::tuple<ShaderProgram::UniformGUID, ResourceHandle<Texture>, int> > mTextures;
 
         void deleteParam(ParamData& param) {
             if(param.ownedData) {
@@ -190,17 +190,17 @@ namespace ngn {
             setParam<glm::mat4>(id, ParamType::MATF4, vp, count, copy);
         }
 
-        void setTexture(ShaderProgram::UniformGUID uniformGuid, const ResourceHandle<Texture>& tex) {
+        void setTexture(ShaderProgram::UniformGUID uniformGuid, const ResourceHandle<Texture>& tex, int unit = -1) {
             for(auto& elem : mTextures) {
-                if(elem.first == uniformGuid) {
-                    elem.second = tex;
+                if(std::get<0>(elem) == uniformGuid) {
+                    std::get<1>(elem) = tex;
                     return;
                 }
             }
-            mTextures.push_back(std::make_pair(uniformGuid, tex));
+            mTextures.push_back(std::make_tuple(uniformGuid, tex, unit));
         }
-        void setTexture(const char* name, const ResourceHandle<Texture>& tex) {
-            setTexture(ShaderProgram::getUniformGUID(name), tex);
+        void setTexture(const char* name, const ResourceHandle<Texture>& tex, int unit = -1) {
+            setTexture(ShaderProgram::getUniformGUID(name), tex, unit);
         }
 
         virtual void apply() = 0;

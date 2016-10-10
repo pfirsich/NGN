@@ -4,6 +4,7 @@
 
 namespace ngn {
     const Texture* Texture::currentBoundTextures[Texture::MAX_UNITS] = {nullptr};
+    bool Texture::currentTextureUnitAvailable[Texture::MAX_UNITS] = {true};
     Texture* Texture::fallback = nullptr;
     bool Texture::staticInitialized = false;
 
@@ -37,6 +38,13 @@ namespace ngn {
         fallback = tex;
     }
 
+    void Texture::initSampler() {
+        glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, static_cast<GLenum>(mSWrap));
+        glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, static_cast<GLenum>(mTWrap));
+        glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(mMagFilter));
+        glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(mMinFilter));
+    }
+
     void Texture::loadFromMemory(unsigned char* buffer, int width, int height, int components, bool genMipmaps) {
         assert(components >= 1 && components <= 4);
 
@@ -53,14 +61,11 @@ namespace ngn {
             glTexSubImage2D(mTarget, 0, 0, 0, width, height, format, GL_UNSIGNED_BYTE, buffer);
         } else {
             glTexImage2D(mTarget, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, buffer);
+            if(genMipmaps) mMinFilter = MinFilter::LINEAR_MIPMAP_LINEAR;
+            initSampler();
         }
 
-        // update mips and sampler state
         if(genMipmaps) glGenerateMipmap(mTarget);
-        glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, static_cast<GLenum>(mSWrap));
-        glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, static_cast<GLenum>(mTWrap));
-        glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(mMagFilter));
-        glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(mMinFilter = genMipmaps ? MinFilter::LINEAR_MIPMAP_LINEAR : mMinFilter));
 
         mWidth = width;
         mHeight = height;
@@ -128,6 +133,7 @@ namespace ngn {
             height = height / 2;
             if(height < 1) height = 1;
         }
+        initSampler();
     }
 
     void Texture::updateData(GLenum format, GLenum type, const void* data, int level, int width, int height, int x, int y) {

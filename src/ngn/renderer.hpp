@@ -29,6 +29,7 @@ namespace ngn {
 
             inline RenderQueueEntry(Material* mat, Material::Pass* pass, Mesh* _mesh) {
                 shaderProgram = pass->getShaderProgram();
+                if(!shaderProgram) LOG_ERROR("Returned nullptr for pass %d!", pass->getPassIndex());
                 uniformBlocks.push_back(mat);
                 mesh = _mesh;
                 stateBlock = pass->getStateBlock();
@@ -38,6 +39,7 @@ namespace ngn {
         inline void renderRenderQueue(std::vector<RenderQueueEntry>& queue) {
             //LOG_DEBUG("------- render");
             for(auto& entry : queue) {
+                Texture::markAllUnitsAvailable();
                 entry.stateBlock.apply();
                 if(entry.shaderProgram) entry.shaderProgram->bind();
                 for(auto block : entry.uniformBlocks) block->apply();
@@ -70,6 +72,7 @@ namespace ngn {
         // Also it helps if their values are consecutive, so the staticInitialize-method can also easily implement a renderer query define
         static const int AMBIENT_PASS;
         static const int LIGHT_PASS;
+        static const int SHADOWMAP_PASS;
 
         bool autoClear, autoClearColor, autoClearDepth, autoClearStencil;
 

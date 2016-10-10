@@ -14,16 +14,27 @@ Low-Level:
     ✔ Proper Light Attenuation @done (08.10.16 17:28)
     ✔ Uniform-Optimierung @done (08.10.16 22:50)
 
-    › FBO
+    ✔ FBO @done (09.10.16 15:35)
+    ✔ Spotlights @done (10.10.16 06:47)
+    ✔ Shadows @done (10.10.16 06:47)
+    › slope-scale and normal-bias parameters for shadow mapping
+    http://gamedev.stackexchange.com/questions/66970/slope-scaled-depth-bias-with-normal-maps
+    http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
+    http://c0de517e.blogspot.de/2011/05/shadowmap-bias-notes.html
+    ftp://download.nvidia.com/developer/presentations/2004/GPU_Jackpot/Shadow_Mapping.pdf
+    http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology in bonus slides
+    › percentage closer filtering with randomly rotated poisson discs
+    https://electronicmeteor.wordpress.com/2013/02/05/poisson-disc-shadow-sampling-ridiculously-easy-and-good-looking-too/
+    http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology
+    http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
+    http://www.gamedev.net/topic/498755-randomly-rotated-pcf-shadows/
+    › Post-Process-System
     › HDR
     › Deferred Shading
     Here shadow map and light culling becomes the task of culling
     In Deferred the lighting model is just not a slot?
     Clustered Deferred?
-    › Spotlights
-    just inner and outer angle + smoothstep?
-    › Shadows
-    Nur Directional (aber direkt richtig) und Spot, aber auch mit rotated pcf
+    Deferred sollte default renderer sein, Forward relativ langsam, aber Forward für ausgewählte OBjekte mit komplizierten MAterialien oder Transparenz
     › Normal Mapping
     http://www.j3l7h.de/talks/2008-02-18_Care_and_Feeding_of_Normal_Vectors.pdf
     › PBR
@@ -42,13 +53,25 @@ Low-Level:
     › ASSIMP-Import for whole Scenes
     › Text
     › Skinning
-    › Post-Process-System
     › Scripting?
 
     -------------------
     › Picking
     › Bloom
     › Particles
+
+    › automatic camera for directional lights (implement frustum culling first!)
+    http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
+    http://gamedev.stackexchange.com/questions/81734/how-to-calculate-directional-light-frustum-from-camera-frustum
+    https://msdn.microsoft.com/de-de/library/windows/desktop/ee416324(v=vs.85).aspx
+    › Cascaded Shadow mapping
+    https://docs.unrealengine.com/latest/INT/Resources/ContentExamples/DynamicSceneShadows/
+    http://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf
+    http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html
+    http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
+    http://the-witness.net/news/2010/03/graphics-tech-shadow-maps-part-1/
+    http://the-witness.net/news/2010/04/graphics-tech-shadow-maps-part-2-save-25-texture-memory-and-possibly-much-more/
+    http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology
 
 -------------------------------------------------------------------------------------------
 
@@ -151,6 +174,10 @@ High-Level:
     › Scripting
 
     Default Renderer:
+        › Decals
+            http://www.gamedev.net/topic/639424-deferred-decals-normal-problem/
+            http://www.gamedev.net/topic/570838-blending-decals-with-deferred-setup/
+            https://mtnphil.wordpress.com/2014/05/24/decals-deferred-rendering/
         › Lightmapping
             http://www.ludicon.com/castano/blog/2016/09/lightmap-compression-in-the-witness/
             http://www.flipcode.com/archives/Light_Mapping_Theory_and_Implementation.shtml
@@ -280,6 +307,31 @@ High-Level:
             http://stefan-s.net/?p=66 - gBuffer Layout in Unity 5
             https://software.intel.com/sites/default/files/m/d/4/1/d/8/lauritzen_deferred_shading_siggraph_2010.pdf - Tiled und Quad-culled deferred
             http://learnopengl.com/#!Advanced-Lighting/Deferred-Shading
+
+            GBufferLayouts & normal encodings:#
+            http://answers.unity3d.com/questions/1219627/modify-gbuffer-layout-add-rendertarget.html
+            www.gamedev.net/topic/512155-render-target-formats-for-hdr-deferred-shading/
+            www.gamedev.net/topic/645046-cryengine-gbuffer-normal-storing-technique/
+            http://www.crytek.com/download/2014_03_25_CRYENGINE_GDC_Schultz.pdf
+            http://nosferalatu.com/CQ2Rendering.html - auch ein bisschen pbr, eher so pbr + deferred
+            http://www.gamedev.net/topic/671210-srgb-on-diffuse-textures-or-gbuffer-color-texture/
+            http://aras-p.info/texts/CompactNormalStorage.html#method01xy
+            http://www.garagegames.com/community/blogs/view/15340
+            http://hacksoflife.blogspot.de/2010/12/yet-another-this-is-our-gbuffer-format.html
+            http://hacksoflife.blogspot.de/2011/02/g-buffer-normals-revisited.html
+            http://c0de517e.blogspot.de/2015/01/notes-on-g-buffer-normal-encodings.html
+            http://www.gamedev.net/topic/637005-compact-world-space-normal-storage-in-g-buffer/
+            http://sebh-blog.blogspot.de/2010/08/cryteks-best-fit-normals.html
+            http://www.gamedev.net/topic/645046-cryengine-gbuffer-normal-storing-technique/
+            http://khayyam.kaplinski.com/2011/07/encoding-normals-for-gbuffer.html
+
+            http://ogldev.atspace.co.uk/www/tutorial35/tutorial35.html
+            http://learnopengl.com/#!Advanced-Lighting/Deferred-Shading
+
+            https://mynameismjp.wordpress.com/2009/03/10/reconstructing-position-from-depth/
+            https://www.opengl.org/discussion_boards/showthread.php/179823-Help-reconstructing-pixel-position-from-depth
+            http://www.derschmale.com/2014/01/26/reconstructing-positions-from-the-depth-buffer/
+            http://gamedev.stackexchange.com/questions/71652/opengl-reconstructing-position-from-depth
         › Bloom
             Unreal Bloom - http://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
         › Shadow Mapping - Cascade? Variance?
@@ -287,7 +339,6 @@ High-Level:
             http://http.developer.nvidia.com/GPUGems/gpugems_ch14.html
             http://gamedev.stackexchange.com/questions/81734/how-to-calculate-directional-light-frustum-from-camera-frustum
             http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
-            https://msdn.microsoft.com/en-us/library/windows/desktop/ee416324(v=vs.85).aspx
             http://docs.cryengine.com/display/SDKDOC4/Shadows+in+CryENGINE
             http://www.terathon.com/lengyel/Lengyel-Oblique.pdf
             https://www.youtube.com/watch?v=9gjIghvKW44
@@ -316,6 +367,17 @@ High-Level:
         http://filmicgames.com/archives/75 - Filmic Tone Mapping
         http://learnopengl.com/#!Advanced-Lighting/HDR
         https://mynameismjp.wordpress.com/2010/04/30/a-closer-look-at-tone-mapping/
+        http://www.gamedev.net/topic/673257-post-process-hdr-or-ldr-nowadays/
+        https://beforethecoffee.wordpress.com/hdr-post-processing-tutorial/
+        http://www.gamedev.net/page/resources/_/technical/graphics-programming-and-theory/high-dynamic-range-rendering-r2108
+        http://www.gamedev.net/topic/532960-hdr-lighting--bloom-effect/
+        http://frictionalgames.blogspot.de/2012/09/tech-feature-hdr-lightning.html
+        http://www.gamedev.net/topic/448367-hdr-bloom-and-tone-mapping/
+        http://www.gamedev.net/topic/602034-hdr-practical-use-in-a-game/
+        www.gamedev.net/topic/629701-general-questions-on-hdr-and-tonemapping/
+        https://mynameismjp.wordpress.com/2010/04/30/a-closer-look-at-tone-mapping/
+        http://gamedev.stackexchange.com/questions/62917/uncharted-2-tone-mapping-and-an-eye-adaptation
+        http://www.gamedev.net/topic/658419-hdr-tonemapping-exposure-selection/
         › Parallax Mapping?
         › Gamma Correction
             http://renderwonk.com/blog/index.php/archive/adventures-with-gamma-correct-rendering/
@@ -351,6 +413,8 @@ High-Level:
             http://de.slideshare.net/guerrillagames/practical-occlusion-culling-in-killzone-3
             Das beste scheint hier aber immer zu sein entweder die Geometry von Artists machen zu lassen, dafür hab ich nicht die Kapazität
             http://www.gdcvault.com/play/1017837/Why-Render-Hidden-Objects-Cull
+
+            Coverage Buffer: http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology
         › Lighting
             http://www.3dgep.com/texturing-and-lighting-with-opengl-and-glsl/
             http://ruh.li/GraphicsPhongBlinnPhong.html
@@ -377,6 +441,7 @@ High-Level:
             FXAA: https://www.youtube.com/watch?v=Z9bYzpwVINA
             www.gamedev.net/topic/618791-fxaa-in-opengl/
             https://bartwronski.com/2014/03/15/temporal-supersampling-and-antialiasing/
+            http://www.crytek.com/download/Sousa_Graphics_Gems_CryENGINE3.pdf
         › Scripting
             https://urho3d.github.io/documentation/HEAD/_lua_scripting.html
         › GodRays - http://threejs.org/examples/webgl_postprocessing_godrays.html

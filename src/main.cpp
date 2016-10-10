@@ -60,8 +60,12 @@ int main(int argc, char** args) {
     ngn::setupDefaultLogging();
 
     ngn::Window window("ngn test", 1600, 900, false, false, 8);
+
     ngn::Renderer renderer;
+    renderer.clearColor = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
+
     ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
+    //ngn::OrthographicCamera camera(-50.0f, 50.0f, -50.0f, 50.0f, 0.0f, 200.0f);
 
     window.resizeSignal.connect([&camera, &renderer](int w, int h) {
         renderer.viewport = glm::ivec4(0, 0, w, h);
@@ -128,15 +132,22 @@ int main(int argc, char** args) {
     scene.add(&cube);
 
     ngn::Light light;
-    light.setLightData(new ngn::LightData, true);
-    light.getLightData()->setType(ngn::LightData::LightType::DIRECTIONAL);
+    light.addLightData(ngn::LightData::LightType::DIRECTIONAL);
     light.getLightData()->setColor(glm::vec3(0.2f, 0.2f, 0.2f));
+    //light.getLightData()->addShadow(1024, 1024);
     light.lookAt(glm::vec3(-0.5f, -0.5f, -1.0f));
-    scene.add(&light);
+    //scene.add(&light);
+
+    ngn::Light spotLight;
+    spotLight.addLightData(ngn::LightData::LightType::SPOT);
+    spotLight.getLightData()->setColor(200.0f * glm::vec3(0.25f, 0.25f, 1.0f));
+    spotLight.lookAtPos(glm::vec3(30.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    spotLight.getLightData()->addShadow(1024);
+    //spotLight.getLightData()->getShadow()->getCamera()->lookAtPos(glm::vec3(30.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    scene.add(&spotLight);
 
     ngn::Light pointLight;
-    pointLight.setLightData(new ngn::LightData, true);
-    pointLight.getLightData()->setType(ngn::LightData::LightType::POINT);
+    pointLight.addLightData(ngn::LightData::LightType::POINT);
     pointLight.getLightData()->setRadius(1.0f);
     glm::vec3 col(1.0f, 0.25f, 0.25f);
     pointLight.getLightData()->setColor(100.0f * col);
@@ -151,7 +162,6 @@ int main(int argc, char** args) {
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
 
-    LOG_DEBUG("blendenabled: %d", cube.getMaterial()->getStateBlock().getBlendEnabled());
     // Mainloop
     float lastTime = ngn::getTime();
     bool quit = false;
@@ -168,8 +178,10 @@ int main(int argc, char** args) {
         moveCamera(camera, dt);
 
         renderer.render(&scene, &camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
+        //renderer.render(&scene, spotLight.getLightData()->getShadow()->getCamera(), !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
 
         window.updateAndSwap();
+        //quit = true;
     }
 
     // Make a Screenshot when we close

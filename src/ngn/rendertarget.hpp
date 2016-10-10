@@ -42,6 +42,10 @@ namespace ngn {
         GLuint mFBO;
         std::vector<std::pair<Attachment, ResourceHandle<Texture> > > mTextureAttachments;
         std::vector<RenderbufferData> mRenderbufferAttachments;
+        int mWidth, mHeight;
+
+        static Rendertarget* currentRendertargetDraw;
+        static Rendertarget* currentRendertargetRead;
 
         void prepare();
 
@@ -53,15 +57,30 @@ namespace ngn {
             return 0;
         }
     public:
-        Rendertarget() : mFBO(0) {}
+        static void unbind(bool read = true, bool write = true) {
+            GLenum target = getTarget(read, write);
+            if(target) {
+                glBindFramebuffer(target, 0);
+            }
+        }
+
+        Rendertarget() : mFBO(0), mWidth(0xFFFFFF), mHeight(0xFFFFFF) {}
 
         void attachTexture(Attachment attachment, const ResourceHandle<Texture>& tex) {
             mTextureAttachments.push_back(std::make_pair(attachment, tex));
+            int w = tex.getResource()->getWidth();
+            int h = tex.getResource()->getHeight();
+            mWidth = mWidth < w ? mWidth : w;
+            mHeight = mHeight < h ? mHeight : h;
         }
 
         template<typename... Args>
         void attachRenderbuffer(Args&& ...args) {
             mRenderbufferAttachments.emplace_back(std::forward<Args>(args)...);
+            int w = mRenderbufferAttachments.back().width;
+            int h = mRenderbufferAttachments.back().height;
+            mWidth = mWidth < w ? mWidth : w;
+            mHeight = mHeight < h ? mHeight : h;
         }
 
         const Texture* getTextureAttachment(Attachment attachment) const;
@@ -71,13 +90,7 @@ namespace ngn {
             if(target) {
                 if(mFBO == 0) prepare();
                 glBindFramebuffer(target, mFBO);
-            }
-        }
-
-        void unbind(bool read = true, bool write = true) const {
-            GLenum target = getTarget(read, write);
-            if(target) {
-                glBindFramebuffer(target, 0);
+                glViewport(0, 0, mWidth, mHeight);
             }
         }
     };

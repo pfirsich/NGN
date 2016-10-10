@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "resource.hpp"
+#include "renderstateblock.hpp"
 
 namespace ngn {
     using PixelFormat = GLenum;
@@ -48,9 +49,10 @@ namespace ngn {
             if(mTextureObject != 0) {
                 bind();
                 glTexParameteri(mTarget, param, val);
-                unbind();
             }
         }
+
+        void initSampler();
 
         static bool staticInitialized;
         static void staticInitialize();
@@ -58,6 +60,7 @@ namespace ngn {
     public:
         static const size_t MAX_UNITS = 16;
         static const Texture* currentBoundTextures[MAX_UNITS];
+        static bool currentTextureUnitAvailable[MAX_UNITS];
 
         //TODO: const?
         static Texture* fallback;
@@ -111,19 +114,66 @@ namespace ngn {
         void setMagFilter(MagFilter filter) {setParameter(GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(mMagFilter = filter));}
         MagFilter getMagFilter() const {return mMagFilter;}
 
-        void bind(unsigned int unit = 0) const {
+        void setCompareFunc(DepthFunc func = DepthFunc::LESS) {
+            setParameter(GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+            setParameter(GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(func));
+        }
+
+        void bind(unsigned int unit) const {
             if(currentBoundTextures[unit] != this) {
                 glActiveTexture(GL_TEXTURE0 + unit);
                 glBindTexture(mTarget, mTextureObject);
                 currentBoundTextures[unit] = this;
+                currentTextureUnitAvailable[unit] = true;
             }
         }
-        void unbind(unsigned int unit = 0) const {
+
+        static void unbind(unsigned int unit) {
             if(currentBoundTextures[unit] != nullptr) {
                 glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(mTarget, 0);
+                // There can only be one texture bound to a single unit (independent of type), so i can unbind with whatever I want
+                // Bonus: unbind can be static!
+                glBindTexture(GL_TEXTURE_2D, 0);
                 currentBoundTextures[unit] = nullptr;
             }
         }
+
+        // These functions should be uses in conjunction.
+        // The parameterless bind binds the texture to ANY unit, or does not bind it if it is already bound and returns the index of the unit
+        // it was bound to.
+        // If there is no unit available (currentTextureUnitAvailable[unit] == false for all units) then this function will return -1
+        // To mark all texture units as unused for the next draw call, use markAllUnitsAvailable().
+        // bind(unit) "forcibly" binds the texture to the specified unit, even if it is marked as unavailable
+        // So if you have textures with a fixed unit you want to bind them to, then bind them first (because bind(unit) also makes sure to mark units as used)
+        // to accidental overwriting and bind the rest however you want
+        // This mechanism exists to minimize rebinds on textures if they are on different units and also to have multiple uniform blocks bind textures without talking to each other
+        // (obviously by introducing more global state)
+        // Example:
+        // for each draw call:
+        //     markAllUnitsAvailable()
+        //     fixedUnitTexture.bind(fixedUnit);
+        //     setUniform("fixedUnitTexture", fixedUnit);
+        //     setUniform("mySampler", someTexture.bind());
+        //     setUniform("mySampler2", someTexture2.bind());
+        //     draw()
+
+        int bind() const {
+            int firstAvailableUnit = -1;
+            for(unsigned int i = 0; i < MAX_UNITS; ++i) {
+                if(currentTextureUnitAvailable[i] == true && firstAvailableUnit < 0) firstAvailableUnit = i;
+                if(currentBoundTextures[i] == this) return i; // already bound, return index
+            }
+            if(firstAvailableUnit < 0) {
+                LOG_ERROR("No units available for binding!");
+            } else {
+                bind(firstAvailableUnit);
+            }
+            return firstAvailableUnit;
+        }
+
+        static void markAllUnitsAvailable() {
+            for(unsigned int i = 0; i < MAX_UNITS; ++i) currentTextureUnitAvailable[i] = true;
+        }
+
     };
 }

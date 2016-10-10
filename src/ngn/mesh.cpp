@@ -135,7 +135,7 @@ namespace ngn {
         /*importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS,
             aiComponent_NORMALS | aiComponent_TANGENTS_AND_BITANGENTS | aiComponent_COLORS |
             aiComponent_LIGHTS | aiComponent_CAMERAS);*/
-        const aiScene *scene = importer.ReadFile(filename, aiProcessPreset_TargetRealtime_Fast);
+        const aiScene *scene = importer.ReadFile(filename, aiProcessPreset_TargetRealtime_Fast | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes);
         if(!scene) {
             LOG_ERROR("Mesh file '%s' could not be loaded!\n", importer.GetErrorString());
         }

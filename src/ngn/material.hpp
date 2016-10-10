@@ -66,8 +66,8 @@ namespace ngn {
             const Material& mMaterial;
             int mPassIndex;
             RenderStateBlock* mStateBlock;
-            ResourceHandle<FragmentShader>* mFragmentShader;
-            ResourceHandle<VertexShader>* mVertexShader;
+            ResourceHandle<FragmentShader> mFragmentShader;
+            ResourceHandle<VertexShader> mVertexShader;
 
             mutable const ShaderProgram* mShaderProgram; // just used as cache
 
@@ -75,21 +75,18 @@ namespace ngn {
             //mMaterial(mat), mPassIndex(index), mStateBlock(nullptr), mShadersDirty(true),
             //mVertexShader(nullptr), mFragmentShader(nullptr), mShaderProgram(nullptr)
             Pass(const Material& mat, int index) : mMaterial(mat), mPassIndex(index), mStateBlock(nullptr),
-                    mFragmentShader(nullptr), mVertexShader(nullptr), mShaderProgram(nullptr) {}
+                    mFragmentShader(mat.getFragmentShader()), mVertexShader(mat.getVertexShader()), mShaderProgram(nullptr) {
+            }
 
             Pass(const Pass& other) = delete;
 
             Pass(const Material& mat, const Pass& other) : mMaterial(mat), mPassIndex(other.mPassIndex), mStateBlock(nullptr),
-                    mFragmentShader(nullptr), mVertexShader(nullptr), mShaderProgram(other.mShaderProgram) {
-                if(other.mFragmentShader) mFragmentShader = new ResourceHandle<FragmentShader>(*other.mFragmentShader);
-                if(other.mVertexShader) mVertexShader = new ResourceHandle<VertexShader>(*other.mVertexShader);
+                    mFragmentShader(other.getFragmentShader()), mVertexShader(other.getVertexShader()), mShaderProgram(other.mShaderProgram) {
                 if(other.mStateBlock) mStateBlock = new RenderStateBlock(*other.mStateBlock);
             }
 
             ~Pass() {
                 delete mStateBlock;
-                delete mVertexShader;
-                delete mFragmentShader;
             }
 
             RenderStateBlock& addStateBlock() {
@@ -105,33 +102,23 @@ namespace ngn {
             }
 
             void setFragmentShader(const ResourceHandle<FragmentShader>& frag) {
-                if(mFragmentShader) {
-                    *mFragmentShader = frag;
-                } else {
-                    mFragmentShader = new ResourceHandle<FragmentShader>(frag);
-                }
+                mFragmentShader = frag;
             }
 
             void setVertexShader(const ResourceHandle<VertexShader>& vert) {
-                if(mVertexShader) {
-                    *mVertexShader = vert;
-                } else {
-                    mVertexShader = new ResourceHandle<VertexShader>(vert);
-                }
+                mVertexShader = vert;
             }
 
-            const ResourceHandle<FragmentShader>& getFragmentShader() const {return *mFragmentShader;}
-            const ResourceHandle<VertexShader>& getVertexShader() const {return *mVertexShader;}
+            const ResourceHandle<FragmentShader>& getFragmentShader() const {return mFragmentShader;}
+            const ResourceHandle<VertexShader>& getVertexShader() const {return mVertexShader;}
 
             int getPassIndex() const {return mPassIndex;}
 
             const ShaderProgram* getShaderProgram() const {
-                const ResourceHandle<FragmentShader>& frag = mFragmentShader ? *mFragmentShader : mMaterial.getFragmentShader();
-                const ResourceHandle<VertexShader>& vert = mVertexShader ? *mVertexShader : mMaterial.getVertexShader();
-                if(frag.dirty() || vert.dirty()) { // handles point to different resource
+                if(mFragmentShader.dirty() || mVertexShader.dirty()) { // handles point to different resource
                     std::string defines = "#define NGN_PASS " + std::to_string(mPassIndex) + "\n";
                     uint64_t permutationHash = mPassIndex;
-                    mShaderProgram = getShaderPermutation(permutationHash, frag.getResource(), vert.getResource(), defines, defines);
+                    mShaderProgram = getShaderPermutation(permutationHash, mFragmentShader.getResource(), mVertexShader.getResource(), defines, defines);
                 }
                 return mShaderProgram;
             }

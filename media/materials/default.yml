@@ -7,7 +7,7 @@ material:
         #baseTex: !!texture media/sq.png
         baseTex: !!pixelTexture [1.0, 1.0, 1.0, 1.0]
         color: !!vec4 [1.0, 1.0, 1.0, 1.0]
-        ambient: !!vec3 [0.1, 0.1, 0.1]
+        ambient: !!vec3 [0.05, 0.05, 0.05]
         emissive: !!vec3 [0.0, 0.0, 0.0]
         shininess: !!float 512.0
     renderstate:

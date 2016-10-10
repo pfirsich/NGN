@@ -6,28 +6,19 @@ namespace ngn {
     //TODO: Camera has to account for parent transforms
     class Camera : public SceneNode {
     protected:
-        glm::mat4 mViewMatrix, mInverseViewMatrix, mProjectionMatrix, mInverseProjectionMatrix;
-        bool mViewDirty, mProjectionDirty;
-
-        void dirty() {mViewDirty = true;}
+        glm::mat4 mProjectionMatrix, mInverseProjectionMatrix;
+        bool mProjectionDirty;
 
     public:
-        Camera() : mViewDirty(true), mProjectionDirty(true) {}
-        ~Camera() {}
+        Camera() : mProjectionDirty(true) {}
+        virtual ~Camera() {}
 
-        // Here I will reuse Object::mModelDirty and hope that no one calls getModelMatrix on a camera object
         virtual glm::mat4 getViewMatrix() {
-            if(mViewDirty) {
-                mViewMatrix = glm::translate(glm::mat4_cast(mQuaternion), -mPosition);
-                mInverseViewMatrix = glm::inverse(mViewMatrix);
-                mViewDirty = false;
-            }
-            return mViewMatrix;
+            return glm::inverse(getWorldMatrix());
         }
 
         virtual glm::mat4 getInverseViewMatrix() {
-            getViewMatrix();
-            return mInverseViewMatrix;
+            return getWorldMatrix();
         }
 
         // TODO:
@@ -64,7 +55,7 @@ namespace ngn {
     public:
         float mFovY, mAspect, mNear, mFar;
 
-        PerspectiveCamera() : mFovY(45.0f), mAspect(1.0f), mNear(0.1f), mFar(100.0f) {
+        PerspectiveCamera() : mFovY(glm::radians(45.0f)), mAspect(1.0f), mNear(0.1f), mFar(100.0f) {
             mProjectionDirty = true;
         }
         PerspectiveCamera(float fovy, float aspect, float _near, float _far) {

@@ -66,6 +66,7 @@ namespace ngn {
     };
 
     __stdcall void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+        if(false) return;
         LOG_DEBUG("GL Debug message - source: %s, type: %s, severity: %s, message: %s", debugSourceName[source], debugTypeName[type], debugSeverityName[severity], message);
     }
 
@@ -89,7 +90,6 @@ namespace ngn {
         #endif
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, contextFlags);
 
-        LOG_DEBUG("samples: %d", msaaSamples);
         if(msaaSamples > 0) {
             SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
             SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaaSamples);
