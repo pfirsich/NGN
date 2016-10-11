@@ -9,7 +9,7 @@ namespace ngn {
     }
 
     void GLBuffer::upload() {
-        mUploadedOnce = true;
+        mUploadCount++;
         if(mVBO == 0) {
             glGenBuffers(1, &mVBO);
         }

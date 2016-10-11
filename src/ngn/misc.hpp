@@ -3,41 +3,51 @@
 #include <cmath>
 
 namespace ngn {
-    constexpr vec3x = glm::vec3(1.0f, 0.0f, 0.0f);
-    constexpr vec3y = glm::vec3(0.0f, 1.0f, 0.0f);
-    constexpr vec3z = glm::vec3(0.0f, 0.0f, 1.0f);
-    constexpr vec4x = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-    constexpr vec4y = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-    constexpr vec4z = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+    float srgbToLinear(float val);
+    float linearToSRGB(float val);
 
-    // https://www.opengl.org/registry/specs/EXT/framebuffer_sRGB.txt
-    float srgbToLinear(float val) {
-        if(val <= 0.04045f) {
-            return val / 12.92f;
-        } else {
-            return std::pow((val + 0.055f) / 1.055f, 2.4f);
-        }
-    }
-
-    float linearToSRGB(float val) {
-        if(val <= 0.0f) {
-            return 0.0f;
-        } else if(val < 0.0031308f) {
-            return 12.92f * val;
-        } else if(val < 1.0f) {
-            return 1.055f * std::pow(val, 0.41666f) - 0.055;
-        } else if(val >= 1.0f) {
-            return 1.0f;
-        }
-    }
-
-    glm::vec3 srgbToLinear(const glm::vec3& v) {
+    inline glm::vec3 srgbToLinear(const glm::vec3& v) {
         glm::vec3 ret(srgbToLinear(v.r), srgbToLinear(v.g), srgbToLinear(v.b));
         return ret;
     }
 
-    glm::vec4 srgbToLinear(const glm::vec4& v) {
-        glm::vec4 ret(srgbToLinear(v), 1.0f);
+    inline glm::vec4 srgbToLinear(const glm::vec4& v) {
+        glm::vec4 ret(srgbToLinear(glm::vec3(v)), 1.0f);
+        return ret;
+    }
+
+    // for usual model/view matrices this is fine
+    inline glm::vec3 transformPoint(const glm::mat4& transform, const glm::vec3& coord) {
+        return glm::vec3(transform * glm::vec4(coord, 1.0f));
+    }
+
+    // If we are dealing with general, potentially non-affine transformations, use this (e.g. projections)
+    // specifically: the last row of the transformation matrix has to be (0, 0, 0, 1), otherwise, use this
+    inline glm::vec3 transformPointDivide(const glm::mat4& transform, const glm::vec3& coord) {
+        glm::vec4 v = transform * glm::vec4(coord, 1.0f);
+        if(v.w < 1e-5) v.w = 1.0f;
+        return glm::vec3(v) / v.w;
+    }
+
+    // for vectors the last row can be (0, 0, 0, X)
+    inline glm::vec3 transformVector(const glm::mat4& transform, const glm::vec3& coord, float w = 1.0f) {
+        return glm::vec3(transform * glm::vec4(coord, 0.0f));
+    }
+
+    inline glm::vec3 transformVectorDivide(const glm::mat4& transform, const glm::vec3& coord) {
+        glm::vec4 v = transform * glm::vec4(coord, 0.0f);
+        if(v.w < 1e-5) v.w = 1.0f;
+        return glm::vec3(v) / v.w;
+    }
+
+    // glm gives an error for glm::abs(mat4());
+    inline glm::mat4 absMat4(const glm::mat4& mat) {
+        glm::mat4 ret = mat;
+        for(int i = 0; i < 3; ++i) {
+            for(int j = 0; j < 3; ++j) {
+                ret[i][j] = std::fabs(mat[i][j]);
+            }
+        }
         return ret;
     }
 }

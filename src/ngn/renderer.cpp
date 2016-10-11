@@ -199,8 +199,10 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                     node->rendererData[mRendererIndex] = rendererData = new RendererData;
                 }
 
-                if(node->getMesh()) {
-                    glm::mat4 model = node->getWorldMatrix();
+                Mesh* mesh = node->getMesh();
+                if(mesh) {
+                    rendererData->worldMatrix = node->getWorldMatrix();
+                    glm::mat4 model = rendererData->worldMatrix;
                     glm::mat4 modelview = viewMatrix * model;
                     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
                     rendererData->uniforms.setMatrix4(UniformGUIDs::ngn_modelMatrixGUID, model);
@@ -209,11 +211,18 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                     rendererData->uniforms.setMatrix4(UniformGUIDs::ngn_modelViewMatrixGUID, modelview);
                     rendererData->uniforms.setMatrix3(UniformGUIDs::ngn_normalMatrixGUID, normalMatrix);
                     rendererData->uniforms.setMatrix4(UniformGUIDs::ngn_modelViewProjectionMatrixGUID, projectionMatrix * modelview);
+
+                    rendererData->boundingBox = mesh->boundingBox();
+                    rendererData->boundingBox.transform(rendererData->worldMatrix);
+                }
+
+                SceneNode* parent = node->getParent();
+                if(parent) {
+                    parent->rendererData[mRendererIndex]->boundingBox.fitAABB(rendererData->boundingBox);
                 }
 
                 LightData* lightData = node->getLightData();
                 if(lightData) {
-                    if(lightData->getShadow()) lightData->getShadow()->updateCamera(camera);
                     lightLists[static_cast<int>(lightData->getType())].push_back(node);
                 }
 
@@ -228,6 +237,8 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
             //LOG_DEBUG("----- frame");
 
             // generate shadow maps
+            AABoundingBox sceneBounds = root.rendererData[mRendererIndex]->boundingBox;
+
             glColorMask(false, false, false, false);
             for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
                 for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
@@ -235,6 +246,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                     LightData* lightData = light->getLightData();
                     LightData::Shadow* shadow = lightData->getShadow();
                     if(shadow) {
+                        shadow->updateCamera(camera, sceneBounds);
                         glm::mat4 lightViewMatrix(shadow->getCamera()->getViewMatrix());
                         glm::mat4 lightProjectionMatrix(shadow->getCamera()->getProjectionMatrix());
 
@@ -248,10 +260,12 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                 if(!pass) pass = mat->getPass(AMBIENT_PASS);
 
                                 if(pass) {
+                                    RendererData* rendererData = node->rendererData[mRendererIndex];
+
                                     renderQueue.emplace_back(mat, pass, mesh);
                                     RenderQueueEntry& entry = renderQueue.back();
 
-                                    glm::mat4 model = node->getWorldMatrix();
+                                    glm::mat4 model = rendererData->worldMatrix;
                                     glm::mat4 modelview = lightViewMatrix * model;
                                     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
                                     entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelMatrixGUID, model);

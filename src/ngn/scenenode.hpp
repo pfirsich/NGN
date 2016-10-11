@@ -13,6 +13,7 @@
 #include "lightdata.hpp"
 #include "rendererdata.hpp"
 #include "resource.hpp"
+#include "aabb.hpp"
 
 namespace ngn {
     class SceneNode {
@@ -75,6 +76,7 @@ namespace ngn {
             if(mMeshOwned) delete mMesh;
             delete mLightData;
             for(int i = 0; i < MAX_RENDERDATA_COUNT; ++i) delete rendererData[i];
+            //TODO: for all children: mParent=nullptr?
         }
 
         // Id etc.
@@ -126,6 +128,18 @@ namespace ngn {
                     ++it;
                 }
             }
+        }
+
+        AABoundingBox boundingBox() const {
+            AABoundingBox ret;
+            if(mMesh) {
+                ret = mMesh->boundingBox();
+                ret.transform(getWorldMatrix());
+            }
+            for(auto child : mChildren) {
+                ret.fitAABB(child->boundingBox());
+            }
+            return ret;
         }
 
         // Transforms

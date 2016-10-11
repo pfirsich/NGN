@@ -8,24 +8,29 @@ namespace ngn {
         delete mCamera;
     }
 
-    void LightData::Shadow::updateCamera(const Camera& viewCamera) {
+    void LightData::Shadow::updateCamera(const Camera& viewCamera, const AABoundingBox& sceneBoundingBox) {
         if(mCamera && mAutoCam) {
             switch(mParent->getType()) {
                 case LightData::LightType::DIRECTIONAL: {
+                    float cascadeStart = 0.0f;
+                    float cascadeEnd = 1.0f;
+
                     //TODO: In z this should clamp the scene, not the camer frustum!
                     OrthographicCamera* shadowCam = static_cast<OrthographicCamera*>(mCamera);
                     glm::mat4 inverseProject = glm::inverse(viewCamera.getProjectionMatrix() * viewCamera.getViewMatrix());
                     glm::vec4 frustumCorners[8]; // world space
+                    cascadeStart = cascadeStart * 2.0f - 1.0f;
+                    cascadeEnd = cascadeEnd * 2.0f - 1.0f;
                     // near
-                    frustumCorners[0] = inverseProject * glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
-                    frustumCorners[1] = inverseProject * glm::vec4(-1.0f,  1.0f, -1.0f, 1.0f);
-                    frustumCorners[2] = inverseProject * glm::vec4( 1.0f,  1.0f, -1.0f, 1.0f);
-                    frustumCorners[3] = inverseProject * glm::vec4( 1.0f, -1.0f, -1.0f, 1.0f);
+                    frustumCorners[0] = inverseProject * glm::vec4(-1.0f, -1.0f, cascadeStart, 1.0f);
+                    frustumCorners[1] = inverseProject * glm::vec4(-1.0f,  1.0f, cascadeStart, 1.0f);
+                    frustumCorners[2] = inverseProject * glm::vec4( 1.0f,  1.0f, cascadeStart, 1.0f);
+                    frustumCorners[3] = inverseProject * glm::vec4( 1.0f, -1.0f, cascadeStart, 1.0f);
                     // far
-                    frustumCorners[4] = inverseProject * glm::vec4(-1.0f, -1.0f,  1.0f, 1.0f);
-                    frustumCorners[5] = inverseProject * glm::vec4(-1.0f,  1.0f,  1.0f, 1.0f);
-                    frustumCorners[6] = inverseProject * glm::vec4( 1.0f,  1.0f,  1.0f, 1.0f);
-                    frustumCorners[7] = inverseProject * glm::vec4( 1.0f, -1.0f,  1.0f, 1.0f);
+                    frustumCorners[4] = inverseProject * glm::vec4(-1.0f, -1.0f, cascadeEnd,   1.0f);
+                    frustumCorners[5] = inverseProject * glm::vec4(-1.0f,  1.0f, cascadeEnd,   1.0f);
+                    frustumCorners[6] = inverseProject * glm::vec4( 1.0f,  1.0f, cascadeEnd,   1.0f);
+                    frustumCorners[7] = inverseProject * glm::vec4( 1.0f, -1.0f, cascadeEnd,   1.0f);
 
                     /*This is not so easy.
                     All our 4-dimensional vectors represent points in a projective space (not actual 3d space ("affine") points)
@@ -54,15 +59,30 @@ namespace ngn {
                         max = glm::max(max, frustumCorners[i]);
                     }
 
-                    min.z -= 100.0f;
-                    max.z += 100.0f;
-                    glm::vec4 worldPos = (min + max) * 0.5f;
+                    // use scene bounds to determine min/max z
+                    // do this by looping through all the corner points, transforming them to light pos and min/max ing z
+                    /*min.z = inf; max.z = -inf;
+                    glm::vec3 point, dir;
+                    for(int i = 0; i < 8; ++i) {
+                        dir = glm::vec3(0.0f, 0.0f, 0.0f);
+                        if(i & 1) dir += glm::vec3(1.0f, 0.0f, 0.0f);
+                        if(i & 2) dir += glm::vec3(0.0f, 1.0f, 0.0f);
+                        if(i & 4) dir += glm::vec3(0.0f, 0.0f, 1.0f);
+                        point = sceneBoundingBox.min + dir * sceneBoundingBox.max;
+                        //LOG_DEBUG("max: %f, %f, %f - point: %f, %f, %f", sceneBoundingBox.max.x, sceneBoundingBox.max.y, sceneBoundingBox.max.z, point.x, point.y, point.z);
+                        point = transformPoint(toLightSpace, point);
+                        min.z = std::min(min.z, point.z);
+                        max.z = std::max(max.z, point.z);
+                    }*/
+
+                    /*glm::vec4 worldPos = (min + max) * 0.5f;
                     worldPos.z = max.z;
                     worldPos = glm::inverse(toLightSpace) * worldPos;
+                    shadowCam->setPosition(glm::vec3(glm::inverse(shadowCam->getParent()->getWorldMatrix()) * worldPos));*/
 
-                    shadowCam->setPosition(glm::vec3(glm::inverse(shadowCam->getParent()->getWorldMatrix()) * worldPos));
                     // regarding near/far: http://stackoverflow.com/questions/14836606/opengl-orthogonal-view-near-far-values
-                    shadowCam->set(min.x, max.x, min.y, max.y, 0.0f, max.z - min.z);
+                    //shadowCam->set(min.x, max.x, min.y, max.y, 0.0f, max.z - min.z);
+                    shadowCam->set(min.x, max.x, min.y, max.y, min.z, max.z - min.z);
                     break;
                 }
                 case LightData::LightType::SPOT: {
@@ -77,7 +97,7 @@ namespace ngn {
     }
 
     LightData::Shadow::Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, PixelFormat format) :
-            mParent(parent), mCamera(nullptr), mShadowBias(0.0005f), mAutoCam(true) {
+            mParent(parent), mCamera(nullptr), mShadowBias(0.001f), mAutoCam(true) {
         mShadowMapTexture.setStorage(format, shadowMapWidth, shadowMapHeight);
         LOG_DEBUG("shadow map texture object: %d", mShadowMapTexture.getTextureObject());
         mShadowMapTexture.setCompareFunc();

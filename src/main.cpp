@@ -159,10 +159,13 @@ int main(int argc, char** args) {
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pointLight.getMaterial()->setVector3("emissive", col);
     pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);
-    //pointLight.getMaterial()->setUnlit();
-    //scene.add(pointLight);
+    scene.add(pointLight);
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
+
+    ngn::AABoundingBox sceneAABB = scene.boundingBox();
+    LOG_DEBUG("scene aabb: min = %f, %f, %f - max: %f, %f, %f", sceneAABB.min.x, sceneAABB.min.y, sceneAABB.min.z,
+                                                                sceneAABB.max.x, sceneAABB.max.y, sceneAABB.max.z);
 
     // Mainloop
     float lastTime = ngn::getTime();

@@ -73,20 +73,20 @@ namespace ngn {
     }
 
     std::pair<glm::vec3, float> Mesh::boundingSphere() const {
-        std::pair<glm::vec3, glm::vec3> bBox = boundingBox();
-        glm::vec3 center = (bBox.first + bBox.second) * 0.5f;
-        float radius = glm::length(center - bBox.first);
+        AABoundingBox bBox = boundingBox();
+        glm::vec3 center = (bBox.min + bBox.max) * 0.5f;
+        float radius = glm::length(center - bBox.min);
         return std::make_pair(center, radius);
     }
 
-    std::pair<glm::vec3, glm::vec3> Mesh::boundingBox() const {
-        glm::vec3 min, max;
-        auto position = getAccessor<glm::vec3>(AttributeType::POSITION);
-        for(size_t i = 0; i < position.getCount(); ++i) {
-            min = glm::min(position.get(i), min);
-            max = glm::max(position.get(i), max);
+    const AABoundingBox& Mesh::boundingBox() const {
+        if(mBBoxDirty) {
+            auto position = getAccessor<glm::vec3>(AttributeType::POSITION);
+            mBoundingBox.min = mBoundingBox.max = position.get(0);
+            for(size_t i = 1; i < position.getCount(); ++i) mBoundingBox.fitPoint(position.get(i));
+            mBBoxDirty = false;
         }
-        return std::make_pair(min, max);
+        return mBoundingBox;
     }
 
     Mesh* assimpMesh(aiMesh* mesh, const VertexFormat& format) {

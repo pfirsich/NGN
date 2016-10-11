@@ -17,6 +17,7 @@ Low-Level:
     ✔ FBO @done (09.10.16 15:35)
     ✔ Spotlights @done (10.10.16 06:47)
     ✔ Shadows @done (10.10.16 06:47)
+    ✔ automatic camera for directional lights @done (11.10.16 02:07)
     › slope-scale and normal-bias parameters for shadow mapping
     http://gamedev.stackexchange.com/questions/66970/slope-scaled-depth-bias-with-normal-maps
     http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
@@ -60,18 +61,15 @@ Low-Level:
     › Bloom
     › Particles
 
-    › automatic camera for directional lights (implement frustum culling first!)
-    http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
-    http://gamedev.stackexchange.com/questions/81734/how-to-calculate-directional-light-frustum-from-camera-frustum
-    https://msdn.microsoft.com/de-de/library/windows/desktop/ee416324(v=vs.85).aspx
     › Cascaded Shadow mapping
     https://docs.unrealengine.com/latest/INT/Resources/ContentExamples/DynamicSceneShadows/
+    => numCascades, maxDistance (1.0 is all, 0.0 is nothing), distributionExponent
     http://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf
     http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html
     http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
-    http://the-witness.net/news/2010/03/graphics-tech-shadow-maps-part-1/
-    http://the-witness.net/news/2010/04/graphics-tech-shadow-maps-part-2-save-25-texture-memory-and-possibly-much-more/
-    http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology
+    https://www.opengl.org/discussion_boards/showthread.php/184007-Cascaded-shadow-mapping-and-split-values - Splitting
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ee416307(v=vs.85).aspx
+    http://dev.theomader.com/cascaded-shadow-mapping-1/
 
 -------------------------------------------------------------------------------------------
 
@@ -156,6 +154,8 @@ Low-Level:
     › Pass-Indices
     See above. If that is not provided, maybe build a class somewhere that wraps an int and increments the value automatically. Maybe with fixed ranges for specific renderers.
     In a single translation unit the order of initialization is defined (as defined in source), in multiple source files it's undefined, but that is irrelevant as long as it's consistent.
+
+    › update bounding boxes automatically (with dirty/version-counter in vertex/indexbuffers)
 
 
     › Uniform Buffer Objects (maybe not?)
@@ -363,6 +363,16 @@ High-Level:
             http://www.sunandblackcat.com/tipFullView.php?l=eng&topicid=35 - Improvements for Shadow Mapping
             http://developer.download.nvidia.com/presentations/2008/GDC/GDC08_SoftShadowMapping.pdf - Soft Shadows
             http://www.trentreed.net/blog/exponential-shadow-maps/
+            https://mynameismjp.wordpress.com/2016/01/24/update-for-my-shadow-sample-update/
+            https://mynameismjp.wordpress.com/2013/09/10/shadow-maps/
+            http://www.olhovsky.com/2011/07/exponential-shadow-mapping-drawbacks/
+            http://the-witness.net/news/2010/03/graphics-tech-shadow-maps-part-1/
+            http://the-witness.net/news/2010/04/graphics-tech-shadow-maps-part-2-save-25-texture-memory-and-possibly-much-more/
+            http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology
+
+            Frustum fitting:#
+            http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
+            http://gamedev.stackexchange.com/questions/81734/how-to-calculate-directional-light-frustum-from-camera-frustum
         › HDR
         http://filmicgames.com/archives/75 - Filmic Tone Mapping
         http://learnopengl.com/#!Advanced-Lighting/HDR
@@ -415,6 +425,15 @@ High-Level:
             http://www.gdcvault.com/play/1017837/Why-Render-Hidden-Objects-Cull
 
             Coverage Buffer: http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology
+            Frustum Culling:
+                http://www.cse.chalmers.se/~uffe/vfc_bbox.pdf
+                https://fgiesen.wordpress.com/2010/10/17/view-frustum-culling/
+                https://fgiesen.wordpress.com/2010/10/20/some-more-frustum-culling-notes/
+                http://www.iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
+                http://zeuxcg.org/2009/01/31/view-frustum-culling-optimization-introduction/
+                http://www.flipcode.com/archives/Frustum_Culling.shtml
+                http://www.gamedev.net/page/resources/_/technical/general-programming/useless-snippet-2-aabbfrustum-test-r3342
+                http://www.txutxi.com/?p=584
         › Lighting
             http://www.3dgep.com/texturing-and-lighting-with-opengl-and-glsl/
             http://ruh.li/GraphicsPhongBlinnPhong.html
@@ -444,6 +463,7 @@ High-Level:
             http://www.crytek.com/download/Sousa_Graphics_Gems_CryENGINE3.pdf
         › Scripting
             https://urho3d.github.io/documentation/HEAD/_lua_scripting.html
+            http://zeuxcg.org/2010/11/07/lua-callstack-with-c-debugger/
         › GodRays - http://threejs.org/examples/webgl_postprocessing_godrays.html
         › Screen Space Reflections
         https://www.reddit.com/r/gamedev/comments/52lawa/what_exactly_are_screenspace_reflections/

@@ -10,6 +10,7 @@
 #include "mesh_vertexaccessor.hpp"
 #include "shaderprogram.hpp"
 #include "log.hpp"
+#include "aabb.hpp"
 
 namespace ngn {
     class Mesh {
@@ -32,8 +33,11 @@ namespace ngn {
         std::vector<std::unique_ptr<VertexBuffer> > mVertexBuffers;
         std::unique_ptr<IndexBuffer> mIndexBuffer;
 
+        mutable AABoundingBox mBoundingBox;
+        mutable bool mBBoxDirty;
+
     public:
-        Mesh(DrawMode mode) : mMode(mode), mVAO(0), mIndexBuffer(nullptr) {}
+        Mesh(DrawMode mode) : mMode(mode), mVAO(0), mIndexBuffer(nullptr), mBBoxDirty(true) {}
 
         // I'm not really sure what I want these to do
         Mesh(const Mesh& other) = delete;
@@ -83,7 +87,7 @@ namespace ngn {
 
         // In the header because of the slim possibility that it might be inlined
         // instanceCount = 0 means, that the draw commands will not be instanced
-        void draw(size_t instanceCount = 0) {
+        inline void draw(size_t instanceCount = 0) {
             if(mVAO == 0) {
                 compile();
             }
@@ -131,11 +135,10 @@ namespace ngn {
         // I don't think this is the proper prototype of this function, maybe merge with another Mesh?
         /*TODO*/ void merge(const VertexBuffer& other, const glm::mat4& transform);
 
+        void updateBoundingBox() const {mBBoxDirty = true;}
+        const AABoundingBox& boundingBox() const;
         // Centroid of the bounding box
         glm::vec3 center() const;
-        // axis-aligned
-        // first vector is point with minimal coordinates (x, y, z), second with maximum
-        std::pair<glm::vec3, glm::vec3> boundingBox() const;
         // position and radius
         std::pair<glm::vec3, float> boundingSphere() const;
     };

@@ -83,12 +83,12 @@ namespace ngn {
         // this is because void doesn't have a destructor, making that type incomplete
         GLuint mVBO;
         int mLastUploadedSize;
-        bool mUploadedOnce;
+        int mUploadCount;
 
     public:
         GLBuffer(GLenum target, void* data, size_t size, UsageHint usage) :
                 mTarget(target), mSize(size), mUsage(usage), mData(reinterpret_cast<VBODataType*>(data)),
-                mVBO(0), mLastUploadedSize(0), mUploadedOnce(false) {}
+                mVBO(0), mLastUploadedSize(0), mUploadCount(0) {}
 
         ~GLBuffer() {
             if(mVBO != 0) glDeleteBuffers(1, &mVBO);
@@ -107,13 +107,15 @@ namespace ngn {
             return mData.get();
         }
 
+        int getUploadCount() const {return mUploadCount;}
+
         // If you uploaded your data, you can call release to delete the local copy
         void freeLocal() {
             mData.reset();
         }
 
         void bind() {
-            if(!mUploadedOnce) upload();
+            if(mUploadCount == 0) upload();
             glBindBuffer(mTarget, mVBO);
         }
 

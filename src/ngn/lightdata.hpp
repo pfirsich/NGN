@@ -4,6 +4,7 @@
 
 #include "texture.hpp"
 #include "rendertarget.hpp"
+#include "aabb.hpp"
 
 namespace ngn {
     class Camera;
@@ -40,7 +41,7 @@ namespace ngn {
             void setBias(float bias) {mShadowBias = bias;}
             float getBias() const {return mShadowBias;}
 
-            void updateCamera(const Camera& viewCamera);
+            void updateCamera(const Camera& viewCamera, const AABoundingBox& sceneBoundingBox);
             Camera* getCamera() {return mCamera;}
         };
 
