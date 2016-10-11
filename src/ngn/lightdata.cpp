@@ -97,7 +97,8 @@ namespace ngn {
     }
 
     LightData::Shadow::Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, PixelFormat format) :
-            mParent(parent), mCamera(nullptr), mShadowBias(0.0002f), mNormalShadowBias(1.0f), mAutoCam(true) {
+            mParent(parent), mCamera(nullptr), mShadowBias(0.0002f), mNormalShadowBias(1.0f), mAutoCam(true),
+            mPCFSamples(16), mPCFEarlyBailSamples(4), mPCFRadius(2.5f) {
         mShadowMapTexture.setStorage(format, shadowMapWidth, shadowMapHeight);
         LOG_DEBUG("shadow map texture object: %d", mShadowMapTexture.getTextureObject());
         mShadowMapTexture.setCompareFunc();

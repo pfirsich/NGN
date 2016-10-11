@@ -131,18 +131,18 @@ int main(int argc, char** args) {
     cube.setPosition(glm::vec3(0.0f, 5.0f, 0.0f));
     scene.add(cube);
 
-    ngn::Light light;
-    light.addLightData(ngn::LightData::LightType::DIRECTIONAL);
-    light.getLightData()->setColor(glm::vec3(0.2f, 0.2f, 0.2f));
-    light.getLightData()->addShadow(4096, 4096);
-    light.lookAt(glm::vec3(-0.5f, -0.5f, -1.0f));
-    //light.getLightData()->getShadow()->getCamera()->addDebugMesh();
-    scene.add(light);
+    ngn::Light dirLight;
+    dirLight.addLightData(ngn::LightData::LightType::DIRECTIONAL);
+    dirLight.getLightData()->setColor(glm::vec3(0.2f, 0.2f, 0.2f));
+    dirLight.getLightData()->addShadow(4096, 4096);
+    dirLight.lookAt(glm::vec3(-0.5f, -0.5f, -1.0f));
+    //dirLight.getLightData()->getShadow()->getCamera()->addDebugMesh();
+    scene.add(dirLight);
 
     ngn::Light spotLight;
     spotLight.addLightData(ngn::LightData::LightType::SPOT);
     spotLight.getLightData()->setColor(200.0f * glm::vec3(0.25f, 0.25f, 1.0f));
-    spotLight.lookAtPos(glm::vec3(30.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    spotLight.lookAtPos(glm::vec3(28.0f, 28.0f, 0.0f), ironman.getPosition());
     spotLight.getLightData()->addShadow(2048, 2048);
     //spotLight.getLightData()->getShadow()->getCamera()->lookAtPos(glm::vec3(30.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     //spotlight.getLightData()->getShadow()->getCamera()->addDebugMesh();
@@ -159,7 +159,7 @@ int main(int argc, char** args) {
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pointLight.getMaterial()->setVector3("emissive", col);
     pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);
-    scene.add(pointLight);
+    //scene.add(pointLight);
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
 
@@ -183,7 +183,7 @@ int main(int argc, char** args) {
         moveCamera(camera, dt);
 
         renderer.render(scene, camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
-        //renderer.render(scene, *light.getLightData()->getShadow()->getCamera(), !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
+        //renderer.render(scene, *dirLight.getLightData()->getShadow()->getCamera(), !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
 
         window.updateAndSwap();
         //quit = true;

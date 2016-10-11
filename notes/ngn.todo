@@ -19,11 +19,8 @@ Low-Level:
     ✔ Shadows @done (10.10.16 06:47)
     ✔ automatic camera for directional lights @done (11.10.16 02:07)
     ✔ normal-bias parameter for shadow mapping @done (11.10.16 03:48)
-    › percentage closer filtering with randomly rotated poisson discs
-    https://electronicmeteor.wordpress.com/2013/02/05/poisson-disc-shadow-sampling-ridiculously-easy-and-good-looking-too/
-    http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology
-    http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
-    http://www.gamedev.net/topic/498755-randomly-rotated-pcf-shadows/
+    › Audiodatei anhören
+    ✔ percentage closer filtering with randomly rotated poisson discs @done (11.10.16 15:25)
     › Post-Process-System
     › HDR
     › Deferred Shading
@@ -56,7 +53,7 @@ Low-Level:
     › Bloom
     › Particles
 
-    › Cascaded Shadow mapping
+    › Cascaded Shadow mapping - Ich brauche erstmal ne ordentliche Testszene!
     https://docs.unrealengine.com/latest/INT/Resources/ContentExamples/DynamicSceneShadows/
     => numCascades, maxDistance (1.0 is all, 0.0 is nothing), distributionExponent
     http://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf
@@ -67,6 +64,8 @@ Low-Level:
     http://dev.theomader.com/cascaded-shadow-mapping-1/
 
 -------------------------------------------------------------------------------------------
+
+    › Adjust (directional) lights up vector to get better shadow map fit
 
     › prefixes in shaders for different spaces? w for world, m for model, v for view, n for ndc, even t for texture/[0,1]?
 
@@ -366,6 +365,9 @@ High-Level:
             http://the-witness.net/news/2010/03/graphics-tech-shadow-maps-part-1/
             http://the-witness.net/news/2010/04/graphics-tech-shadow-maps-part-2-save-25-texture-memory-and-possibly-much-more/
             http://de.slideshare.net/TiagoAlexSousa/secrets-of-cryengine-3-graphics-technology
+            http://gregory-igehy.hatenadiary.com/entry/2015/12/08/000330
+            http://www.olhovsky.com/2011/07/shadow-map-filtering-experimentation/
+            http://www.crytek.com/download/Playing%20with%20Real-Time%20Shadows.pdf
 
             Frustum fitting:#
             http://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
@@ -379,6 +381,11 @@ High-Level:
             https://mynameismjp.wordpress.com/2013/09/10/shadow-maps/
             http://www.dissidentlogic.com/old/#Notes%20on%20the%20Normal%20Offset%20Materials
             http://www.dissidentlogic.com/old/images/NormalOffsetShadows/GDC_Poster_NormalOffset.png - just works (tm)
+
+            PCF:#
+            http://www.sunandblackcat.com/tipFullView.php?l=eng&topicid=35
+            http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
+            http://www.gamedev.net/topic/498755-randomly-rotated-pcf-shadows/
         › HDR
         http://filmicgames.com/archives/75 - Filmic Tone Mapping
         http://learnopengl.com/#!Advanced-Lighting/HDR

@@ -67,6 +67,85 @@ SurfaceProperties surface() {
     return blinnPhongSurface();
 }
 
+const vec2 poissonDisk[16] = vec2[](
+    vec2(-0.94201624, -0.39906216),
+    vec2( 0.94558609, -0.76890725),
+    vec2(-0.09418410, -0.92938870),
+    vec2( 0.34495938,  0.29387760),
+    vec2(-0.91588581,  0.45771432),
+    vec2(-0.81544232, -0.87912464),
+    vec2(-0.38277543,  0.27676845),
+    vec2( 0.97484398,  0.75648379),
+    vec2( 0.44323325, -0.97511554),
+    vec2( 0.53742981, -0.47373420),
+    vec2(-0.26496911, -0.41893023),
+    vec2( 0.79197514,  0.19090188),
+    vec2(-0.24188840,  0.99706507),
+    vec2(-0.81409955,  0.91437590),
+    vec2( 0.19984126,  0.78641367),
+    vec2( 0.14383161, -0.14100790)
+);
+
+float rand3(in vec3 seed) {
+    return fract(sin(dot(seed,vec3(53.1215, 21.1352, 9.1322))) * 2105.2354);
+}
+
+float rand2(in vec2 seed) {
+    return fract(sin(dot(seed,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+float shadowValue(in sampler2DShadow shadowMap, vec3 shadowCoords) {
+    return texture(shadowMap, shadowCoords);
+}
+
+float poissonShadowValue(in sampler2DShadow shadowMap, vec3 shadowCoords) {
+    // Should this parameter not be in texels, but in world coordinates?
+    vec2 radius = 1.0/ngn_light.shadowMapSize * ngn_light.shadowPCFRadius; // it would be great to have this in world coordinates :/
+
+    // Think about storing these rotations (sin(alpha) and cos(alpha)) in the RG channel of a texture and tile it over the screen
+    // I could get rid of a sqrt, fract, sin, dot for a texture fetch. I don't know if this might be worth it.
+    // Also I could store the whole poisson disk coordinate, if I don't plan on sorting my offsets for early bailing!
+    // Storing this in a texture might be bad because we only fetch once into it and therefore effectively
+    // trade two cache misses with some instructions. What I have now is good enough for now though.
+    mat2 offsetRotation = mat2(1.0);
+    // Interestingly using sin/cos seems slower than c = rand, s = sqrt(1-c*c), even though on newer hardware with a special functions unit
+    // (like Kepler) that is idle mos of the time, sin/cos should be almost free. Seems like a reason to use a texture?
+    // But it might be that it's slower, because here we use a lot of special functions anyways. Test this someday!
+
+    // In theory using the world position as the variable for the rotation is the better way to do it, to avoid creeping noise
+    // when the camera is moving, but in practice there is no visible difference. Don't forget this in case I decide to use a texture, because
+    // if I would use the world position, I would need a 3D texture! (which I can then just not do)
+    //float c = rand2(gl_FragCoord.xy);
+    float c = rand3(vsOut.worldPos * 1000.0);
+    float s = sqrt(1.0 - c*c);
+    offsetRotation[0][0] = c;
+    offsetRotation[1][1] = c;
+    offsetRotation[0][1] = -s;
+    offsetRotation[1][0] = s;
+
+    float sum = 0.0;
+    vec2 offset;
+
+    for(int i = 0; i < ngn_light.shadowPCFEarlyBailSamples; ++i) {
+        offset = poissonDisk[i + ngn_light.shadowPCFEarlyBailSamples] * radius;
+        sum += texture(shadowMap, shadowCoords + vec3(offsetRotation * offset, 0.0));
+    }
+
+    float bailShadowFactor = sum / ngn_light.shadowPCFEarlyBailSamples;
+    // I think this branching might be slow, especially with ngn_light.shadowPCFEarlyBailSamples == 0, I hope this somehow gets optimized out, even if
+    // we only branch on a (homogeneous) uniform
+    if(ngn_light.shadowPCFEarlyBailSamples == 0 || bailShadowFactor > 0.1 && bailShadowFactor < 0.9) {
+        for(int i = 0; i < ngn_light.shadowPCFSamples - ngn_light.shadowPCFEarlyBailSamples; ++i) {
+            offset = poissonDisk[i + ngn_light.shadowPCFEarlyBailSamples] * radius;
+            sum += texture(shadowMap, shadowCoords + vec3(offsetRotation * offset, 0.0));
+        }
+        return sum / ngn_light.shadowPCFSamples;
+    } else {
+        return bailShadowFactor;
+    }
+
+}
+
 void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
     if(ngn_light.type == NGN_LIGHT_TYPE_DIRECTIONAL) {
         lightDir = -ngn_light.direction;
@@ -92,7 +171,9 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
 
     if(ngn_light.shadowed) {
         // normal offset: http://www.dissidentlogic.com/old/images/NormalOffsetShadows/GDC_Poster_NormalOffset.png
-        float normalOffsetScale = min(1.0, 1.0 - dot(lightDir, vsOut.normal)) * ngn_light.shadowNormalBias;
+        // I need the minimal bias here, since on curved surfaces it sometimes happens, that the cosine does not rise fast enough
+        // and I get rings of self-shadowing (especially with PCF!)
+        float normalOffsetScale = min(1.0, 1.0 - dot(lightDir, vsOut.normal) + 0.5) * ngn_light.shadowNormalBias;
         vec3 normalOffset = vsOut.worldNormal * normalOffsetScale;
         vec4 offsetFragLightSpace = ngn_light.toLightSpace * vec4(vsOut.worldPos + normalOffset, 1.0);
 
@@ -107,7 +188,7 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
             ngn_fragColor = vec4(shadowCoords.xy, 0.0, 1.0); return;
         }*/
         shadowCoords.z -= ngn_light.shadowBias;
-        float shadow = texture(ngn_light.shadowMap, shadowCoords);
+        float shadow = poissonShadowValue(ngn_light.shadowMap, shadowCoords);
         //ngn_fragColor = vec4(shadow); return;
         lightAtten *= shadow;
     }
@@ -116,7 +197,8 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
 #pragma ngn slot
 void main() {
     SurfaceProperties _surf = surface();
-    if(_surf.alpha < 1.0/256.0) discard; // alpha-test
+    //Alpha test should be optional (different materials), so that it's occurence in the shader does not disable early-z
+    //if(_surf.alpha < 1.0/256.0) discard; // alpha-test
 
     #if NGN_PASS == NGN_PASS_FORWARD_AMBIENT
         ngn_fragColor = vec4(_surf.emission + _surf.albedo * ambient, _surf.alpha);

@@ -30,7 +30,8 @@ namespace ngn {
             float mShadowBias;
             float mNormalShadowBias;
             bool mAutoCam;
-
+            int mPCFSamples, mPCFEarlyBailSamples;
+            float mPCFRadius;
 
         public:
             Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, PixelFormat format = GL_DEPTH_COMPONENT24);
@@ -44,6 +45,18 @@ namespace ngn {
 
             void setNormalBias(float bias) {mNormalShadowBias = bias;}
             float getNormalBias() const {return mNormalShadowBias;}
+
+            void setPCFSamples(int samples, int earlyBailSamples = -1) {
+                if(earlyBailSamples < 0) earlyBailSamples = samples > 8 ? 4 : 0;
+                mPCFSamples = samples;
+                mPCFEarlyBailSamples = earlyBailSamples;
+            }
+            int getPCFSamples() const {return mPCFSamples;}
+            int getPCFEarlyBailSamples() const {return mPCFEarlyBailSamples;}
+
+            // in shadow map texels
+            void setPCFRadius(float radius) {mPCFRadius = radius;}
+            float getPCFRadius() const {return mPCFRadius;}
 
             void updateCamera(const Camera& viewCamera, const AABoundingBox& sceneBoundingBox);
             Camera* getCamera() {return mCamera;}

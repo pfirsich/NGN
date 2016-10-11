@@ -44,6 +44,10 @@ namespace ngn {
         ShaderProgram::UniformGUID ngn_light_shadowMapGUID;
         ShaderProgram::UniformGUID ngn_light_shadowBiasGUID;
         ShaderProgram::UniformGUID ngn_light_shadowNormalBiasGUID;
+        ShaderProgram::UniformGUID ngn_light_shadowPCFSamples;
+        ShaderProgram::UniformGUID ngn_light_shadowPCFEarlyBailSamples;
+        ShaderProgram::UniformGUID ngn_light_shadowMapSize;
+        ShaderProgram::UniformGUID ngn_light_shadowPCFRadius;
         ShaderProgram::UniformGUID ngn_light_toLightSpaceGUID;
     }
 
@@ -84,6 +88,11 @@ struct ngn_LightParameters {
     float shadowBias;
     float shadowNormalBias;
     mat4 toLightSpace;
+
+    int shadowPCFSamples;
+    int shadowPCFEarlyBailSamples;
+    vec2 shadowMapSize;
+    float shadowPCFRadius;
 };
 layout(location = 7) uniform ngn_LightParameters ngn_light;
 
@@ -110,6 +119,11 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
         UniformGUIDs::ngn_light_shadowBiasGUID = ShaderProgram::getUniformGUID("ngn_light.shadowBias");
         UniformGUIDs::ngn_light_shadowNormalBiasGUID = ShaderProgram::getUniformGUID("ngn_light.shadowNormalBias");
         UniformGUIDs::ngn_light_toLightSpaceGUID = ShaderProgram::getUniformGUID("ngn_light.toLightSpace");
+
+        UniformGUIDs::ngn_light_shadowPCFSamples = ShaderProgram::getUniformGUID("ngn_light.shadowPCFSamples");
+        UniformGUIDs::ngn_light_shadowPCFEarlyBailSamples = ShaderProgram::getUniformGUID("ngn_light.shadowPCFEarlyBailSamples");
+        UniformGUIDs::ngn_light_shadowMapSize = ShaderProgram::getUniformGUID("ngn_light.shadowMapSize");
+        UniformGUIDs::ngn_light_shadowPCFRadius = ShaderProgram::getUniformGUID("ngn_light.shadowPCFRadius");
 
         Renderer::staticInitialized = true;
     }
@@ -354,6 +368,11 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                             entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowedGUID, 1);
                                             entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowBiasGUID, shadow->getBias());
                                             entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowNormalBiasGUID, shadow->getNormalBias());
+                                            if(shadow->getPCFSamples() > 0) {
+                                                entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowPCFSamples, shadow->getPCFSamples());
+                                                entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowPCFEarlyBailSamples, shadow->getPCFEarlyBailSamples());
+                                                entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowPCFRadius, shadow->getPCFRadius());
+                                            }
                                             /* This is some bullshit
                                             The shadow map is bound to a specific unit (this engine is going to assume hardware with at least 16)
                                             because I rely heavily on uniform dynamic branching instead of different shader permutations. As a result
@@ -367,7 +386,9 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                             If I don't remove these samplers on a case-by-case basis, I have to have a depth texture bound at all times,
                                             so as an easy fix I dedicated the unit 15 to shadow maps!
                                             */
-                                            entry.perEntryUniforms.setTexture(UniformGUIDs::ngn_light_shadowMapGUID, &shadow->mShadowMapTexture, 15);
+                                            Texture* shadowMap = &shadow->mShadowMapTexture;
+                                            entry.perEntryUniforms.setTexture(UniformGUIDs::ngn_light_shadowMapGUID, shadowMap, 15);
+                                            entry.perEntryUniforms.setVector2(UniformGUIDs::ngn_light_shadowMapSize, glm::vec2(shadowMap->getWidth(), shadowMap->getHeight()));
                                             entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_light_toLightSpaceGUID, toLightSpace);
                                         } else {
                                             entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowedGUID, 0);
