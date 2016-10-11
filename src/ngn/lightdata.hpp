@@ -28,6 +28,7 @@ namespace ngn {
             Texture mShadowMapTexture;
             Camera* mCamera;
             float mShadowBias;
+            float mNormalShadowBias;
             bool mAutoCam;
 
 
@@ -40,6 +41,9 @@ namespace ngn {
 
             void setBias(float bias) {mShadowBias = bias;}
             float getBias() const {return mShadowBias;}
+
+            void setNormalBias(float bias) {mNormalShadowBias = bias;}
+            float getNormalBias() const {return mNormalShadowBias;}
 
             void updateCamera(const Camera& viewCamera, const AABoundingBox& sceneBoundingBox);
             Camera* getCamera() {return mCamera;}

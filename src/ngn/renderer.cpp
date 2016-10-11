@@ -43,6 +43,7 @@ namespace ngn {
         ShaderProgram::UniformGUID ngn_light_shadowedGUID;
         ShaderProgram::UniformGUID ngn_light_shadowMapGUID;
         ShaderProgram::UniformGUID ngn_light_shadowBiasGUID;
+        ShaderProgram::UniformGUID ngn_light_shadowNormalBiasGUID;
         ShaderProgram::UniformGUID ngn_light_toLightSpaceGUID;
     }
 
@@ -81,6 +82,7 @@ struct ngn_LightParameters {
     bool shadowed;
     sampler2DShadow shadowMap;
     float shadowBias;
+    float shadowNormalBias;
     mat4 toLightSpace;
 };
 layout(location = 7) uniform ngn_LightParameters ngn_light;
@@ -106,6 +108,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
         UniformGUIDs::ngn_light_shadowedGUID = ShaderProgram::getUniformGUID("ngn_light.shadowed");
         UniformGUIDs::ngn_light_shadowMapGUID = ShaderProgram::getUniformGUID("ngn_light.shadowMap");
         UniformGUIDs::ngn_light_shadowBiasGUID = ShaderProgram::getUniformGUID("ngn_light.shadowBias");
+        UniformGUIDs::ngn_light_shadowNormalBiasGUID = ShaderProgram::getUniformGUID("ngn_light.shadowNormalBias");
         UniformGUIDs::ngn_light_toLightSpaceGUID = ShaderProgram::getUniformGUID("ngn_light.toLightSpace");
 
         Renderer::staticInitialized = true;
@@ -259,7 +262,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                 Material::Pass* pass = mat->getPass(SHADOWMAP_PASS);
                                 if(!pass) pass = mat->getPass(AMBIENT_PASS);
 
-                                if(pass) {
+                                if(pass && pass->getShaderProgram()) {
                                     RendererData* rendererData = node->rendererData[mRendererIndex];
 
                                     renderQueue.emplace_back(mat, pass, mesh);
@@ -298,7 +301,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                         assert(mat != nullptr);
                         Material::Pass* pass = mat->getPass(AMBIENT_PASS);
 
-                        if(pass) {
+                        if(pass && pass->getShaderProgram()) {
                             if(drawTransparent == pass->getStateBlock().getBlendEnabled()) {
                                 renderQueue.emplace_back(mat, pass, mesh);
                                 RenderQueueEntry& entry = renderQueue.back();
@@ -319,7 +322,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                         Material* mat = node->getMaterial();
                         assert(mat != nullptr);
                         Material::Pass* pass = mat->getPass(LIGHT_PASS);
-                        if(pass) {
+                        if(pass && pass->getShaderProgram()) {
                             if(drawTransparent == pass->getStateBlock().getBlendEnabled()) {
                                 for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
                                     // later: sort by influence and take the N most influential lights
@@ -350,6 +353,7 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                             glm::mat4 toLightSpace = shadow->getCamera()->getProjectionMatrix() * shadow->getCamera()->getViewMatrix();
                                             entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowedGUID, 1);
                                             entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowBiasGUID, shadow->getBias());
+                                            entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowNormalBiasGUID, shadow->getNormalBias());
                                             /* This is some bullshit
                                             The shadow map is bound to a specific unit (this engine is going to assume hardware with at least 16)
                                             because I rely heavily on uniform dynamic branching instead of different shader permutations. As a result

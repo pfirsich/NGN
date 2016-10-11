@@ -61,7 +61,7 @@ namespace ngn {
 
                     // use scene bounds to determine min/max z
                     // do this by looping through all the corner points, transforming them to light pos and min/max ing z
-                    /*min.z = inf; max.z = -inf;
+                    min.z = inf; max.z = -inf;
                     glm::vec3 point, dir;
                     for(int i = 0; i < 8; ++i) {
                         dir = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -73,7 +73,7 @@ namespace ngn {
                         point = transformPoint(toLightSpace, point);
                         min.z = std::min(min.z, point.z);
                         max.z = std::max(max.z, point.z);
-                    }*/
+                    }
 
                     /*glm::vec4 worldPos = (min + max) * 0.5f;
                     worldPos.z = max.z;
@@ -85,7 +85,7 @@ namespace ngn {
                     shadowCam->set(min.x, max.x, min.y, max.y, min.z, max.z - min.z);
                     break;
                 }
-                case LightData::LightType::SPOT: {
+                case LightData::LightType::SPOT: { // ez
                     PerspectiveCamera* shadowCam = static_cast<PerspectiveCamera*>(mCamera);
                     shadowCam->set(glm::acos(mParent->getOuterAngle())*2.0f, 1.0f, 0.1f, mParent->getRange());
                     break;
@@ -97,7 +97,7 @@ namespace ngn {
     }
 
     LightData::Shadow::Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, PixelFormat format) :
-            mParent(parent), mCamera(nullptr), mShadowBias(0.001f), mAutoCam(true) {
+            mParent(parent), mCamera(nullptr), mShadowBias(0.0002f), mNormalShadowBias(1.0f), mAutoCam(true) {
         mShadowMapTexture.setStorage(format, shadowMapWidth, shadowMapHeight);
         LOG_DEBUG("shadow map texture object: %d", mShadowMapTexture.getTextureObject());
         mShadowMapTexture.setCompareFunc();

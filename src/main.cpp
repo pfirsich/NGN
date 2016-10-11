@@ -64,7 +64,7 @@ int main(int argc, char** args) {
     ngn::Renderer renderer;
     renderer.clearColor = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 
-    ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 150.0f);
+    ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 130.0f);
     //ngn::OrthographicCamera camera(-50.0f, 50.0f, -50.0f, 50.0f, 0.0f, 200.0f);
 
     window.resizeSignal.connect([&camera, &renderer](int w, int h) {

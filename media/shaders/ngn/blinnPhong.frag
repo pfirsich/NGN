@@ -6,6 +6,7 @@ in VSOUT {
     vec2 texCoord;
     vec3 normal;
     vec3 worldPos;
+    vec3 worldNormal;
     vec3 eye; // view space, inverse of position
 } vsOut;
 
@@ -90,7 +91,13 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
     }
 
     if(ngn_light.shadowed) {
+        // normal offset: http://www.dissidentlogic.com/old/images/NormalOffsetShadows/GDC_Poster_NormalOffset.png
+        float normalOffsetScale = min(1.0, 1.0 - dot(lightDir, vsOut.normal)) * ngn_light.shadowNormalBias;
+        vec3 normalOffset = vsOut.worldNormal * normalOffsetScale;
+        vec4 offsetFragLightSpace = ngn_light.toLightSpace * vec4(vsOut.worldPos + normalOffset, 1.0);
+
         vec4 fragLightSpace = ngn_light.toLightSpace * vec4(vsOut.worldPos, 1.0);
+        fragLightSpace.xy = offsetFragLightSpace.xy;
         vec3 shadowCoords = fragLightSpace.xyz / fragLightSpace.w;
         shadowCoords = shadowCoords * 0.5 + 0.5;
         /*if(shadowCoords.x > 1.0 || shadowCoords.x < 0.0 || shadowCoords.y > 1.0 || shadowCoords.y < 0.0) {

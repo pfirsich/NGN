@@ -29,7 +29,6 @@ namespace ngn {
 
             inline RenderQueueEntry(Material* mat, Material::Pass* pass, Mesh* _mesh) {
                 shaderProgram = pass->getShaderProgram();
-                if(!shaderProgram) LOG_ERROR("Returned nullptr for pass %d!", pass->getPassIndex());
                 uniformBlocks.push_back(mat);
                 mesh = _mesh;
                 stateBlock = pass->getStateBlock();
