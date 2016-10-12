@@ -17,7 +17,7 @@ namespace ngn {
         for(auto& renderBuffer : mRenderbufferAttachments) {
             glGenRenderbuffers(1, &renderBuffer.rbo);
             glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer.rbo);
-            glRenderbufferStorage(GL_RENDERBUFFER, renderBuffer.format, renderBuffer.width, renderBuffer.height);
+            glRenderbufferStorage(GL_RENDERBUFFER, static_cast<GLenum>(renderBuffer.format), renderBuffer.width, renderBuffer.height);
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, static_cast<GLenum>(renderBuffer.attachment), GL_RENDERBUFFER, renderBuffer.rbo);
             if(isColor(renderBuffer.attachment)) colorAttachments.push_back(static_cast<GLenum>(renderBuffer.attachment));
         }

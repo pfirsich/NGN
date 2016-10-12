@@ -121,13 +121,14 @@ namespace ngn {
         The first two can be eliminated by using GL_FLOAT for type (for example), the other two are essentially the same.
         Ergo I will just just GL_RGBA for format and if internalFormat is a depth format, I will use GL_DEPTH_COMPONENT
         */
+        GLenum intFormat = static_cast<GLenum>(internalFormat);
         GLenum format = GL_RGBA;
-        if(internalFormat == GL_DEPTH_COMPONENT || internalFormat == GL_DEPTH_COMPONENT16 ||
-           internalFormat == GL_DEPTH_COMPONENT24 || internalFormat == GL_DEPTH_COMPONENT32F) {
+        if(intFormat == GL_DEPTH_COMPONENT || intFormat == GL_DEPTH_COMPONENT16 ||
+           intFormat == GL_DEPTH_COMPONENT24 || intFormat == GL_DEPTH_COMPONENT32F) {
             format = GL_DEPTH_COMPONENT;
         }
         for(int i = 0; i < levels; ++i) {
-            glTexImage2D(mTarget, i, internalFormat, width, height, 0, format, GL_FLOAT, nullptr);
+            glTexImage2D(mTarget, i, intFormat, width, height, 0, format, GL_FLOAT, nullptr);
             width = width / 2;
             if(width < 1) width = 1;
             height = height / 2;

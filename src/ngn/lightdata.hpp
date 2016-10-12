@@ -42,7 +42,7 @@ namespace ngn {
             float getCascadeSplit(float _near, float _far, int cascadeIndex) const;
 
         public:
-            Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, int cascades = 1, PixelFormat format = GL_DEPTH_COMPONENT24);
+            Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, int cascades = 1, PixelFormat format = PixelFormat::DEPTH24);
             ~Shadow();
 
             void setAutoCam(bool autocam) {mAutoCam = autocam;}

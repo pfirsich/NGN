@@ -10,7 +10,27 @@
 #include "renderstateblock.hpp"
 
 namespace ngn {
-    using PixelFormat = GLenum;
+    //using PixelFormat = GLenum;
+
+    enum class PixelFormat : GLenum {
+        R = GL_R8,
+        R_HDR = GL_R16F,
+        RG = GL_RG8,
+        RG_HDR = GL_RG16F,
+        RGB = GL_RGB8,
+        RGB_HDR = GL_RGB16F,
+        RGBA = GL_RGBA8,
+        RGBA_HDR = GL_RGBA16F,
+        RGB10_A2 = GL_RGB10_A2,
+        RG11F_B10F = GL_R11F_G11F_B10F,
+        RGBE = GL_RGB9_E5,
+        DEPTH16 = GL_DEPTH_COMPONENT16,
+        DEPTH24 = GL_DEPTH_COMPONENT24,
+        DEPTH32F = GL_DEPTH_COMPONENT32F,
+        DEPTH32F_STENCIL8 = GL_DEPTH32F_STENCIL8,
+        DEPTH24_STENCIL8 = GL_DEPTH24_STENCIL8,
+        STENCIL8 = GL_STENCIL_INDEX8
+    };
 
     class Texture : public Resource {
     public:
