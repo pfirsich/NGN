@@ -97,11 +97,11 @@ int main(int argc, char** args) {
     // Scene
     ngn::Scene scene;
 
-    std::vector<ngn::Mesh*> meshes = ngn::assimpMeshes("media/ironman.obj", vFormat);
+    std::vector<std::pair<std::string, ngn::Mesh*> > meshes = ngn::assimpMeshes("media/ironman.obj", true, vFormat);
     ngn::Object ironman;
-    for(auto mesh : meshes) {
+    for(auto& mesh : meshes) {
         ngn::Object* obj = new ngn::Object;
-        obj->setMesh(mesh);
+        obj->setMesh(mesh.second);
         ironman.add(*obj);
     }
     ironman.setMaterial(baseMaterial);
@@ -109,12 +109,14 @@ int main(int argc, char** args) {
     ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
     scene.add(ironman);
 
-    std::vector<ngn::Mesh*> testSceneMeshes = ngn::assimpMeshes("media/ngn_testscene.obj", vFormat);
+    std::vector<std::pair<std::string, ngn::Mesh*> > testSceneMeshes = ngn::assimpMeshes("media/ngn_testscene.obj", false, vFormat);
     ngn::Object testScene;
-    for(auto mesh : testSceneMeshes) {
+    LOG_DEBUG("%d meshes in test scene", testSceneMeshes.size());
+    for(auto& mesh : testSceneMeshes) {
         ngn::Object* obj = new ngn::Object;
-        obj->setMesh(mesh);
+        obj->setMesh(mesh.second);
         testScene.add(*obj);
+        //LOG_DEBUG("name: %s", mesh.first.c_str());
     }
     testScene.setMaterial(baseMaterial);
     testScene.setScale(2.0f * glm::vec3(1.0f, 1.0f, 1.0f));
@@ -177,7 +179,8 @@ int main(int argc, char** args) {
     //scene.add(pointLight);
 
     //camera.addDebugMesh(); scene.add(camera); // so it shows up in shadow maps
-    //camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
+
+    camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
 
     // Mainloop
     glLineWidth(4.0f);

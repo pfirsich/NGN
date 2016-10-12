@@ -144,7 +144,7 @@ namespace ngn {
     };
 
     Mesh* assimpMesh(const char* filename, const VertexFormat& format);
-    std::vector<Mesh*> assimpMeshes(const char* filename, const VertexFormat& format);
+    std::vector<std::pair<std::string, Mesh*> > assimpMeshes(const char* filename, bool merge, const VertexFormat& format);
 
     // width, height, depth along x, y, z, center is 0, 0, 0
     Mesh* boxMesh(float width, float height, float depth, const VertexFormat& format);

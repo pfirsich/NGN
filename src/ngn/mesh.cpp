@@ -130,19 +130,19 @@ namespace ngn {
         return ngnMesh;
     }
 
-    std::vector<Mesh*> assimpMeshes(const char* filename, const VertexFormat& format) {
+    std::vector<std::pair<std::string, Mesh*> > assimpMeshes(const char* filename, bool merge, const VertexFormat& format) {
         Assimp::Importer importer;
         /*importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS,
             aiComponent_NORMALS | aiComponent_TANGENTS_AND_BITANGENTS | aiComponent_COLORS |
             aiComponent_LIGHTS | aiComponent_CAMERAS);*/
-        const aiScene *scene = importer.ReadFile(filename, aiProcessPreset_TargetRealtime_Fast | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes);
+        const aiScene *scene = importer.ReadFile(filename, aiProcessPreset_TargetRealtime_Fast | aiProcess_OptimizeMeshes | (merge ? aiProcess_OptimizeGraph : 0));
         if(!scene) {
             LOG_ERROR("Mesh file '%s' could not be loaded!\n", importer.GetErrorString());
         }
 
-        std::vector<Mesh*> meshes;
+        std::vector<std::pair<std::string, Mesh*> > meshes;
         for(size_t i = 0; i < scene->mNumMeshes; ++i) {
-            meshes.push_back(assimpMesh(scene->mMeshes[i], format));
+            meshes.push_back(std::make_pair(std::string(scene->mMeshes[i]->mName.C_Str()), assimpMesh(scene->mMeshes[i], format)));
         }
 
         return meshes;
