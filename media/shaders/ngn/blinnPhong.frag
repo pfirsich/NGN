@@ -181,7 +181,7 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
     if(ngn_light.shadowed) {
         int cascadeIndex = 0;
         for(int i = 0; i < ngn_light.shadowCascadeCount; ++i) {
-            if(length(vsOut.eye) < ngn_light.shadowCascadeSplitDistance[i]) {
+            if(abs(vsOut.eye.z) < ngn_light.shadowCascadeSplitDistance[i]) {
                 cascadeIndex = i;
                 break;
             }
