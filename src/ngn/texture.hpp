@@ -4,6 +4,7 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "resource.hpp"
 #include "renderstateblock.hpp"
@@ -119,8 +120,13 @@ namespace ngn {
             setParameter(GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(func));
         }
 
+        void setBorderColor(const glm::vec4& col) {
+            bind();
+            glTexParameterfv(mTarget, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(col));
+        }
+
         void bind(unsigned int unit) const {
-            if(currentBoundTextures[unit] != this) {
+            if(currentBoundTextures[unit] != this && mTextureObject != 0) {
                 glActiveTexture(GL_TEXTURE0 + unit);
                 glBindTexture(mTarget, mTextureObject);
                 currentBoundTextures[unit] = this;

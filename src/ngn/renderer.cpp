@@ -41,14 +41,19 @@ namespace ngn {
         ShaderProgram::UniformGUID ngn_light_outerAngleGUID;
 
         ShaderProgram::UniformGUID ngn_light_shadowedGUID;
-        ShaderProgram::UniformGUID ngn_light_shadowMapGUID;
         ShaderProgram::UniformGUID ngn_light_shadowBiasGUID;
         ShaderProgram::UniformGUID ngn_light_shadowNormalBiasGUID;
         ShaderProgram::UniformGUID ngn_light_shadowPCFSamples;
         ShaderProgram::UniformGUID ngn_light_shadowPCFEarlyBailSamples;
         ShaderProgram::UniformGUID ngn_light_shadowMapSize;
         ShaderProgram::UniformGUID ngn_light_shadowPCFRadius;
-        ShaderProgram::UniformGUID ngn_light_toLightSpaceGUID;
+        ShaderProgram::UniformGUID ngn_light_shadowCascadeCountGUID;
+
+        ShaderProgram::UniformGUID ngn_light_shadowMapGUID;
+        ShaderProgram::UniformGUID ngn_light_shadowMapUVScaleGUID;
+        ShaderProgram::UniformGUID ngn_light_shadowMapUVOffsetGUID[LightData::Shadow::MAX_CASCADES];
+        ShaderProgram::UniformGUID ngn_light_shadowMapCameraTransformGUID[LightData::Shadow::MAX_CASCADES];
+        ShaderProgram::UniformGUID ngn_light_shadowCascadeSplitDistanceGUID[LightData::Shadow::MAX_CASCADES];
     }
 
     void Renderer::staticInitialize() {
@@ -61,16 +66,16 @@ namespace ngn {
         #define STRINGIFY_LIGHT_TYPE(x) ("NGN_LIGHT_TYPE_" #x " " + std::to_string(static_cast<int>(LightData::LightType::x)))
         Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(POINT) + "\n";
         Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(DIRECTIONAL) + "\n";
-        Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(SPOT) + "\n";
+        Shader::globalShaderPreamble += "#define " + STRINGIFY_LIGHT_TYPE(SPOT) + "\n\n";
+        Shader::globalShaderPreamble += "#define NGN_MAX_CASCADES " + std::to_string(LightData::Shadow::MAX_CASCADES) + "\n";
         Shader::globalShaderPreamble +=
 R"(
-#extension GL_ARB_explicit_uniform_location : enable
-layout(location = 1) uniform mat4 ngn_modelMatrix;
-layout(location = 2) uniform mat4 ngn_viewMatrix;
-layout(location = 3) uniform mat4 ngn_modelViewMatrix;
-layout(location = 4) uniform mat3 ngn_normalMatrix;
-layout(location = 5) uniform mat4 ngn_projectionMatrix;
-layout(location = 6) uniform mat4 ngn_modelViewProjectionMatrix;
+uniform mat4 ngn_modelMatrix;
+uniform mat4 ngn_viewMatrix;
+uniform mat4 ngn_modelViewMatrix;
+uniform mat3 ngn_normalMatrix;
+uniform mat4 ngn_projectionMatrix;
+uniform mat4 ngn_modelViewProjectionMatrix;
 
 struct ngn_LightParameters {
     int type;
@@ -85,16 +90,22 @@ struct ngn_LightParameters {
 
     bool shadowed;
     sampler2DShadow shadowMap;
+    mat4 shadowMapCameraTransform[NGN_MAX_CASCADES];
+    vec2 shadowMapUVOffset[NGN_MAX_CASCADES];
+    float shadowCascadeSplitDistance[NGN_MAX_CASCADES];
+    vec2 shadowMapUVScale;
+    int shadowCascadeCount;
+    vec2 shadowMapSize;
+
     float shadowBias;
     float shadowNormalBias;
-    mat4 toLightSpace;
 
     int shadowPCFSamples;
     int shadowPCFEarlyBailSamples;
-    vec2 shadowMapSize;
     float shadowPCFRadius;
+
 };
-layout(location = 7) uniform ngn_LightParameters ngn_light;
+uniform ngn_LightParameters ngn_light;
 
 )";
 
@@ -118,11 +129,20 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
         UniformGUIDs::ngn_light_shadowMapGUID = ShaderProgram::getUniformGUID("ngn_light.shadowMap");
         UniformGUIDs::ngn_light_shadowBiasGUID = ShaderProgram::getUniformGUID("ngn_light.shadowBias");
         UniformGUIDs::ngn_light_shadowNormalBiasGUID = ShaderProgram::getUniformGUID("ngn_light.shadowNormalBias");
-        UniformGUIDs::ngn_light_toLightSpaceGUID = ShaderProgram::getUniformGUID("ngn_light.toLightSpace");
+        UniformGUIDs::ngn_light_shadowCascadeCountGUID = ShaderProgram::getUniformGUID("ngn_light.shadowCascadeCount");
+        UniformGUIDs::ngn_light_shadowMapSize = ShaderProgram::getUniformGUID("ngn_light.shadowMapSize");
+
+        // All this is so ugly
+        for(int i = 0; i < LightData::Shadow::MAX_CASCADES; ++i) {
+            std::string num = std::to_string(i);
+            UniformGUIDs::ngn_light_shadowMapCameraTransformGUID[i] = ShaderProgram::getUniformGUID(("ngn_light.shadowMapCameraTransform[" + num + "]").c_str());
+            UniformGUIDs::ngn_light_shadowMapUVOffsetGUID[i] = ShaderProgram::getUniformGUID(("ngn_light.shadowMapUVOffset[" + num + "]").c_str());
+            UniformGUIDs::ngn_light_shadowCascadeSplitDistanceGUID[i] = ShaderProgram::getUniformGUID(("ngn_light.shadowCascadeSplitDistance[" + num + "]").c_str());
+        }
+        UniformGUIDs::ngn_light_shadowMapUVScaleGUID = ShaderProgram::getUniformGUID("ngn_light.shadowMapUVScale");
 
         UniformGUIDs::ngn_light_shadowPCFSamples = ShaderProgram::getUniformGUID("ngn_light.shadowPCFSamples");
         UniformGUIDs::ngn_light_shadowPCFEarlyBailSamples = ShaderProgram::getUniformGUID("ngn_light.shadowPCFEarlyBailSamples");
-        UniformGUIDs::ngn_light_shadowMapSize = ShaderProgram::getUniformGUID("ngn_light.shadowMapSize");
         UniformGUIDs::ngn_light_shadowPCFRadius = ShaderProgram::getUniformGUID("ngn_light.shadowPCFRadius");
 
         Renderer::staticInitialized = true;
@@ -263,41 +283,44 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                     LightData* lightData = light->getLightData();
                     LightData::Shadow* shadow = lightData->getShadow();
                     if(shadow) {
-                        shadow->updateCamera(camera, sceneBounds);
-                        glm::mat4 lightViewMatrix(shadow->getCamera()->getViewMatrix());
-                        glm::mat4 lightProjectionMatrix(shadow->getCamera()->getProjectionMatrix());
-
-                        for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
-                            SceneNode* node = linearizedSceneGraph[i];
-                            Mesh* mesh = node->getMesh();
-                            if(mesh) {
-                                Material* mat = node->getMaterial();
-                                assert(mat != nullptr);
-                                Material::Pass* pass = mat->getPass(SHADOWMAP_PASS);
-                                if(!pass) pass = mat->getPass(AMBIENT_PASS);
-
-                                if(pass && pass->getShaderProgram()) {
-                                    RendererData* rendererData = node->rendererData[mRendererIndex];
-
-                                    renderQueue.emplace_back(mat, pass, mesh);
-                                    RenderQueueEntry& entry = renderQueue.back();
-
-                                    glm::mat4 model = rendererData->worldMatrix;
-                                    glm::mat4 modelview = lightViewMatrix * model;
-                                    glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
-                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelMatrixGUID, model);
-                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_viewMatrixGUID, lightViewMatrix);
-                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_projectionMatrixGUID, lightProjectionMatrix);
-                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewMatrixGUID, modelview);
-                                    entry.perEntryUniforms.setMatrix3(UniformGUIDs::ngn_normalMatrixGUID, normalMatrix);
-                                    entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewProjectionMatrixGUID, lightProjectionMatrix * modelview);
-                                }
-                            }
-                        }
                         shadow->mShadowMap.bind();
                         glClear(GL_DEPTH_BUFFER_BIT);
-                        if(doRenderQueue) renderRenderQueue(renderQueue);
-                        renderQueue.clear();
+                        for(int cascadeIndex = 0; cascadeIndex < shadow->getCascadeCount(); ++cascadeIndex) {
+                            shadow->updateCamera(camera, sceneBounds, cascadeIndex);
+                            glm::mat4 lightViewMatrix(shadow->getCamera(cascadeIndex)->getViewMatrix());
+                            glm::mat4 lightProjectionMatrix(shadow->getCamera(cascadeIndex)->getProjectionMatrix());
+
+                            for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {
+                                SceneNode* node = linearizedSceneGraph[i];
+                                Mesh* mesh = node->getMesh();
+                                if(mesh) {
+                                    Material* mat = node->getMaterial();
+                                    assert(mat != nullptr);
+                                    Material::Pass* pass = mat->getPass(SHADOWMAP_PASS);
+                                    if(!pass) pass = mat->getPass(AMBIENT_PASS);
+
+                                    if(pass && pass->getShaderProgram()) {
+                                        RendererData* rendererData = node->rendererData[mRendererIndex];
+
+                                        renderQueue.emplace_back(mat, pass, mesh);
+                                        RenderQueueEntry& entry = renderQueue.back();
+
+                                        glm::mat4 model = rendererData->worldMatrix;
+                                        glm::mat4 modelview = lightViewMatrix * model;
+                                        glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
+                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelMatrixGUID, model);
+                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_viewMatrixGUID, lightViewMatrix);
+                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_projectionMatrixGUID, lightProjectionMatrix);
+                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewMatrixGUID, modelview);
+                                        entry.perEntryUniforms.setMatrix3(UniformGUIDs::ngn_normalMatrixGUID, normalMatrix);
+                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewProjectionMatrixGUID, lightProjectionMatrix * modelview);
+                                    }
+                                }
+                            }
+                            shadow->setShadowMapViewport(cascadeIndex);
+                            if(doRenderQueue) renderRenderQueue(renderQueue);
+                            renderQueue.clear();
+                        }
                     }
                 }
             }
@@ -364,10 +387,10 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
 
                                         LightData::Shadow* shadow = lightData->getShadow();
                                         if(shadow) {
-                                            glm::mat4 toLightSpace = shadow->getCamera()->getProjectionMatrix() * shadow->getCamera()->getViewMatrix();
                                             entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowedGUID, 1);
                                             entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowBiasGUID, shadow->getBias());
                                             entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowNormalBiasGUID, shadow->getNormalBias());
+                                            entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowCascadeCountGUID, shadow->getCascadeCount());
                                             if(shadow->getPCFSamples() > 0) {
                                                 entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowPCFSamples, shadow->getPCFSamples());
                                                 entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowPCFEarlyBailSamples, shadow->getPCFEarlyBailSamples());
@@ -384,12 +407,22 @@ layout(location = 7) uniform ngn_LightParameters ngn_light;
                                             then this will also result in a similar message:
                                             "Program undefined behavior warning: Sampler object 0 has depth compare enabled. It is being used with depth texture 5, by a program that samples it with a regular sampler. This is undefined beahvior."
                                             If I don't remove these samplers on a case-by-case basis, I have to have a depth texture bound at all times,
-                                            so as an easy fix I dedicated the unit 15 to shadow maps!
+                                            so as an easy fix I dedicated the last few units to shadow maps!
                                             */
                                             Texture* shadowMap = &shadow->mShadowMapTexture;
                                             entry.perEntryUniforms.setTexture(UniformGUIDs::ngn_light_shadowMapGUID, shadowMap, 15);
-                                            entry.perEntryUniforms.setVector2(UniformGUIDs::ngn_light_shadowMapSize, glm::vec2(shadowMap->getWidth(), shadowMap->getHeight()));
-                                            entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_light_toLightSpaceGUID, toLightSpace);
+
+                                            for(int cascadeIndex = 0; cascadeIndex < shadow->getCascadeCount(); ++cascadeIndex) {
+                                                entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_light_shadowMapCameraTransformGUID[cascadeIndex],
+                                                    shadow->getCamera(cascadeIndex)->getProjectionMatrix() * shadow->getCamera(cascadeIndex)->getViewMatrix());
+                                                entry.perEntryUniforms.setVector2(UniformGUIDs::ngn_light_shadowMapUVOffsetGUID[cascadeIndex],
+                                                    glm::vec2(cascadeIndex / 2, cascadeIndex % 2));
+                                                entry.perEntryUniforms.setFloat(UniformGUIDs::ngn_light_shadowCascadeSplitDistanceGUID[cascadeIndex], shadow->getCascadeSplit(camera.getNear(), camera.getFar(), cascadeIndex+1));
+                                            }
+                                            entry.perEntryUniforms.setVector2(UniformGUIDs::ngn_light_shadowMapSize,
+                                                glm::vec2(shadow->getShadowMapWidth(), shadow->getShadowMapHeight()));
+                                            entry.perEntryUniforms.setVector2(UniformGUIDs::ngn_light_shadowMapUVScaleGUID,
+                                                glm::vec2(1.0f / shadow->getXCascadeCount(), 1.0f / shadow->getYCascadeCount()));
                                         } else {
                                             entry.perEntryUniforms.setInteger(UniformGUIDs::ngn_light_shadowedGUID, 0);
                                         }

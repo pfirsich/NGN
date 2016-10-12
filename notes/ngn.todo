@@ -21,6 +21,19 @@ Low-Level:
     ✔ normal-bias parameter for shadow mapping @done (11.10.16 03:48)
     › Audiodatei anhören
     ✔ percentage closer filtering with randomly rotated poisson discs @done (11.10.16 15:25)
+    › Cascaded Shadow mapping - Ich brauche erstmal ne ordentliche Testszene!
+    https://docs.unrealengine.com/latest/INT/Resources/ContentExamples/DynamicSceneShadows/
+    => numCascades, maxDistance (1.0 is all, 0.0 is nothing), distributionExponent
+    http://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf
+    http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html
+    http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
+    https://www.opengl.org/discussion_boards/showthread.php/184007-Cascaded-shadow-mapping-and-split-values - Splitting
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ee416307(v=vs.85).aspx
+    http://dev.theomader.com/cascaded-shadow-mapping-1/
+
+    Blending between cascades
+    updateInverval/updateOffset (in frames) für cascades, sodass man weiter entfernte cascades cachen kann oder die letzten beiden nur alternierend oder so
+    Adjust PCF Kernel size between cascades
     › Post-Process-System
     › HDR
     › Deferred Shading
@@ -53,15 +66,6 @@ Low-Level:
     › Bloom
     › Particles
 
-    › Cascaded Shadow mapping - Ich brauche erstmal ne ordentliche Testszene!
-    https://docs.unrealengine.com/latest/INT/Resources/ContentExamples/DynamicSceneShadows/
-    => numCascades, maxDistance (1.0 is all, 0.0 is nothing), distributionExponent
-    http://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf
-    http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html
-    http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
-    https://www.opengl.org/discussion_boards/showthread.php/184007-Cascaded-shadow-mapping-and-split-values - Splitting
-    https://msdn.microsoft.com/en-us/library/windows/desktop/ee416307(v=vs.85).aspx
-    http://dev.theomader.com/cascaded-shadow-mapping-1/
 
 -------------------------------------------------------------------------------------------
 

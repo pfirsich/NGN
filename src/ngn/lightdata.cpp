@@ -5,32 +5,33 @@
 
 namespace ngn {
     LightData::Shadow::~Shadow() {
-        delete mCamera;
+        for(int i = 0; i < mCascadeCount; ++i) delete mCameras[i];
     }
 
-    void LightData::Shadow::updateCamera(const Camera& viewCamera, const AABoundingBox& sceneBoundingBox) {
-        if(mCamera && mAutoCam) {
+    float LightData::Shadow::getCascadeSplit(float _near, float _far, int index) const {
+        float ratio = static_cast<float>(index) / mCascadeCount;
+        float z_log = _near * std::pow(_far / _near, ratio);
+        float z_lin = _near + (_far - _near) * ratio;
+        return mCascadeLambda * z_log + (1.0f - mCascadeLambda) * z_lin;
+    }
+
+    void LightData::Shadow::updateCamera(const Camera& viewCamera, const AABoundingBox& sceneBoundingBox, int cascadeIndex) {
+        if(mCameras[cascadeIndex] && mAutoCam) {
             switch(mParent->getType()) {
                 case LightData::LightType::DIRECTIONAL: {
-                    float cascadeStart = 0.0f;
-                    float cascadeEnd = 1.0f;
-
-                    //TODO: In z this should clamp the scene, not the camer frustum!
-                    OrthographicCamera* shadowCam = static_cast<OrthographicCamera*>(mCamera);
+                    OrthographicCamera* shadowCam = static_cast<OrthographicCamera*>(mCameras[cascadeIndex]);
                     glm::mat4 inverseProject = glm::inverse(viewCamera.getProjectionMatrix() * viewCamera.getViewMatrix());
                     glm::vec4 frustumCorners[8]; // world space
-                    cascadeStart = cascadeStart * 2.0f - 1.0f;
-                    cascadeEnd = cascadeEnd * 2.0f - 1.0f;
                     // near
-                    frustumCorners[0] = inverseProject * glm::vec4(-1.0f, -1.0f, cascadeStart, 1.0f);
-                    frustumCorners[1] = inverseProject * glm::vec4(-1.0f,  1.0f, cascadeStart, 1.0f);
-                    frustumCorners[2] = inverseProject * glm::vec4( 1.0f,  1.0f, cascadeStart, 1.0f);
-                    frustumCorners[3] = inverseProject * glm::vec4( 1.0f, -1.0f, cascadeStart, 1.0f);
+                    frustumCorners[0] = inverseProject * glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
+                    frustumCorners[1] = inverseProject * glm::vec4(-1.0f,  1.0f, -1.0f, 1.0f);
+                    frustumCorners[2] = inverseProject * glm::vec4( 1.0f,  1.0f, -1.0f, 1.0f);
+                    frustumCorners[3] = inverseProject * glm::vec4( 1.0f, -1.0f, -1.0f, 1.0f);
                     // far
-                    frustumCorners[4] = inverseProject * glm::vec4(-1.0f, -1.0f, cascadeEnd,   1.0f);
-                    frustumCorners[5] = inverseProject * glm::vec4(-1.0f,  1.0f, cascadeEnd,   1.0f);
-                    frustumCorners[6] = inverseProject * glm::vec4( 1.0f,  1.0f, cascadeEnd,   1.0f);
-                    frustumCorners[7] = inverseProject * glm::vec4( 1.0f, -1.0f, cascadeEnd,   1.0f);
+                    frustumCorners[4] = inverseProject * glm::vec4(-1.0f, -1.0f,  1.0f, 1.0f);
+                    frustumCorners[5] = inverseProject * glm::vec4(-1.0f,  1.0f,  1.0f, 1.0f);
+                    frustumCorners[6] = inverseProject * glm::vec4( 1.0f,  1.0f,  1.0f, 1.0f);
+                    frustumCorners[7] = inverseProject * glm::vec4( 1.0f, -1.0f,  1.0f, 1.0f);
 
                     /*This is not so easy.
                     All our 4-dimensional vectors represent points in a projective space (not actual 3d space ("affine") points)
@@ -49,14 +50,20 @@ namespace ngn {
                         frustumCorners[i] = glm::vec4(glm::vec3(frustumCorners[i]) / frustumCorners[i].w, 1.0);
                     }
 
+                    float viewNear = viewCamera.getNear();
+                    float viewFar = viewCamera.getFar();
+                    float cascadeStart = (getCascadeSplit(viewNear, viewFar, cascadeIndex) - viewNear) / (viewFar - viewNear);
+                    float cascadeEnd = (getCascadeSplit(viewNear, viewFar, cascadeIndex + 1) - viewNear) / (viewFar - viewNear);
                     // transform to light space and find min/max
                     glm::mat4 toLightSpace = shadowCam->getViewMatrix();
                     float inf = std::numeric_limits<float>::infinity();
                     glm::vec4 min(inf, inf, inf, 0.0f), max(-inf, -inf, -inf, 1.0f);
-                    for(int i = 0; i < 8; ++i) {
-                        frustumCorners[i] = toLightSpace * frustumCorners[i];
-                        min = glm::min(min, frustumCorners[i]);
-                        max = glm::max(max, frustumCorners[i]);
+                    for(int nearFactor = 0; nearFactor <= 1; ++nearFactor) {
+                        for(int i = 0; i < 4; ++i) {
+                            glm::vec4 point = toLightSpace * glm::mix(frustumCorners[i], frustumCorners[i+4], nearFactor ? cascadeStart : cascadeEnd);
+                            min = glm::min(min, point);
+                            max = glm::max(max, point);
+                        }
                     }
 
                     // use scene bounds to determine min/max z
@@ -86,7 +93,7 @@ namespace ngn {
                     break;
                 }
                 case LightData::LightType::SPOT: { // ez
-                    PerspectiveCamera* shadowCam = static_cast<PerspectiveCamera*>(mCamera);
+                    PerspectiveCamera* shadowCam = static_cast<PerspectiveCamera*>(mCameras[cascadeIndex]);
                     shadowCam->set(glm::acos(mParent->getOuterAngle())*2.0f, 1.0f, 0.1f, mParent->getRange());
                     break;
                 }
@@ -96,27 +103,50 @@ namespace ngn {
         }
     }
 
-    LightData::Shadow::Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, PixelFormat format) :
-            mParent(parent), mCamera(nullptr), mShadowBias(0.0002f), mNormalShadowBias(1.0f), mAutoCam(true),
-            mPCFSamples(16), mPCFEarlyBailSamples(4), mPCFRadius(2.5f) {
-        mShadowMapTexture.setStorage(format, shadowMapWidth, shadowMapHeight);
+    void LightData::Shadow::setShadowMapViewport(int cascadeIndex) {
+        int x = cascadeIndex / 2;
+        int y = cascadeIndex % 2;
+        glViewport(x*mShadowMapWidth, y*mShadowMapHeight, mShadowMapWidth, mShadowMapHeight);
+        glScissor( x*mShadowMapWidth, y*mShadowMapHeight, mShadowMapWidth, mShadowMapHeight);
+    }
+
+    LightData::Shadow::Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, int cascades, PixelFormat format) :
+            mParent(parent), mShadowMapWidth(shadowMapWidth), mShadowMapHeight(shadowMapHeight), mShadowBias(0.0002f),
+            mNormalShadowBias(1.0f), mAutoCam(true), mPCFSamples(16), mPCFEarlyBailSamples(4), mPCFRadius(2.5f), mCascadeCount(cascades), mCascadeLambda(0.8f) {
+        if(cascades < 1) cascades = 1;
+        if(cascades > MAX_CASCADES) {
+            LOG_ERROR("Maximum number of cascades is %d! Clamping to %d cascades.", MAX_CASCADES, MAX_CASCADES);
+            cascades = MAX_CASCADES;
+        }
+        if(cascades > 1 && mParent->getType() != LightData::LightType::DIRECTIONAL) {
+            LOG_ERROR("Shadow map cascades not supported for non-directional lights. Clamping to 1 cascade.");
+            cascades = 1;
+        }
+
+        LOG_DEBUG("%d cascades: %d*%d atlas", cascades, getXCascadeCount(), getYCascadeCount());
+        mShadowMapTexture.setStorage(format, shadowMapWidth * getXCascadeCount(), shadowMapHeight * getYCascadeCount());
         LOG_DEBUG("shadow map texture object: %d", mShadowMapTexture.getTextureObject());
         mShadowMapTexture.setCompareFunc();
+        mShadowMapTexture.setBorderColor(glm::vec4(1.0f));
         mShadowMap.attachTexture(Rendertarget::Attachment::DEPTH, &mShadowMapTexture);
+
+        for(int i = 0; i < mCascadeCount; ++i) mCameras[i] = nullptr;
         switch(mParent->getType()) {
             case LightData::LightType::POINT:
                 LOG_ERROR("Point light shadows are not supported yet!");
                 break;
             case LightData::LightType::DIRECTIONAL:
-                mCamera = new OrthographicCamera;
+                for(int i = 0; i < mCascadeCount; ++i) mCameras[i] = new OrthographicCamera;
                 break;
             case LightData::LightType::SPOT:
-                mCamera = new PerspectiveCamera;
+                mCameras[0] = new PerspectiveCamera;
                 break;
             default:
                 LOG_CRITICAL("Unknown light type!");
                 return;
         }
-        mParent->getParent()->add(*mCamera); // add camera as child of light scene node
+        for(int i = 0; i < mCascadeCount; ++i) {
+            mParent->getParent()->add(*mCameras[i]); // add camera as child of light scene node
+        }
     }
 }

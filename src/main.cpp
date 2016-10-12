@@ -36,12 +36,15 @@ struct InputState {
 } inputState;
 
 void moveCamera(ngn::Camera& camera, float dt) {
-    float speed = 10.0 * dt;
-    glm::vec3 move(0.0);
+    float speed = 30.0f;
+    if(inputState.key[SDL_SCANCODE_LSHIFT]) speed *= 2.0f;
+    speed *= dt;
+
+    glm::vec3 move(0.0f);
     move.x = ((int)inputState.key[SDL_SCANCODE_D] - (int)inputState.key[SDL_SCANCODE_A]);
     move.y = ((int)inputState.key[SDL_SCANCODE_R] - (int)inputState.key[SDL_SCANCODE_F]);
     move.z = ((int)inputState.key[SDL_SCANCODE_W] - (int)inputState.key[SDL_SCANCODE_S]);
-    if(glm::length(move) > 0.5) {
+    if(glm::length(move) > 0.5f) {
         float y = move.y;
         move = camera.getLocalSystem() * move;
         move.y = y;
@@ -64,7 +67,7 @@ int main(int argc, char** args) {
     ngn::Renderer renderer;
     renderer.clearColor = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 
-    ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 0.1f, 130.0f);
+    ngn::PerspectiveCamera camera(glm::radians(45.0f), 1.0f, 2.0f, 400.0f);
     //ngn::OrthographicCamera camera(-50.0f, 50.0f, -50.0f, 50.0f, 0.0f, 200.0f);
 
     window.resizeSignal.connect([&camera, &renderer](int w, int h) {
@@ -106,18 +109,30 @@ int main(int argc, char** args) {
     ironman.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
     scene.add(ironman);
 
+    std::vector<ngn::Mesh*> testSceneMeshes = ngn::assimpMeshes("media/ngn_testscene.obj", vFormat);
+    ngn::Object testScene;
+    for(auto mesh : testSceneMeshes) {
+        ngn::Object* obj = new ngn::Object;
+        obj->setMesh(mesh);
+        testScene.add(*obj);
+    }
+    testScene.setMaterial(baseMaterial);
+    testScene.setScale(2.0f * glm::vec3(1.0f, 1.0f, 1.0f));
+    //testScene.rotate(M_PI/2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+    scene.add(testScene);
+
     ngn::Object sphere;
     sphere.setMesh(ngn::sphereMesh(5.0f, 128, 128, true, vFormat));
     sphere.setMaterial(baseMaterial);
     sphere.setPosition(glm::vec3(-20.0f, 10.0f, 0.0f));
     scene.add(sphere);
 
-    ngn::Object ground;
+    /*ngn::Object ground;
     ground.setMesh(ngn::planeMesh(100.0f, 100.0f, 1, 1, vFormat));
     ground.setMaterial(new ngn::Material(*baseMaterial.getResource()));
     ground.getMaterial()->setVector4("color", glm::vec4(0.5f, 1.0f, 0.5f, 1.0f));
     ground.getMaterial()->setFloat("shininess", 64.0);
-    scene.add(ground);
+    scene.add(ground);*/
 
     ngn::Object cube;
     cube.setMesh(ngn::boxMesh(10.0f, 10.0f, 10.0f, vFormat));
@@ -133,9 +148,9 @@ int main(int argc, char** args) {
 
     ngn::Light dirLight;
     dirLight.addLightData(ngn::LightData::LightType::DIRECTIONAL);
-    dirLight.getLightData()->setColor(glm::vec3(0.2f, 0.2f, 0.2f));
-    dirLight.getLightData()->addShadow(4096, 4096);
-    dirLight.lookAt(glm::vec3(-0.5f, -0.5f, -1.0f));
+    dirLight.getLightData()->setColor(glm::vec3(0.8f, 0.8f, 0.8f));
+    dirLight.getLightData()->addShadow(4096, 4096, 4);
+    dirLight.lookAt(glm::vec3(-0.4f, -1.0f, -0.4f));
     //dirLight.getLightData()->getShadow()->getCamera()->addDebugMesh();
     scene.add(dirLight);
 
@@ -145,7 +160,7 @@ int main(int argc, char** args) {
     spotLight.lookAtPos(glm::vec3(28.0f, 28.0f, 0.0f), ironman.getPosition());
     spotLight.getLightData()->addShadow(2048, 2048);
     //spotLight.getLightData()->getShadow()->getCamera()->lookAtPos(glm::vec3(30.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    //spotlight.getLightData()->getShadow()->getCamera()->addDebugMesh();
+    //spotLight.getLightData()->getShadow()->getCamera()->addDebugMesh();
     scene.add(spotLight);
 
     ngn::Light pointLight;
@@ -161,13 +176,11 @@ int main(int argc, char** args) {
     pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);
     //scene.add(pointLight);
 
-    camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
-
-    ngn::AABoundingBox sceneAABB = scene.boundingBox();
-    LOG_DEBUG("scene aabb: min = %f, %f, %f - max: %f, %f, %f", sceneAABB.min.x, sceneAABB.min.y, sceneAABB.min.z,
-                                                                sceneAABB.max.x, sceneAABB.max.y, sceneAABB.max.z);
+    //camera.addDebugMesh(); scene.add(camera); // so it shows up in shadow maps
+    //camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
 
     // Mainloop
+    glLineWidth(4.0f);
     float lastTime = ngn::getTime();
     bool quit = false;
     window.closeSignal.connect([&quit]() {quit = true;});
@@ -181,6 +194,7 @@ int main(int argc, char** args) {
         pointLight.setPosition(30.0f * glm::vec3(glm::cos(t), 0.0f, glm::sin(t)) + glm::vec3(0.0f, 10.0f, 0.0f));
 
         moveCamera(camera, dt);
+        camera.updateDebugMesh();
 
         renderer.render(scene, camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
         //renderer.render(scene, *dirLight.getLightData()->getShadow()->getCamera(), !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);

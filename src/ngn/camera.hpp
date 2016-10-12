@@ -8,6 +8,7 @@ namespace ngn {
     protected:
         glm::mat4 mProjectionMatrix;
         Mesh* mDebugMesh;
+        float mNear, mFar;
 
     public:
         Camera() : mDebugMesh(nullptr) {}
@@ -42,31 +43,49 @@ namespace ngn {
             VertexFormat vFormat;
             vFormat.add(AttributeType::POSITION, 3, AttributeDataType::F32);
 
-            Mesh* mDebugMesh = new Mesh(Mesh::DrawMode::LINES);
+            mDebugMesh = new Mesh(Mesh::DrawMode::LINES);
             mDebugMesh->addVertexBuffer(vFormat, 24, UsageHint::DYNAMIC);
             updateDebugMesh();
             setMesh(mDebugMesh);
+            setMaterial(Material::fallback);
         }
 
         void updateDebugMesh() {
             if(mDebugMesh) {
-                /*auto position = mDebugMesh->getAccessor<glm::vec3>(AttributeType::POSITION);
+                auto position = mDebugMesh->getAccessor<glm::vec3>(AttributeType::POSITION);
                 glm::mat4 inverseProject = getInverseProjectionMatrix();
                 glm::vec3 frustumCorners[8]; // view space
                 // near
-                frustumCorners[0] = inverseProject * glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
-                frustumCorners[1] = inverseProject * glm::vec4(-1.0f,  1.0f, -1.0f, 1.0f);
-                frustumCorners[2] = inverseProject * glm::vec4( 1.0f,  1.0f, -1.0f, 1.0f);
-                frustumCorners[3] = inverseProject * glm::vec4( 1.0f, -1.0f, -1.0f, 1.0f);
+                frustumCorners[0] = transformPointDivide(inverseProject, glm::vec3(-1.0f, -1.0f, -1.0f));
+                frustumCorners[1] = transformPointDivide(inverseProject, glm::vec3(-1.0f,  1.0f, -1.0f));
+                frustumCorners[2] = transformPointDivide(inverseProject, glm::vec3( 1.0f,  1.0f, -1.0f));
+                frustumCorners[3] = transformPointDivide(inverseProject, glm::vec3( 1.0f, -1.0f, -1.0f));
                 // far
-                frustumCorners[4] = inverseProject * glm::vec4(-1.0f, -1.0f,  1.0f, 1.0f);
-                frustumCorners[5] = inverseProject * glm::vec4(-1.0f,  1.0f,  1.0f, 1.0f);
-                frustumCorners[6] = inverseProject * glm::vec4( 1.0f,  1.0f,  1.0f, 1.0f);
-                frustumCorners[7] = inverseProject * glm::vec4( 1.0f, -1.0f,  1.0f, 1.0f);
+                frustumCorners[4] = transformPointDivide(inverseProject, glm::vec3(-1.0f, -1.0f,  1.0f));
+                frustumCorners[5] = transformPointDivide(inverseProject, glm::vec3(-1.0f,  1.0f,  1.0f));
+                frustumCorners[6] = transformPointDivide(inverseProject, glm::vec3( 1.0f,  1.0f,  1.0f));
+                frustumCorners[7] = transformPointDivide(inverseProject, glm::vec3( 1.0f, -1.0f,  1.0f));
 
-                //TODO: this*/
+                // near and far rectangle
+                int index = 0;
+                for(int i = 0; i < 4; ++i) {
+                    int next = i<3 ? i+1 : i-3;
+                    // near
+                    position[index++] = frustumCorners[i];
+                    position[index++] = frustumCorners[next];
+                    // far
+                    position[index++] = frustumCorners[i+4];
+                    position[index++] = frustumCorners[next+4];
+                }
+
+                // frustum edges between near and far
+                for(int i = 0; i < 4; ++i) {
+                    position[index++] = frustumCorners[i];
+                    position[index++] = frustumCorners[i+4];
+                }
 
                 mDebugMesh->hasAttribute(AttributeType::POSITION)->upload();
+                mDebugMesh->updateBoundingBox();
             }
         }
 
@@ -77,13 +96,25 @@ namespace ngn {
         glm::vec4 unproject(const glm::vec4& v) const {
             return getInverseViewMatrix() * getInverseProjectionMatrix() * v;
         }
+
+        float getNear() const {return mNear;}
+        void setNear(float _near) {mNear = _near; updateProjectionMatrix();}
+
+        float getFar() const {return mFar;}
+        void setFar(float _far) {mFar = _far; updateProjectionMatrix();}
+
+        void setNearFar(float _near, float _far) {
+            mNear = _near, mFar = _far;
+            updateProjectionMatrix();
+        }
     };
 
     class PerspectiveCamera : public Camera {
+    private:
+        float mFovY, mAspect;
     public:
-        float mFovY, mAspect, mNear, mFar;
-
-        PerspectiveCamera() : mFovY(glm::radians(45.0f)), mAspect(1.0f), mNear(0.1f), mFar(100.0f) {
+        PerspectiveCamera() : mFovY(glm::radians(45.0f)), mAspect(1.0f) {
+            mNear = 0.1f; mFar = 100.0f;
             updateProjectionMatrix();
         }
         PerspectiveCamera(float fovy, float aspect, float _near, float _far) {
@@ -96,12 +127,6 @@ namespace ngn {
 
         float getAspect() const {return mAspect;}
         void setAspect(float aspect) {mAspect = aspect; updateProjectionMatrix();}
-
-        float getNear() const {return mNear;}
-        void setNear(float _near) {mNear = _near; updateProjectionMatrix();}
-
-        float getFar() const {return mFar;}
-        void setFar(float _far) {mFar = _far; updateProjectionMatrix();}
 
         void set(float fovy, float aspect) {
             set(fovy, aspect, mNear, mFar);
@@ -119,10 +144,12 @@ namespace ngn {
     };
 
     class OrthographicCamera : public Camera {
+    private:
+        float mLeft, mRight, mTop, mBottom;
     public:
-        float mLeft, mRight, mTop, mBottom, mNear, mFar;
 
-        OrthographicCamera() : mLeft(-1.0f), mRight(1.0f), mTop(-1.0f), mBottom(1.0f), mNear(-1.0f), mFar(1.0f) {
+        OrthographicCamera() : mLeft(-1.0f), mRight(1.0f), mTop(-1.0f), mBottom(1.0f) {
+            mNear = 1.0f; mFar = 1.0f;
             updateProjectionMatrix();
         }
         OrthographicCamera(float left, float right, float top, float bottom, float _near = -1.0f, float _far = 1.0f) {
@@ -141,17 +168,6 @@ namespace ngn {
 
         float getBottom() const {return mBottom;}
         void setBottom(float bottom) {mBottom = bottom; updateProjectionMatrix();}
-
-        float getNear() const {return mNear;}
-        void setNear(float _near) {mNear = _near; updateProjectionMatrix();}
-
-        float getFar() const {return mFar;}
-        void setFar(float _far) {mFar = _far; updateProjectionMatrix();}
-
-        void setNearFar(float _near, float _far) {
-            mNear = _near, mFar = _far;
-            updateProjectionMatrix();
-        }
 
         void set(float left, float right, float top, float bottom) {
             set(left, right, top, bottom, mNear, mFar);

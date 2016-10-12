@@ -66,7 +66,7 @@ namespace ngn {
     };
 
     __stdcall void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-        if(false) return;
+        if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
         LOG_DEBUG("GL Debug message - source: %s, type: %s, severity: %s, message: %s", debugSourceName[source], debugTypeName[type], debugSeverityName[severity], message);
     }
 

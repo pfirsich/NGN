@@ -11,7 +11,7 @@ namespace ngn {
     };
 
     std::vector<std::unique_ptr<LoggingHandler> > loggingHandlers;
-    std::string loggingFormat("{levelname} [{y}.{m}.{d} {H}:{M}:{S}] [{filename}:{line}] - {message}");
+    std::string loggingFormat("[{y}.{m}.{d} {H}:{M}:{S}] [{filename}:{line}] {levelname} - {message}");
 
     void setupDefaultLogging() {
         #ifdef DEBUG

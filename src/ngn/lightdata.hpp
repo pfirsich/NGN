@@ -22,19 +22,27 @@ namespace ngn {
 
         class Shadow {
         friend class Renderer;
+        public:
+            constexpr static int MAX_CASCADES = 6;
         private:
+
             LightData* mParent;
             Rendertarget mShadowMap;
             Texture mShadowMapTexture;
-            Camera* mCamera;
+            Camera* mCameras[MAX_CASCADES];
+            int mShadowMapWidth, mShadowMapHeight;
             float mShadowBias;
             float mNormalShadowBias;
             bool mAutoCam;
             int mPCFSamples, mPCFEarlyBailSamples;
             float mPCFRadius;
+            int mCascadeCount;
+            float mCascadeLambda;
+
+            float getCascadeSplit(float _near, float _far, int cascadeIndex) const;
 
         public:
-            Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, PixelFormat format = GL_DEPTH_COMPONENT24);
+            Shadow(LightData* parent, int shadowMapWidth, int shadowMapHeight, int cascades = 1, PixelFormat format = GL_DEPTH_COMPONENT24);
             ~Shadow();
 
             void setAutoCam(bool autocam) {mAutoCam = autocam;}
@@ -58,8 +66,20 @@ namespace ngn {
             void setPCFRadius(float radius) {mPCFRadius = radius;}
             float getPCFRadius() const {return mPCFRadius;}
 
-            void updateCamera(const Camera& viewCamera, const AABoundingBox& sceneBoundingBox);
-            Camera* getCamera() {return mCamera;}
+            int getCascadeCount() const {return mCascadeCount;}
+
+            float getCascadeLambda() const {return mCascadeLambda;}
+            void setCascadeLambda(float lambda) {mCascadeLambda = lambda;}
+
+            int getShadowMapWidth() const {return mShadowMapWidth;}
+            int getShadowMapHeight() const {return mShadowMapHeight;}
+
+            int getXCascadeCount() const {return (mCascadeCount + 1) / 2;}
+            int getYCascadeCount() const {return mCascadeCount >= 2 ? 2 : 1;}
+
+            void setShadowMapViewport(int cascadeIndex);
+            void updateCamera(const Camera& viewCamera, const AABoundingBox& sceneBoundingBox, int cascadeIndex);
+            Camera* getCamera(int cascadeIndex = 0) {return mCameras[cascadeIndex];}
         };
 
     private:

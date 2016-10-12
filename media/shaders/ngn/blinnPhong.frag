@@ -146,6 +146,15 @@ float poissonShadowValue(in sampler2DShadow shadowMap, vec3 shadowCoords) {
 
 }
 
+vec4 colors[6] = vec4[6](
+    vec4(1.0, 0.0, 0.0, 1.0),
+    vec4(0.0, 1.0, 0.0, 1.0),
+    vec4(0.0, 0.0, 1.0, 1.0),
+    vec4(1.0, 1.0, 0.0, 1.0),
+    vec4(1.0, 0.0, 1.0, 1.0),
+    vec4(0.0, 1.0, 1.0, 1.0)
+);
+
 void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
     if(ngn_light.type == NGN_LIGHT_TYPE_DIRECTIONAL) {
         lightDir = -ngn_light.direction;
@@ -170,27 +179,41 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
     }
 
     if(ngn_light.shadowed) {
+        int cascadeIndex = 0;
+        for(int i = 0; i < ngn_light.shadowCascadeCount; ++i) {
+            if(length(vsOut.eye) < ngn_light.shadowCascadeSplitDistance[i]) {
+                cascadeIndex = i;
+                break;
+            }
+        }
+        /*if(ngn_light.type == NGN_LIGHT_TYPE_DIRECTIONAL) {
+            ngn_fragColor = colors[cascadeIndex]; return;
+        }*/
+
         // normal offset: http://www.dissidentlogic.com/old/images/NormalOffsetShadows/GDC_Poster_NormalOffset.png
         // I need the minimal bias here, since on curved surfaces it sometimes happens, that the cosine does not rise fast enough
         // and I get rings of self-shadowing (especially with PCF!)
         float normalOffsetScale = min(1.0, 1.0 - dot(lightDir, vsOut.normal) + 0.5) * ngn_light.shadowNormalBias;
         vec3 normalOffset = vsOut.worldNormal * normalOffsetScale;
-        vec4 offsetFragLightSpace = ngn_light.toLightSpace * vec4(vsOut.worldPos + normalOffset, 1.0);
+        vec4 offsetFragLightSpace = ngn_light.shadowMapCameraTransform[cascadeIndex] * vec4(vsOut.worldPos + normalOffset, 1.0);
 
-        vec4 fragLightSpace = ngn_light.toLightSpace * vec4(vsOut.worldPos, 1.0);
+        vec4 fragLightSpace = ngn_light.shadowMapCameraTransform[cascadeIndex] * vec4(vsOut.worldPos, 1.0);
         fragLightSpace.xy = offsetFragLightSpace.xy;
         vec3 shadowCoords = fragLightSpace.xyz / fragLightSpace.w;
         shadowCoords = shadowCoords * 0.5 + 0.5;
+        shadowCoords.z -= ngn_light.shadowBias * 2.0;
         /*if(shadowCoords.x > 1.0 || shadowCoords.x < 0.0 || shadowCoords.y > 1.0 || shadowCoords.y < 0.0) {
             ngn_fragColor = vec4(0.0, 0.0, 1.0, 1.0); return;
         } else {
             //ngn_fragColor = vec4(vec3(pow(shadowCoords.z, 1000.0)), 1.0); return;
             ngn_fragColor = vec4(shadowCoords.xy, 0.0, 1.0); return;
         }*/
-        shadowCoords.z -= ngn_light.shadowBias;
+
+        shadowCoords.xy = (shadowCoords.xy + ngn_light.shadowMapUVOffset[cascadeIndex]) * ngn_light.shadowMapUVScale;
+
         float shadow = poissonShadowValue(ngn_light.shadowMap, shadowCoords);
         //ngn_fragColor = vec4(shadow); return;
-        lightAtten *= shadow;
+        lightAtten *= mix(0.1, 1.0, shadow);
     }
 }
 
