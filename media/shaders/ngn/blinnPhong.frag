@@ -193,7 +193,9 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
         // normal offset: http://www.dissidentlogic.com/old/images/NormalOffsetShadows/GDC_Poster_NormalOffset.png
         // I need the minimal bias here, since on curved surfaces it sometimes happens, that the cosine does not rise fast enough
         // and I get rings of self-shadowing (especially with PCF!)
-        float normalOffsetScale = min(1.0, 1.0 - dot(lightDir, vsOut.normal) + 0.5) * ngn_light.shadowNormalBias;
+        float NdotL = dot(lightDir, vsOut.normal);
+        float normalOffsetScale = min(1.0, sqrt(1.0 - NdotL*NdotL) + 0.5) * ngn_light.shadowNormalBias;
+        //float normalOffsetScale = min(1.0, 1.0 -  + 0.0) * ngn_light.shadowNormalBias;
         vec3 normalOffset = vsOut.worldNormal * normalOffsetScale;
         vec4 offsetFragLightSpace = ngn_light.shadowMapCameraTransform[cascadeIndex] * vec4(vsOut.worldPos + normalOffset, 1.0);
 
