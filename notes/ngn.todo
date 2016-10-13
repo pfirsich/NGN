@@ -21,19 +21,7 @@ Low-Level:
     ✔ normal-bias parameter for shadow mapping @done (11.10.16 03:48)
     › Audiodatei anhören
     ✔ percentage closer filtering with randomly rotated poisson discs @done (11.10.16 15:25)
-    › Cascaded Shadow mapping - Ich brauche erstmal ne ordentliche Testszene!
-    https://docs.unrealengine.com/latest/INT/Resources/ContentExamples/DynamicSceneShadows/
-    => numCascades, maxDistance (1.0 is all, 0.0 is nothing), distributionExponent
-    http://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf
-    http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html
-    http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
-    https://www.opengl.org/discussion_boards/showthread.php/184007-Cascaded-shadow-mapping-and-split-values - Splitting
-    https://msdn.microsoft.com/en-us/library/windows/desktop/ee416307(v=vs.85).aspx
-    http://dev.theomader.com/cascaded-shadow-mapping-1/
 
-    Blending between cascades
-    updateInverval/updateOffset (in frames) für cascades, sodass man weiter entfernte cascades cachen kann oder die letzten beiden nur alternierend oder so
-    Adjust PCF Kernel size between cascades
     › Post-Process-System
     › HDR
     › Deferred Shading
@@ -68,6 +56,13 @@ Low-Level:
 
 
 -------------------------------------------------------------------------------------------
+
+    › PostEffects make it clear that the globalShaderPreamble should be part of the material, since shaders are used elsewhere as well where they don't care at all about lights or transformations
+
+    › More Cascaded Shadow Mapping
+    Blending between cascades
+    updateInverval/updateOffset (in frames) für cascades, sodass man weiter entfernte cascades cachen kann oder die letzten beiden nur alternierend oder so
+    Adjust PCF Kernel size between cascades
 
     › Adjust (directional) lights up vector to get better shadow map fit
 
@@ -390,21 +385,16 @@ High-Level:
             http://www.sunandblackcat.com/tipFullView.php?l=eng&topicid=35
             http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
             http://www.gamedev.net/topic/498755-randomly-rotated-pcf-shadows/
+
+            Cascades:#
+            http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/ - Biasing!
+            http://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf
+            https://msdn.microsoft.com/en-us/library/windows/desktop/ee416307 - Bibel
+            https://www.opengl.org/discussion_boards/showthread.php/184007-Cascaded-shadow-mapping-and-split-values
+            http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html
+            http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
         › HDR
-        http://filmicgames.com/archives/75 - Filmic Tone Mapping
-        http://learnopengl.com/#!Advanced-Lighting/HDR
-        https://mynameismjp.wordpress.com/2010/04/30/a-closer-look-at-tone-mapping/
-        http://www.gamedev.net/topic/673257-post-process-hdr-or-ldr-nowadays/
-        https://beforethecoffee.wordpress.com/hdr-post-processing-tutorial/
-        http://www.gamedev.net/page/resources/_/technical/graphics-programming-and-theory/high-dynamic-range-rendering-r2108
-        http://www.gamedev.net/topic/532960-hdr-lighting--bloom-effect/
-        http://frictionalgames.blogspot.de/2012/09/tech-feature-hdr-lightning.html
-        http://www.gamedev.net/topic/448367-hdr-bloom-and-tone-mapping/
-        http://www.gamedev.net/topic/602034-hdr-practical-use-in-a-game/
-        www.gamedev.net/topic/629701-general-questions-on-hdr-and-tonemapping/
-        https://mynameismjp.wordpress.com/2010/04/30/a-closer-look-at-tone-mapping/
-        http://gamedev.stackexchange.com/questions/62917/uncharted-2-tone-mapping-and-an-eye-adaptation
-        http://www.gamedev.net/topic/658419-hdr-tonemapping-exposure-selection/
+
         › Parallax Mapping?
         › Gamma Correction
             http://renderwonk.com/blog/index.php/archive/adventures-with-gamma-correct-rendering/

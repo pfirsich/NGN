@@ -14,3 +14,4 @@
 #include "renderer.hpp"
 #include "shader.hpp"
 #include "rendertarget.hpp"
+#include "posteffect.hpp"

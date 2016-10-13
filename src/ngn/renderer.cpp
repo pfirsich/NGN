@@ -193,14 +193,12 @@ uniform ngn_LightParameters ngn_light;
         if(color) mask |= GL_COLOR_BUFFER_BIT;
         if(depth) mask |= GL_DEPTH_BUFFER_BIT;
         if(stencil) mask |= GL_STENCIL_BUFFER_BIT;
+        if(depth) glDepthMask((RenderStateBlock::currentDepthWrite = true) ? GL_TRUE : GL_FALSE);
         glClear(mask);
     }
 
     void Renderer::render(SceneNode& root, Camera& camera, bool regenerateQueue, bool doRenderQueue) {
         updateState();
-        // make sure depth write is enabled before we clear
-        glDepthMask((RenderStateBlock::currentDepthWrite = true) ? GL_TRUE : GL_FALSE);
-        if(autoClear) clear();
 
         static std::vector<SceneNode*> linearizedSceneGraph;
         if(linearizedSceneGraph.capacity() == 0) linearizedSceneGraph.reserve(131072);
@@ -273,10 +271,13 @@ uniform ngn_LightParameters ngn_light;
 
             //LOG_DEBUG("----- frame");
 
+            Rendertarget* currentRenderTarget = Rendertarget::currentRendertargetDraw;
+
             // generate shadow maps
             AABoundingBox sceneBounds = root.rendererData[mRendererIndex]->boundingBox;
 
             glColorMask(false, false, false, false);
+            glDepthMask((RenderStateBlock::currentDepthWrite = true) ? GL_TRUE : GL_FALSE);
             for(size_t ltype = 0; ltype < LIGHT_TYPE_COUNT; ++ltype) {
                 for(size_t l = 0; l < lightLists[ltype].size(); ++l) {
                     SceneNode* light = lightLists[ltype][l];
@@ -296,24 +297,27 @@ uniform ngn_LightParameters ngn_light;
                                 if(mesh) {
                                     Material* mat = node->getMaterial();
                                     assert(mat != nullptr);
-                                    Material::Pass* pass = mat->getPass(SHADOWMAP_PASS);
-                                    if(!pass) pass = mat->getPass(AMBIENT_PASS);
 
-                                    if(pass && pass->getShaderProgram()) {
-                                        RendererData* rendererData = node->rendererData[mRendererIndex];
+                                    if(mat->getStateBlock().getDepthWrite()) {
+                                        Material::Pass* pass = mat->getPass(SHADOWMAP_PASS);
+                                        if(!pass) pass = mat->getPass(AMBIENT_PASS);
 
-                                        renderQueue.emplace_back(mat, pass, mesh);
-                                        RenderQueueEntry& entry = renderQueue.back();
+                                        if(pass && pass->getShaderProgram()) {
+                                            RendererData* rendererData = node->rendererData[mRendererIndex];
 
-                                        glm::mat4 model = rendererData->worldMatrix;
-                                        glm::mat4 modelview = lightViewMatrix * model;
-                                        glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
-                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelMatrixGUID, model);
-                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_viewMatrixGUID, lightViewMatrix);
-                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_projectionMatrixGUID, lightProjectionMatrix);
-                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewMatrixGUID, modelview);
-                                        entry.perEntryUniforms.setMatrix3(UniformGUIDs::ngn_normalMatrixGUID, normalMatrix);
-                                        entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewProjectionMatrixGUID, lightProjectionMatrix * modelview);
+                                            renderQueue.emplace_back(mat, pass, mesh);
+                                            RenderQueueEntry& entry = renderQueue.back();
+
+                                            glm::mat4 model = rendererData->worldMatrix;
+                                            glm::mat4 modelview = lightViewMatrix * model;
+                                            glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelview)));
+                                            entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelMatrixGUID, model);
+                                            entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_viewMatrixGUID, lightViewMatrix);
+                                            entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_projectionMatrixGUID, lightProjectionMatrix);
+                                            entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewMatrixGUID, modelview);
+                                            entry.perEntryUniforms.setMatrix3(UniformGUIDs::ngn_normalMatrixGUID, normalMatrix);
+                                            entry.perEntryUniforms.setMatrix4(UniformGUIDs::ngn_modelViewProjectionMatrixGUID, lightProjectionMatrix * modelview);
+                                        }
                                     }
                                 }
                             }
@@ -325,9 +329,14 @@ uniform ngn_LightParameters ngn_light;
                 }
             }
 
-            Rendertarget::unbind();
-            glViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+            if(currentRenderTarget) {
+                currentRenderTarget->bind();
+            } else {
+                Rendertarget::unbind();
+                glViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+            }
             glColorMask(true, true, true, true);
+            if(autoClear) clear();
             for(bool drawTransparent = false; ; drawTransparent = !drawTransparent) {
                 // ambient pass
                 for(size_t i = 0; i < linearizedSceneGraph.size(); ++i) {

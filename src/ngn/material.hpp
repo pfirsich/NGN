@@ -9,17 +9,14 @@
 #include "texture.hpp"
 #include "shader.hpp"
 #include "resource.hpp"
-
-#include "hash_tuple.hpp"
+#include "shadercache.hpp"
 
 namespace ngn {
-
     class Material : public UniformList, public Resource {
     friend class Renderer;
 
     private:
-        static ShaderProgram* getShaderPermutation(uint64_t permutationHash, const FragmentShader* frag, const VertexShader* vert,
-                    const std::string& fragDefines, const std::string& vertDefines);
+        static ShaderCache shaderCache;
 
     public:
         enum class BlendMode {
@@ -118,7 +115,7 @@ namespace ngn {
                 if(mFragmentShader.dirty() || mVertexShader.dirty()) { // handles point to different resource
                     std::string defines = "#define NGN_PASS " + std::to_string(mPassIndex) + "\n";
                     uint64_t permutationHash = mPassIndex;
-                    mShaderProgram = getShaderPermutation(permutationHash, mFragmentShader.getResource(), mVertexShader.getResource(), defines, defines);
+                    mShaderProgram = shaderCache.getShaderPermutation(permutationHash, mFragmentShader.getResource(), mVertexShader.getResource(), defines, defines);
                 }
                 return mShaderProgram;
             }

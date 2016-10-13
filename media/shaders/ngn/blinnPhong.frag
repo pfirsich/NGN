@@ -215,7 +215,7 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
 
         float shadow = poissonShadowValue(ngn_light.shadowMap, shadowCoords);
         //ngn_fragColor = vec4(shadow); return;
-        lightAtten *= mix(0.1, 1.0, shadow);
+        lightAtten *= shadow;
     }
 }
 
