@@ -5,9 +5,10 @@
 #include <string>
 
 #include <glad/glad.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "texture.hpp"
 
 namespace ngn {
     // Maybe introduce a new class Shader that represents a Shader object, so they can be
@@ -159,6 +160,10 @@ namespace ngn {
 
         void setUniform(UniformLocation loc, const glm::mat4& val) const {
             glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(val));
+        }
+
+        void setUniform(UniformLocation loc, const Texture& tex) const {
+            glUniform1i(loc, tex.bind());
         }
     };
 }
