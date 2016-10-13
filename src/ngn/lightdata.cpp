@@ -123,12 +123,10 @@ namespace ngn {
             cascades = 1;
         }
 
-        LOG_DEBUG("%d cascades: %d*%d atlas", cascades, getXCascadeCount(), getYCascadeCount());
         mShadowMapTexture.setStorage(format, shadowMapWidth * getXCascadeCount(), shadowMapHeight * getYCascadeCount());
-        LOG_DEBUG("shadow map texture object: %d", mShadowMapTexture.getTextureObject());
         mShadowMapTexture.setCompareFunc();
         mShadowMapTexture.setBorderColor(glm::vec4(1.0f));
-        mShadowMap.attachTexture(Rendertarget::Attachment::DEPTH, &mShadowMapTexture);
+        mShadowMap.attachTexture(Rendertarget::Attachment::DEPTH, mShadowMapTexture);
 
         for(int i = 0; i < mCascadeCount; ++i) mCameras[i] = nullptr;
         switch(mParent->getType()) {

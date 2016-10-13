@@ -1,6 +1,9 @@
 #include "rendertarget.hpp"
 
 namespace ngn {
+    Rendertarget* Rendertarget::currentRendertargetDraw = nullptr;
+    Rendertarget* Rendertarget::currentRendertargetRead = nullptr;
+
     void Rendertarget::prepare() {
         std::vector<GLenum> colorAttachments;
         auto isColor = [](Attachment attachment){return attachment != Attachment::DEPTH && attachment != Attachment::STENCIL && attachment != Attachment::DEPTH_STENCIL;};
@@ -9,7 +12,7 @@ namespace ngn {
         glGenFramebuffers(1, &mFBO);
         glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
         for(auto& texAttachment : mTextureAttachments) {
-            Texture* tex = texAttachment.second.getResource();
+            Texture* tex = texAttachment.second;
             glFramebufferTexture2D(GL_FRAMEBUFFER, static_cast<GLenum>(texAttachment.first), tex->getTarget(),
                                    tex->getTextureObject(), 0);
             if(isColor(texAttachment.first)) colorAttachments.push_back(static_cast<GLenum>(texAttachment.first));
@@ -41,7 +44,7 @@ namespace ngn {
     const Texture* Rendertarget::getTextureAttachment(Attachment attachment) const {
         for(auto& tex : mTextureAttachments) {
             if(tex.first == attachment) {
-                return tex.second.getResource();
+                return tex.second;
             }
         }
         return nullptr;

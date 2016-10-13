@@ -40,12 +40,9 @@ namespace ngn {
         };
 
         GLuint mFBO;
-        std::vector<std::pair<Attachment, ResourceHandle<Texture> > > mTextureAttachments;
+        std::vector<std::pair<Attachment, Texture*> > mTextureAttachments;
         std::vector<RenderbufferData> mRenderbufferAttachments;
         int mWidth, mHeight;
-
-        static Rendertarget* currentRendertargetDraw;
-        static Rendertarget* currentRendertargetRead;
 
         void prepare();
 
@@ -57,19 +54,25 @@ namespace ngn {
             return 0;
         }
     public:
+        static Rendertarget* currentRendertargetDraw;
+        static Rendertarget* currentRendertargetRead;
+
         static void unbind(bool read = true, bool write = true) {
             GLenum target = getTarget(read, write);
             if(target) {
                 glBindFramebuffer(target, 0);
+                if(read) currentRendertargetRead = nullptr;
+                if(write) currentRendertargetDraw = nullptr;
             }
         }
 
         Rendertarget() : mFBO(0), mWidth(0xFFFFFF), mHeight(0xFFFFFF) {}
+        ~Rendertarget() {if(mFBO != 0) glDeleteFramebuffers(1, &mFBO);}
 
-        void attachTexture(Attachment attachment, const ResourceHandle<Texture>& tex) {
-            mTextureAttachments.push_back(std::make_pair(attachment, tex));
-            int w = tex.getResource()->getWidth();
-            int h = tex.getResource()->getHeight();
+        void attachTexture(Attachment attachment, Texture& tex) {
+            mTextureAttachments.push_back(std::make_pair(attachment, &tex));
+            int w = tex.getWidth();
+            int h = tex.getHeight();
             mWidth = mWidth < w ? mWidth : w;
             mHeight = mHeight < h ? mHeight : h;
         }
@@ -91,6 +94,8 @@ namespace ngn {
                 if(mFBO == 0) prepare();
                 glBindFramebuffer(target, mFBO);
                 glViewport(0, 0, mWidth, mHeight);
+                if(read) currentRendertargetRead = this;
+                if(write) currentRendertargetDraw = this;
             }
         }
     };
