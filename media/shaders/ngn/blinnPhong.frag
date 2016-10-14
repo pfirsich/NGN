@@ -35,8 +35,8 @@ vec4 blinnPhongLightingModel(in SurfaceProperties surface, in vec3 eyeDir, in ve
     // blinn
     float specular = 0.0;
     if(dot(lightDir, surface.normal) > 0.0) {
-        vec3 half = normalize(eyeDir + lightDir);
-        specular = pow(max(dot(surface.normal, half), 0.0), surface.specularPower);
+        vec3 halfVector = normalize(eyeDir + lightDir);
+        specular = pow(max(dot(surface.normal, halfVector), 0.0), surface.specularPower);
     }
 
     const vec3 specColor = vec3(1.0, 1.0, 1.0);
