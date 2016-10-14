@@ -1,0 +1,104 @@
+eine liste von passes, die alle andere passes als input haben können
+daraus baut man dann einen graphen, dieser graph muss dann rausfinden wie viele rendertargets er insgesamt braucht und speichert sich welcher pass wo rein rendern soll, natürlich will man maximal viel ping-pongen und so, aber manche texturen haben eben mehrere inputs, also muss man die länger behalten
+man muss dann den ganzen effect "compilen" (da werden dann rendertargets und so gebaut) und ab dann darf man den auch nicht mehr modifizieren (bis auf parameter)
+der pass hat als parameter einen shader + ein output format für die textur (mit default predefines wie RGB_LDR, RGBA_LDR und R_LDR, RG_LDR und analog für HDR oder so?) und uniform-parameter mit defaults (vllt. will man sowas in yaml können)
+
+wäre auch cool, wenn alle posteffects in einem context sich rendertargets teilen, sodass man mehrere posteffects haben kann, dafür aber keine zusätzlichen, unnötigen rendertargets braucht
+
+example:
+auto render = posteffect.addRendererPass(myRenderer, scene, camera, PostEffect::TargetType::RGBA_HDR); // returns PostEffect::PassHandle = uint 
+auto logluminance = posteffect.addPass(shaderloglum, {render}, PostEffect::TargetType::R_HDR, customRes, customRes);
+auto exposure = posteffect.addFunctionPass(callback, {logluminance});
+auto highpass = posteffect.addPass(shaderwhatever, {render, exposure}, PostEffect::TargetType::RGBA_HDR);
+auto hblur = posteffect.addPass(shaderwhatever2, {highpass}, PostEffect::TargetType::RGBA_HDR);
+auto vblur = posteffect.addPass(shaderwhatever3, {hblur}, PostEffect::TargetType::RGBA_HDR);
+auto tonemap = posteffect.addPass(tonemapshader, {render, exposure, vblur}, PostEffect::TargetType::RGB_LDR);
+auto colorgrade = posteffect.addPass(gradeshader, {tonemap}, PostEffect::TargetType::BACKBUFFER);
+
+hier muss noch platz finden: AA, screen space reflections, dof, motion blur (FAK), SSAO
+
+
+
+FragmentShader reicht - ein VertexShader für den Rest
+
+Texture renderOutputTexture(PixelFormat::RGBA_HDR, window->getWidth(), window->getHeight());
+Rendertarget renderTarget;
+renderTarget.attachTexture(Rendertarget::Attachment::COLOR0, renderOutputTexture);
+renderTarget.attachRenderbuffer(Rendertarget::Attachment::DEPTH, PixelFormat::DEPTH24, window->getWidth(), window->getHeight());
+
+PostEffect postEffect;
+Pass* renderPass = postEffect.addDummyPass(renderOutputTexture);
+Pass* logLuminance = postEffect.addPass(Resource::get<FragmentShader>("ngn/logluminance.frag"), {{"hdrImage": renderPass}}, PixelFormat::RGB_HDR);
+Pass* exposure = postEffect.addFunctionPass(ngn::determineExposure, {{"logLumImage", logLuminance}});
+Pass* highpass = postEffect.addPass(Resource::get<FragmentShader>("ngn/hdrHighpass.frag"), {{"exposure": exposure}, {"image": renderPass}});
+Pass* hblur = postEffect.addPass(Resource::get<FragmentShader>("ngn/hblur.frag"), {{"image": highpass}});
+Pass* vblur = postEffect.addPass(Resource::get<FragmentShader>("ngn/vblur.frag"), {{"image": hblur}});
+
+Pass* tonemap = postEffect.addPass()
+
+[...]
+
+renderer.render(scene, camera, renderTarget);
+postEffect.render();
+
+--------------
+
+    class PostEffect {
+    private:
+        class BasePass {
+        friend class PostEffect;
+            Pass() {}
+            virtual ~Pass() {}
+        };
+
+    public:
+        class DummyPass : public Pass {
+
+        };
+
+        void (*FunctionPassCallback)(const std::unordered_map<std::string, Pass*>& inputs, const std::vector<Pass*>& outputs);
+
+    private:
+        std::vector<Rendertarget*> mRendertargets;
+        std::vector<Pass*> mPasses;
+
+        void prepare() {
+            for(auto pass : mPasses) {
+
+            }
+        }
+
+    public:
+        // This function is for feeding the renderer output and maybe additional gbuffer textures or so
+        DummyPass* addDummyPass(Texture& texture);
+        ShaderPass* addPass(const RessourceHandle<FragmentShader>& shader, const std::unordered_map<std::string, Pass*>& dependencies, PixelFormat output, int width = -1, int height = -1);
+        FunctionPass* addFunctionPass(FunctionPassCallback callback, const std::unordered_map<std::string, Pass*>& dependencies = {});
+
+        void render() {
+            if(!mPrepared) prepare();
+            for(auto pass : mPasses) {
+
+            }
+        }
+    };
+
+
+--------------
+
+Ich habe Angst, dass das semi-data-driven-System super viel ohnehin nicht abbilden kann. Vielleicht sollte man sich den Stress nicht machen. Ist auch ein bisschen scheiße, dass jeder pass nur einen output haben kann. Und dass ich nicht dazwischen blenden kann, wie ich will, sondern extra-add-passes einfügen müsste oder so.
+Prinzipiell reicht ein Render-Target-Pool?
+Es wäre halt schon, wenn die ganzen Effekte vorgebaute Funktionen wären, die man einfach da hinschreibt.
+Von da irgendwann zu migrieren ist ja nicht so schlimm, weil wenig Framework drumherum ist. Die Frage ist, wie man das usable machen kann.
+
+RendertargetPool renderTargetPool;
+
+[...]
+
+renderTarget.bind();
+renderer.render(scene, camera, viewport);
+
+RenderTargetHandle logLuminance = renderTargetPool.bind(R_HDR, 512, 512);
+ngn::renderFullscreenShader(Resource::get<FragmentShader>("ngn/logluminance.frag")).
+    setUniform("hdrImage", renderTarget.getTextureAttachment(Rendertarget::Attachment::COLOR0));
+
+

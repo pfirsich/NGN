@@ -1,0 +1,8 @@
+I'm having a few problems with my HDR shader. It seems that "float * grey = red" and I can't figure out why. 
+The shader can be found here: http://pastebin.com/D2JVKurk
+
+And I made some debug images using the commented out lines. The images (names correspond to the value I'm debug-outputting) can be seen here: http://imgur.com/a/KMzrE
+
+You can see that texColor is mostly grey, exposure is a sane float value (~60) and together they should be about 250, so that there is a little wiggle room left until I have to be afraid to overflow into inf or nan or whatever. Why is exposedColor so red? Does the final result only look so super broken because of that? Is there another obvious problem?
+
+If I do "vec3 exposedColor = exposure * vec3(0.0, texColor.g, texColor.b);" I get black!

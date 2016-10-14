@@ -4,3 +4,4 @@ dependencies/*
 depfiles/*
 gitignored/*
 *.cap
+*.sublime-workspace

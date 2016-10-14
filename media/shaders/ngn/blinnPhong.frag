@@ -175,7 +175,7 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
         // if we have light sources with luminance > 1, these values will obviously be wrong. therefore we have to rescale
         // also note, that we use max(r,g,b) as our luminance function, but just to make sure, that no component will exceed the cutoff
         float cutoff = ngn_light.attenCutoff / max(max(ngn_light.color.r, ngn_light.color.g), ngn_light.color.b);
-        lightAtten = (lightAtten - cutoff) / (1.0 - cutoff);
+        lightAtten = max(0, (lightAtten - cutoff) / (1.0 - cutoff));
     }
 
     if(ngn_light.shadowed) {

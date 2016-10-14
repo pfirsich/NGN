@@ -8,6 +8,7 @@
 #include "log.hpp"
 #include "resource.hpp"
 #include "texture.hpp"
+#include "window.hpp"
 
 namespace ngn {
     class Rendertarget {
@@ -34,7 +35,7 @@ namespace ngn {
             int width, height;
             GLuint rbo;
 
-            RenderbufferData(Attachment _attachment, PixelFormat _format, int w, int h) :
+            RenderbufferData(Attachment _attachment, PixelFormat _format, int w = -1, int h = -1) :
                     attachment(_attachment), format(_format), width(w), height(h), rbo(0) {}
             ~RenderbufferData() {if(rbo != 0) glDeleteRenderbuffers(1, &rbo);}
         };
@@ -63,10 +64,17 @@ namespace ngn {
                 glBindFramebuffer(target, 0);
                 if(read) currentRendertargetRead = nullptr;
                 if(write) currentRendertargetDraw = nullptr;
+                if(write) glViewport(0, 0, Window::currentWindow->getSize().x, Window::currentWindow->getSize().y);
             }
         }
 
         Rendertarget() : mFBO(0), mWidth(0xFFFFFF), mHeight(0xFFFFFF) {}
+        Rendertarget(Texture& tex, PixelFormat depthRenderbufferFormat = PixelFormat::NONE) : Rendertarget() {
+            attachTexture(Attachment::COLOR0, tex);
+            if(depthRenderbufferFormat != PixelFormat::NONE) {
+                attachRenderbuffer(Attachment::DEPTH, depthRenderbufferFormat, mWidth, mHeight);
+            }
+        }
         ~Rendertarget() {if(mFBO != 0) glDeleteFramebuffers(1, &mFBO);}
 
         void attachTexture(Attachment attachment, Texture& tex) {
@@ -80,10 +88,16 @@ namespace ngn {
         template<typename... Args>
         void attachRenderbuffer(Args&& ...args) {
             mRenderbufferAttachments.emplace_back(std::forward<Args>(args)...);
-            int w = mRenderbufferAttachments.back().width;
-            int h = mRenderbufferAttachments.back().height;
-            mWidth = mWidth < w ? mWidth : w;
-            mHeight = mHeight < h ? mHeight : h;
+            RenderbufferData& rBuffer = mRenderbufferAttachments.back();
+            int w = rBuffer.width;
+            int h = rBuffer.height;
+            if(w < 0 || h < 0) {
+                rBuffer.width = mWidth;
+                rBuffer.height = mHeight;
+            } else {
+                mWidth = mWidth < w ? mWidth : w;
+                mHeight = mHeight < h ? mHeight : h;
+            }
         }
 
         const Texture* getTextureAttachment(Attachment attachment) const;

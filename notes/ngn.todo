@@ -59,6 +59,8 @@ Low-Level:
 
     › PostEffects make it clear that the globalShaderPreamble should be part of the material, since shaders are used elsewhere as well where they don't care at all about lights or transformations
 
+    › Handle GL state somewhere. Some stuff is just ridiculous
+
     › More Cascaded Shadow Mapping
     Blending between cascades
     updateInverval/updateOffset (in frames) für cascades, sodass man weiter entfernte cascades cachen kann oder die letzten beiden nur alternierend oder so
@@ -394,7 +396,12 @@ High-Level:
             http://http.developer.nvidia.com/GPUGems3/gpugems3_ch10.html
             http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
         › HDR
-
+            http://filmicgames.com/archives/75 - Different tone mapping operators
+            https://mynameismjp.wordpress.com/2010/04/30/a-closer-look-at-tone-mapping/
+            http://www.cs.utah.edu/~reinhard/cdrom/tonemap.pdf
+            http://frictionalgames.blogspot.de/2012/09/tech-feature-hdr-lightning.html
+            https://docs.unrealengine.com/latest/INT/Engine/Rendering/PostProcessEffects/AutomaticExposure/index.html
+            https://mynameismjp.wordpress.com/2011/08/10/average-luminance-compute-shader/
         › Parallax Mapping?
         › Gamma Correction
             http://renderwonk.com/blog/index.php/archive/adventures-with-gamma-correct-rendering/
@@ -475,6 +482,9 @@ High-Level:
         › Screen Space Reflections
         https://www.reddit.com/r/gamedev/comments/52lawa/what_exactly_are_screenspace_reflections/
         http://roar11.com/2015/07/screen-space-glossy-reflections/
+        › Some sort of Realtime GI?
+        Light Propagation Volumes
+        Voxel Cone Tracing
 
 Sound:
     https://www.youtube.com/watch?v=Vjm--AqG04Y

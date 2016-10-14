@@ -11,14 +11,12 @@ namespace ngn {
 
         vertexShader = new VertexShader;
         vertexShader->setSource(R"(
-out VSOUT {
-    vec2 texCoord;
-} vsOut;
+out vec2 ngn_texCoord;
 
 layout(location = NGN_ATTR_POSITION) in vec2 attrPosition;
 
 void main() {
-    vsOut.texCoord = attrPosition * 0.5 + 0.5;
+    ngn_texCoord = attrPosition * 0.5 + 0.5;
     gl_Position = vec4(attrPosition, 0.0, 1.0);
 }
 )");

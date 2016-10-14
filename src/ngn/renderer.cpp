@@ -149,15 +149,12 @@ uniform ngn_LightParameters ngn_light;
     }
 
     void Renderer::updateState() const {
-        if(currentViewport != viewport) {
-            currentViewport = viewport;
-            glViewport(viewport.x, viewport.y, viewport.z, viewport.w);
-            LOG_DEBUG("viewport: %d, %d, %d, %d\n", viewport.x, viewport.y, viewport.z, viewport.w);
-        }
+        // There needs to be a proper way to handle GL state
+        glViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+
         if(scissorTest && currentScissor != scissor) {
             currentScissor = scissor;
             glScissor(scissor.x, scissor.y, scissor.z, scissor.w);
-            LOG_DEBUG("scissor");
         }
 
         // straight up comparing float values should be fine,
@@ -178,7 +175,6 @@ uniform ngn_LightParameters ngn_light;
         }
 
         if(currentScissorTest != scissorTest) {
-            LOG_DEBUG("scissor test");
             currentScissorTest = scissorTest;
             if(scissorTest)
                 glEnable(GL_SCISSOR_TEST);

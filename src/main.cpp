@@ -62,7 +62,7 @@ void moveCamera(ngn::Camera& camera, float dt) {
 int main(int argc, char** args) {
     ngn::setupDefaultLogging();
 
-    ngn::Window window("ngn test", 1600, 900, false, false, 8);
+    ngn::Window window("ngn test", 1600, 900, false, false);
 
     ngn::Renderer renderer;
     renderer.clearColor = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
@@ -150,7 +150,7 @@ int main(int argc, char** args) {
 
     ngn::Light dirLight;
     dirLight.addLightData(ngn::LightData::LightType::DIRECTIONAL);
-    dirLight.getLightData()->setColor(glm::vec3(0.8f, 0.8f, 0.8f));
+    dirLight.getLightData()->setColor(1.0f * glm::vec3(1.0f, 1.0f, 1.0f));
     dirLight.getLightData()->addShadow(4096, 4096, 4);
     dirLight.lookAt(glm::vec3(-0.4f, -1.0f, -0.4f));
     //dirLight.getLightData()->getShadow()->getCamera()->addDebugMesh();
@@ -158,8 +158,9 @@ int main(int argc, char** args) {
 
     ngn::Light spotLight;
     spotLight.addLightData(ngn::LightData::LightType::SPOT);
-    spotLight.getLightData()->setColor(200.0f * glm::vec3(0.25f, 0.25f, 1.0f));
-    spotLight.lookAtPos(glm::vec3(28.0f, 28.0f, 0.0f), ironman.getPosition());
+    spotLight.getLightData()->setColor(100.0f * glm::vec3(0.25f, 0.25f, 1.0f));
+    spotLight.setPosition(glm::vec3(35.0f, 25.0f, -145.0f));
+    spotLight.lookAt(spotLight.getPosition() + glm::vec3(0.0f, -1.0f, 0.5f));
     spotLight.getLightData()->addShadow(2048, 2048);
     //spotLight.getLightData()->getShadow()->getCamera()->lookAtPos(glm::vec3(30.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     //spotLight.getLightData()->getShadow()->getCamera()->addDebugMesh();
@@ -182,11 +183,25 @@ int main(int argc, char** args) {
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
 
+    ngn::Texture renderTexture(ngn::PixelFormat::RGBA_HDR, window.getSize().x, window.getSize().y);
+    ngn::Rendertarget renderTarget(renderTexture, ngn::PixelFormat::DEPTH24);
+
+    const int logLumTexRes = 1024;
+    ngn::Texture lastLogLumTexture(ngn::PixelFormat::R_HDR, logLumTexRes, logLumTexRes);
+    ngn::Rendertarget lastLogLumTarget(lastLogLumTexture);
+
+    ngn::Texture currLogLumTexture(ngn::PixelFormat::R_HDR, logLumTexRes, logLumTexRes);
+    ngn::Rendertarget currLogLumTarget(currLogLumTexture);
+
+    ngn::Texture adaptedLogLumTexture(ngn::PixelFormat::R_HDR, logLumTexRes, logLumTexRes);
+    adaptedLogLumTexture.setMinFilter(ngn::Texture::MinFilter::LINEAR_MIPMAP_LINEAR);
+    ngn::Rendertarget adaptedLogLumTarget(adaptedLogLumTexture);
+
     // Mainloop
-    glLineWidth(4.0f);
     float lastTime = ngn::getTime();
     bool quit = false;
     window.closeSignal.connect([&quit]() {quit = true;});
+    float keyValue = 2.00f;
     while(!quit) {
         float t = ngn::getTime();
         float dt = t - lastTime;
@@ -199,8 +214,31 @@ int main(int argc, char** args) {
         moveCamera(camera, dt);
         camera.updateDebugMesh();
 
+        renderTarget.bind();
         renderer.render(scene, camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
-        //renderer.render(scene, *dirLight.getLightData()->getShadow()->getCamera(), !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
+
+        currLogLumTarget.bind();
+        ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/logluminance.frag"))
+            .setUniform("hdrImage", renderTexture);
+
+        lastLogLumTarget.bind();
+        ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/passthrough.frag")).
+            setUniform("input", adaptedLogLumTexture);
+
+        adaptedLogLumTarget.bind();
+        ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/eyeAdapt.frag"))
+            .setUniform("logLuminance", currLogLumTexture)
+            .setUniform("logLuminanceLast", lastLogLumTexture)
+            .setUniform("dt", dt);
+        adaptedLogLumTexture.updateMipmaps();
+
+        ngn::Rendertarget::unbind();
+        if(inputState.key[SDL_SCANCODE_UP]) keyValue *= std::pow(2.0f, dt);
+        if(inputState.key[SDL_SCANCODE_DOWN]) keyValue *= std::pow(0.5f, dt);
+        ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/tonemap.frag"))
+            .setUniform("hdrImage", renderTexture)
+            .setUniform("logLuminance", adaptedLogLumTexture)
+            .setUniform("keyValue", keyValue);
 
         window.updateAndSwap();
         //quit = true;
