@@ -163,7 +163,9 @@ namespace ngn {
         }
 
         void setUniform(UniformLocation loc, const Texture& tex) const {
-            glUniform1i(loc, tex.bind());
+            int unit = tex.bind();
+            //LOG_DEBUG("bind texture %d to %d and write unit to uniform location %d", tex.getTextureObject(), unit, loc);
+            glUniform1i(loc, unit);
         }
     };
 }

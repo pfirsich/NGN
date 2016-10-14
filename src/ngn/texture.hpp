@@ -13,6 +13,7 @@ namespace ngn {
     //using PixelFormat = GLenum;
 
     enum class PixelFormat : GLenum {
+        NONE = 0, // for default arguments and such
         R = GL_R8,
         R_HDR = GL_R16F,
         RG = GL_RG8,
@@ -68,7 +69,7 @@ namespace ngn {
 
         void setParameter(GLenum param, GLenum val) {
             if(mTextureObject != 0) {
-                bind();
+                bind(0);
                 glTexParameteri(mTarget, param, val);
             }
         }
@@ -116,7 +117,7 @@ namespace ngn {
         void setStorage(PixelFormat format, int width, int height, int levels = 1);
         void updateData(GLenum format, GLenum type, const void* data, int level = 0, int width = -1, int height = -1, int x = 0, int y = 0);
         // if you've set the base level + data, call this. this can also be called on an immutable texture
-        void updateMips() {bind(); glGenerateMipmap(mTarget);}
+        void updateMipmaps() {bind(0); glGenerateMipmap(mTarget);}
 
         void setTarget(GLenum target) {mTarget = target;}
         GLenum getTarget() const {return mTarget;}
@@ -141,7 +142,7 @@ namespace ngn {
         }
 
         void setBorderColor(const glm::vec4& col) {
-            bind();
+            bind(0);
             glTexParameterfv(mTarget, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(col));
         }
 
@@ -150,7 +151,7 @@ namespace ngn {
                 glActiveTexture(GL_TEXTURE0 + unit);
                 glBindTexture(mTarget, mTextureObject);
                 currentBoundTextures[unit] = this;
-                currentTextureUnitAvailable[unit] = true;
+                currentTextureUnitAvailable[unit] = false;
             }
         }
 

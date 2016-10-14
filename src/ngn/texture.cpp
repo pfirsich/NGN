@@ -49,7 +49,7 @@ namespace ngn {
         assert(components >= 1 && components <= 4);
 
         if(mTextureObject == 0) glGenTextures(1, &mTextureObject);
-        bind();
+        bind(0);
 
         GLint formatMap[4] = {GL_RED, GL_RG, GL_RGB, GL_RGBA};
         GLint format = formatMap[components-1];
@@ -104,7 +104,7 @@ namespace ngn {
                 return;
             }
         }
-        bind();
+        bind(0);
         //glTexStorage2D(mTarget, levels, internalFormat, width, height);
         mWidth = width;
         mHeight = height;
@@ -144,7 +144,7 @@ namespace ngn {
             LOG_ERROR("Trying to update texture that is not initialized yet!");
             return;
         }
-        bind();
+        bind(0);
         glTexSubImage2D(mTarget, level, x, y, width, height, format, type, data);
     }
 }
