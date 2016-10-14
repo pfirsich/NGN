@@ -22,6 +22,8 @@ namespace ngn {
         SDL_GLContext mSDLGLContext;
 
     public:
+        static Window* currentWindow;
+
         using CloseSignalType = Signal<void()>; CloseSignalType closeSignal;
         using ResizeSignalType = Signal<void(int, int)>; ResizeSignalType resizeSignal;
 

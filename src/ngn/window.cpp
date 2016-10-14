@@ -5,11 +5,14 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#include <SDL_log.h>
+
 #include "window.hpp"
 #include "log.hpp"
 
 namespace ngn {
     bool Window::firstCreation = false;
+    Window* Window::currentWindow = nullptr;
 
     void checkGLError() {
         GLenum err = glGetError();
@@ -70,7 +73,13 @@ namespace ngn {
         LOG_DEBUG("GL Debug message - source: %s, type: %s, severity: %s, message: %s", debugSourceName[source], debugTypeName[type], debugSeverityName[severity], message);
     }
 
+    void SDLLogFunction(void* userdata, int category, SDL_LogPriority priority, const char* message) {
+        LOG_DEBUG("SDL log: %s", message);
+    }
+
     void Window::create(const char* title, int width, int height, bool fullscreen, bool vsync, int msaaSamples, Uint32 createWindowFlags) {
+        SDL_LogSetOutputFunction(SDLLogFunction, nullptr);
+        SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
         if(!firstCreation) {
             if(SDL_Init(SDL_INIT_VIDEO) < 0) {
                 LOG_CRITICAL("SDL_Init failed! - '%s'\n", SDL_GetError());
@@ -108,6 +117,8 @@ namespace ngn {
             return;
         }
 
+        currentWindow = this;
+
         if(!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
             LOG_CRITICAL("Failed to initialize GLAD! - '%s'\n", SDL_GetError());
             return;
@@ -134,7 +145,6 @@ namespace ngn {
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
         }
-
         #endif
     }
 
