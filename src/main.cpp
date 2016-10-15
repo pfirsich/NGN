@@ -187,15 +187,10 @@ int main(int argc, char** args) {
     ngn::Rendertarget renderTarget(renderTexture, ngn::PixelFormat::DEPTH24);
 
     const int logLumTexRes = 1024;
-    ngn::Texture lastLogLumTexture(ngn::PixelFormat::R_HDR, logLumTexRes, logLumTexRes);
-    ngn::Rendertarget lastLogLumTarget(lastLogLumTexture);
-
-    ngn::Texture currLogLumTexture(ngn::PixelFormat::R_HDR, logLumTexRes, logLumTexRes);
-    ngn::Rendertarget currLogLumTarget(currLogLumTexture);
-
-    ngn::Texture adaptedLogLumTexture(ngn::PixelFormat::R_HDR, logLumTexRes, logLumTexRes);
-    adaptedLogLumTexture.setMinFilter(ngn::Texture::MinFilter::LINEAR_MIPMAP_LINEAR);
-    ngn::Rendertarget adaptedLogLumTarget(adaptedLogLumTexture);
+    ngn::Rendertexture lastLogLumRendertexture(ngn::PixelFormat::R_HDR, logLumTexRes);
+    ngn::Rendertexture currLogLumRendertexture(ngn::PixelFormat::R_HDR, logLumTexRes);
+    ngn::Rendertexture adaptedLogLumRendertexture(ngn::PixelFormat::R_HDR, logLumTexRes);
+    adaptedLogLumRendertexture.setMinFilter(ngn::Texture::MinFilter::LINEAR_MIPMAP_LINEAR);
 
     // Mainloop
     float lastTime = ngn::getTime();
@@ -217,27 +212,27 @@ int main(int argc, char** args) {
         renderTarget.bind();
         renderer.render(scene, camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
 
-        currLogLumTarget.bind();
+        currLogLumRendertexture.renderTo();
         ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/logluminance.frag"))
             .setUniform("hdrImage", renderTexture);
 
-        lastLogLumTarget.bind();
+        lastLogLumRendertexture.renderTo();
         ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/passthrough.frag")).
-            setUniform("input", adaptedLogLumTexture);
+            setUniform("input", adaptedLogLumRendertexture);
 
-        adaptedLogLumTarget.bind();
+        adaptedLogLumRendertexture.renderTo();
         ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/eyeAdapt.frag"))
-            .setUniform("logLuminance", currLogLumTexture)
-            .setUniform("logLuminanceLast", lastLogLumTexture)
+            .setUniform("logLuminance", currLogLumRendertexture)
+            .setUniform("logLuminanceLast", lastLogLumRendertexture)
             .setUniform("dt", dt);
-        adaptedLogLumTexture.updateMipmaps();
+        adaptedLogLumRendertexture.updateMipmaps();
 
         ngn::Rendertarget::unbind();
         if(inputState.key[SDL_SCANCODE_UP]) keyValue *= std::pow(2.0f, dt);
         if(inputState.key[SDL_SCANCODE_DOWN]) keyValue *= std::pow(0.5f, dt);
         ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/tonemap.frag"))
             .setUniform("hdrImage", renderTexture)
-            .setUniform("logLuminance", adaptedLogLumTexture)
+            .setUniform("logLuminance", adaptedLogLumRendertexture)
             .setUniform("keyValue", keyValue);
 
         window.updateAndSwap();

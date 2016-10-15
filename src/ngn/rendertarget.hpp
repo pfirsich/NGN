@@ -113,4 +113,16 @@ namespace ngn {
             }
         }
     };
+
+    struct Rendertexture : public Texture {
+        Rendertarget renderTarget;
+
+        Rendertexture(PixelFormat format, int width, int height = -1) {
+            if(height < 0) height = width;
+            setStorage(format, width, height);
+            renderTarget.attachTexture(Rendertarget::Attachment::COLOR0, *this);
+        }
+
+        void renderTo() {renderTarget.bind();}
+    };
 }
