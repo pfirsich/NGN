@@ -1,7 +1,10 @@
 #include <ctime>
+#include <time.h>
 #include <unordered_map>
 #include <cstdarg>
 #include <cstdio>
+#include <stdio.h>
+#include <sstream>
 
 #include "log.hpp"
 
@@ -61,6 +64,13 @@ namespace ngn {
         return ret;
     }
 
+	std::tm* localtime(std::time_t* t) {
+		// Is this sane?
+		static std::tm tm;
+		localtime_s(&tm, t);
+		return &tm;
+	}
+
     void log(LogLevel level, const char* filename, int line, const char* format, ...) {
         std::unordered_map<std::string, std::string> formatArguments;
         unsigned intLevel = static_cast<unsigned>(level);
@@ -69,7 +79,7 @@ namespace ngn {
         formatArguments["line"] = std::to_string(line);
 
         std::time_t t = std::time(nullptr);
-        std::tm* tm = std::localtime(&t);
+        std::tm* tm = localtime(&t);
         formatArguments["d"] = std::to_string(tm->tm_mday);
         formatArguments["m"] = std::to_string(tm->tm_mon);
         formatArguments["y"] = std::to_string(tm->tm_year + 1900);

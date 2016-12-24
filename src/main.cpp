@@ -20,18 +20,16 @@ struct InputState {
     int numKeys;
     const uint8_t* key;
 
-    InputState() : numKeys(0), key(nullptr) {}
+    InputState() : numKeys(0), key(nullptr) {
+		key = SDL_GetKeyboardState(&numKeys);
+	}	
 
     void update() {
-        if(mouse.lastX < 0 and mouse.lastY < 0)
+		if(mouse.lastX < 0 && mouse.lastY < 0)
             SDL_GetMouseState(&mouse.lastX, &mouse.lastY);
         mouse.buttons = SDL_GetMouseState(&mouse.x, &mouse.y);
         mouse.deltaX = mouse.x - mouse.lastX; mouse.deltaY = mouse.y - mouse.lastY;
-        mouse.lastX = mouse.x; mouse.lastY = mouse.y;
-
-        if(key) delete key;
-
-        key = SDL_GetKeyboardState(&numKeys);
+        mouse.lastX = mouse.x; mouse.lastY = mouse.y;   
     }
 } inputState;
 
@@ -41,9 +39,9 @@ void moveCamera(ngn::Camera& camera, float dt) {
     speed *= dt;
 
     glm::vec3 move(0.0f);
-    move.x = ((int)inputState.key[SDL_SCANCODE_D] - (int)inputState.key[SDL_SCANCODE_A]);
-    move.y = ((int)inputState.key[SDL_SCANCODE_R] - (int)inputState.key[SDL_SCANCODE_F]);
-    move.z = ((int)inputState.key[SDL_SCANCODE_W] - (int)inputState.key[SDL_SCANCODE_S]);
+    move.x = static_cast<float>(static_cast<int>(inputState.key[SDL_SCANCODE_D]) - static_cast<int>(inputState.key[SDL_SCANCODE_A]));
+    move.y = static_cast<float>(static_cast<int>(inputState.key[SDL_SCANCODE_R]) - static_cast<int>(inputState.key[SDL_SCANCODE_F]));
+    move.z = static_cast<float>(static_cast<int>(inputState.key[SDL_SCANCODE_W]) - static_cast<int>(inputState.key[SDL_SCANCODE_S]));
     if(glm::length(move) > 0.5f) {
         float y = move.y;
         move = camera.getLocalSystem() * move;
@@ -176,21 +174,21 @@ int main(int argc, char** args) {
     pointLight.setMaterial(new ngn::Material(*baseMaterial.getResource()));
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pointLight.getMaterial()->setVector3("emissive", col);
-    pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);
+    pointLight.getMaterial()->removePass(ngn::Renderer::FORWARD_LIGHT_PASS);
     //scene.add(pointLight);
 
     //camera.addDebugMesh(); scene.add(camera); // so it shows up in shadow maps
 
     camera.setPosition(glm::vec3(glm::vec3(0.0f, 5.0f, 50.0f)));
 
-    ngn::Texture renderTexture(ngn::PixelFormat::RGBA_HDR, window.getSize().x, window.getSize().y);
+    /*ngn::Texture renderTexture(ngn::PixelFormat::RGBA_HDR, window.getSize().x, window.getSize().y);
     ngn::Rendertarget renderTarget(renderTexture, ngn::PixelFormat::DEPTH24);
 
     const int logLumTexRes = 1024;
     ngn::Rendertexture lastLogLumRendertexture(ngn::PixelFormat::R_HDR, logLumTexRes);
     ngn::Rendertexture currLogLumRendertexture(ngn::PixelFormat::R_HDR, logLumTexRes);
     ngn::Rendertexture adaptedLogLumRendertexture(ngn::PixelFormat::R_HDR, logLumTexRes);
-    adaptedLogLumRendertexture.setMinFilter(ngn::Texture::MinFilter::LINEAR_MIPMAP_LINEAR);
+    adaptedLogLumRendertexture.setMinFilter(ngn::Texture::MinFilter::LINEAR_MIPMAP_LINEAR);*/
 
     // Mainloop
     float lastTime = ngn::getTime();
@@ -209,10 +207,10 @@ int main(int argc, char** args) {
         moveCamera(camera, dt);
         camera.updateDebugMesh();
 
-        renderTarget.bind();
-        renderer.render(scene, camera, !inputState.key[SDL_SCANCODE_M], !inputState.key[SDL_SCANCODE_N]);
+        //renderTarget.bind();
+        renderer.render(scene, camera);
 
-        currLogLumRendertexture.renderTo();
+        /*currLogLumRendertexture.renderTo();
         ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/logluminance.frag"))
             .setUniform("hdrImage", renderTexture);
 
@@ -233,7 +231,7 @@ int main(int argc, char** args) {
         ngn::PostEffectRender(ngn::Resource::getPrepare<ngn::FragmentShader>("media/shaders/ngn/tonemap.frag"))
             .setUniform("hdrImage", renderTexture)
             .setUniform("logLuminance", adaptedLogLumRendertexture)
-            .setUniform("keyValue", keyValue);
+            .setUniform("keyValue", keyValue);*/
 
         window.updateAndSwap();
         //quit = true;

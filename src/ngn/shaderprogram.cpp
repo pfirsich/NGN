@@ -102,7 +102,7 @@ namespace ngn {
         if(it == mAttributeLocations.end()) {
             GLint loc = glGetAttribLocation(mProgramObject, name.c_str());
             if(loc == -1) {
-                LOG_ERROR("Attribute '%s' does not exist in shader program.", name.c_str());
+                LOG_WARNING("Attribute '%s' does not exist in shader program.", name.c_str());
             }
             mAttributeLocations[name] = loc;
             return loc;
@@ -116,7 +116,7 @@ namespace ngn {
         if(it == mUniformLocations.end()) {
             GLint loc = glGetUniformLocation(mProgramObject, name.c_str());
             if(loc == -1) {
-                LOG_ERROR("Uniform '%s' does not exist in shader program.", name.c_str());
+                LOG_WARNING("Uniform '%s' does not exist in shader program.", name.c_str());
             }
             mUniformLocations[name] = loc;
             return loc;

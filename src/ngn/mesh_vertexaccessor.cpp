@@ -37,6 +37,7 @@ namespace ngn {
         // F32 * 1
         if(mAttribute->dataType == AttributeDataType::F32 && mAttribute->num == 1) return *(getPointer<float>(index));
         assert(false && "You seem to be using the wrong data type with this vertex attribute");
+		return 0.0f;
     }
 
     template<>
@@ -55,6 +56,7 @@ namespace ngn {
         // F32 * 2
         if(mAttribute->dataType == AttributeDataType::F32 && mAttribute->num == 2) return glm::make_vec2(getPointer<float>(index));
         assert(false && "You seem to be using the wrong data type with this vertex attribute");
+		return glm::vec2();
     }
 
     template<>
@@ -73,6 +75,7 @@ namespace ngn {
         // F32 * 3
         if(mAttribute->dataType == AttributeDataType::F32 && mAttribute->num == 3) return glm::make_vec3(getPointer<float>(index));
         assert(false && "You seem to be using the wrong data type with this vertex attribute");
+		return glm::vec3();
     }
 
     template<>
@@ -92,6 +95,7 @@ namespace ngn {
         // F32 * 4
         if(mAttribute->dataType == AttributeDataType::F32 && mAttribute->num == 4) return glm::make_vec4(getPointer<float>(index));
         assert(false && "You seem to be using the wrong data type with this vertex attribute");
+		return glm::vec4();
     }
 
     template<>

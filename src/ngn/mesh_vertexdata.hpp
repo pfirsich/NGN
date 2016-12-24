@@ -68,7 +68,7 @@ namespace ngn {
                     return VertexAttributeAccessor<T>(mAttributes[i], getStride(), getAttributeOffset(i), count, data);
                 }
             }
-            printf("There is no attribute of type '%s', make sure to call hasAttribute!", getVertexAttributeTypeName(attrType));
+            LOG_ERROR("There is no attribute of type '%s', make sure to call hasAttribute!", getVertexAttributeTypeName(attrType));
             return VertexAttributeAccessor<T>();
         }
     };

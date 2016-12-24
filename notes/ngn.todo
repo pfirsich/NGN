@@ -1,37 +1,55 @@
 Low-Level:
     Vor Gamejam:
-    ✔ Asset Manager @done (02.10.16 03:08)
-    ✔ Fix the stupid Material-"inheritance"-Bug. @done (02.10.16 20:53)
-    It seems like when a Material is copied for a single pass the reference to the material it belongs to is not updated! The new pass of the new Material is still thinking the Material it belongs to is the old one.
-    ✔ dirty-flags and recompiles for Materials and Passes, also Pass should hold ResourceHandles instead of pointers @done (02.10.16 20:53)
-    ✔ Make Texture resources @done (02.10.16 21:35)
-    ✔ Resource::add(name, pointer); @done (02.10.16 21:53)
-    ✔ Read materials.md again @done (03.10.16 12:28)
-    ✔ Read random_notes.txt and sort @done (03.10.16 03:10)
-    ✔ Make include a pragma, remove uniform/attribute information from the shader and remove YAML files from it @done (03.10.16 15:46)
-    ✔ YAML loading for Materials @done (04.10.16 17:47)
-    The possibility to specify default textures as colors (which will then be generated)
-    ✔ Proper Light Attenuation @done (08.10.16 17:28)
-    ✔ Uniform-Optimierung @done (08.10.16 22:50)
-
-    ✔ FBO @done (09.10.16 15:35)
-    ✔ Spotlights @done (10.10.16 06:47)
-    ✔ Shadows @done (10.10.16 06:47)
-    ✔ automatic camera for directional lights @done (11.10.16 02:07)
-    ✔ normal-bias parameter for shadow mapping @done (11.10.16 03:48)
-    › Audiodatei anhören
-    ✔ percentage closer filtering with randomly rotated poisson discs @done (11.10.16 15:25)
-
-    › Post-Process-System
-    › HDR
+    Deferred Shading so schnell wie möglich integrieren ist gut, weil man dann so Sachen wie SSAO/HBAO und Reflections und allen anderen Kram implementieren kann. Der Deferred Renderer sollte der Hauptrenderer sein und nur für bestimmte Objekte sollte Forward gerendert werden.
+    Aber damit das G-Buffer-Layout passt will man zuerst PBR einbauen
+    Nach Deferred Shading dann direkt SSAO/HBAO. Also
     › Deferred Shading
     Here shadow map and light culling becomes the task of culling
     In Deferred the lighting model is just not a slot?
     Clustered Deferred?
     Deferred sollte default renderer sein, Forward relativ langsam, aber Forward für ausgewählte OBjekte mit komplizierten MAterialien oder Transparenz
+    Only allow one renderer, it's fine to assume that now.
+
+    Links (when I have time :/)
+    http://learnopengl.com/#!Advanced-Lighting/Deferred-Shading
+    https://software.intel.com/sites/default/files/m/d/4/1/d/8/lauritzen_deferred_shading_siggraph_2010.pdf
+    http://www.gamedev.net/topic/512155-render-target-formats-for-hdr-deferred-shading/
+    https://mynameismjp.wordpress.com/2009/03/10/reconstructing-position-from-depth/
+    https://www.opengl.org/discussion_boards/showthread.php/179823-Help-reconstructing-pixel-position-from-depth
+    http://www.derschmale.com/2014/01/26/reconstructing-positions-from-the-depth-buffer/
+    gamedev.stackexchange.com/questions/71652/opengl-reconstructing-position-from-depth
+    www.gamedev.net/topic/671210-srgb-on-diffuse-textures-or-gbuffer-color-texture/
+    nosferalatu.com/CQ2Rendering.html
+    http://tomgillen.blogspot.de/2010/07/gbuffer-layout.html
+    aras-p.info/texts/CompactNormalStorage.html
+    https://mynameismjp.wordpress.com/2009/06/17/storing-normals-using-spherical-coordinates/
+    www.john-chapman.net/content.php?id=13
+    https://www.google.de/search?q=gbuffer+layout&client=firefox-b&source=lnms&tbm=isch&sa=X&ved=0ahUKEwioqYrs1N_PAhWmL8AKHURPC3oQ_AUICCgB
+    http://images.google.de/imgres?imgurl=http%3A%2F%2Fwww.catalinzima.com%2Fwp-content%2Fuploads%2F2008%2F02%2Fgbuffer.jpg&imgrefurl=http%3A%2F%2Fwww.catalinzima.com%2Fxna%2Ftutorials%2Fdeferred-rendering-in-xna%2Fcreating-the-g-buffer%2F&h=480&w=640&tbnid=V1tJpN1OSJKKIM%3A&docid=ycNyTcr8IBlQaM&ei=bdcDWMb8N8nUgAa_iLGoCw&tbm=isch&client=firefox-b&iact=rc&uact=3&dur=1960&page=1&start=22&ndsp=22&ved=0ahUKEwiG58PvieDPAhVJKsAKHT9EDLUQMwg8KBYwFg&bih=891&biw=1280
+    http://image.slidesharecdn.com/deferredshading-111121230216-phpapp02/95/deferred-shading-26-728.jpg?cb=1321917476
+    https://www.opengl.org/discussion_boards/showthread.php/177986-Confused-About-gl_FragCoord-use-with-Textures
+    https://www.opengl.org/sdk/docs/man4/html/textureSize.xhtml
+    https://www.google.de/search?q=ambient+per+light+per+object&ie=utf-8&oe=utf-8&client=firefox-b&gfe_rd=cr&ei=RvsFWLDICoz38AeQ2bOYAg
+    https://www.google.de/search?q=deferred+renderer+skybox&ie=utf-8&oe=utf-8&client=firefox-b&gfe_rd=cr&ei=9jsGWI3DKMz38Afisq_gBA
+    http://www.john-chapman.net/content.php?id=13
+    www.gamedev.net/topic/628808-skybox-deferred-rendering-how-to/
+    http://gamedev.stackexchange.com/questions/61453/skybox-with-deferred-shading
+    http://gamedev.stackexchange.com/questions/55462/how-to-skip-the-sky-in-lighting-shaders
+    https://www.opengl.org/discussion_boards/showthread.php/180940-Deferred-shading-and-light-volumes
+    http://forum.devmaster.net/t/deferred-lighting-rendering-light-volumes/14998/5
+    http://altdevblog.com/2011/08/08/stencil-buffer-optimisation-for-deferred-lights/
+    http://ogldev.atspace.co.uk/www/tutorial37/tutorial37.html
+    http://gamedev.stackexchange.com/questions/52852/how-to-get-pixels-affected-by-a-light-in-deferred-shading
+    › SSAO/HBAO
+    http://ogldev.atspace.co.uk/www/tutorial45/tutorial45.html
+    http://john-chapman-graphics.blogspot.de/2013/01/ssao-tutorial.html
+    http://learnopengl.com/#!Advanced-Lighting/SSAO
+    › Somehow get Blender **scenes** into the Engine (with Textures and all, also with PBR)
+    › PBR
+    › Bloom
+
     › Normal Mapping
     http://www.j3l7h.de/talks/2008-02-18_Care_and_Feeding_of_Normal_Vectors.pdf
-    › PBR
     › Skybox
     › Replace pointers with references if nullptr is not an option! - For returns and parameters!
     › Draw call sorting
@@ -44,18 +62,40 @@ Low-Level:
     › At least Frustum Culling
     › Input
     › SceneGraph.castRay / Bullet integration?
-    › ASSIMP-Import for whole Scenes
     › Text
     › Skinning
-    › Scripting?
 
-    -------------------
     › Picking
-    › Bloom
     › Particles
 
+    Cannot be done before the Gamejam:
+    › Scripting
 
 -------------------------------------------------------------------------------------------
+
+    › Turn builtin default shaders to virtual resources (just add them with ngn_ prefix and without file extension)
+    Same with fullscreen-mesh and default vertex shaders for posteffect/deferred shading passes
+
+    › HDR Tweaken
+    http://www.gamedev.net/topic/673257-post-process-hdr-or-ldr-nowadays/
+    http://www.gamedev.net/page/resources/_/technical/graphics-programming-and-theory/high-dynamic-range-rendering-r2108
+    http://www.gamedev.net/topic/532960-hdr-lighting--bloom-effect/
+    http://www.gamedev.net/topic/602034-hdr-practical-use-in-a-game/
+    http://www.gamedev.net/topic/448367-hdr-bloom-and-tone-mapping/
+    http://www.gamedev.net/topic/658419-hdr-tonemapping-exposure-selection/
+    http://www.gamedev.net/topic/629701-general-questions-on-hdr-and-tonemapping/
+    http://www.gamedev.net/topic/670001-calculate-hdr-exposure-from-luminance-histogram/
+    https://knarkowicz.wordpress.com/2016/01/09/automatic-exposure/
+    http://www.xnainfo.com/content.php?content=28
+    http://www.reedbeta.com/blog/artist-friendly-hdr-with-exposure-values/
+    www.slideshare.net/ozlael/hable-john-uncharted2-hdr-lighting
+    http://www.valvesoftware.com/publications/2008/GDC2008_PostProcessingInTheOrangeBox.pdf
+    https://developer.valvesoftware.com/wiki/Advanced_HDR
+    https://udn.epicgames.com/Three/Bloom.html
+    http://kalogirou.net/2006/05/20/how-to-do-good-bloom-for-hdr-rendering/
+
+    › Window & Renderer -> Singleton.
+    My Engine *could* be designed super cool and have interesting things you can do with it (e.g. having different renderers, using them at the same time, in multiple windows whatever). But I notice that the engines complexity grows and grows and this is definitely an area where I can just cut some away.
 
     › PostEffects make it clear that the globalShaderPreamble should be part of the material, since shaders are used elsewhere as well where they don't care at all about lights or transformations
 
@@ -295,15 +335,12 @@ High-Level:
             http://frictionalgames.blogspot.de/2010/12/bye-bye-pre-pass-lighting.html
             http://www.john-chapman.net/content.php?id=13
             http://http.developer.nvidia.com/GPUGems2/gpugems2_chapter09.html
-            http://learnopengl.com/#!Advanced-Lighting/Deferred-Shading
-            https://urho3d.github.io/documentation/HEAD/_rendering_modes.html
             http://www.slideshare.net/TiagoAlexSousa/rendering-technologies-from-crysis-3-gdc-2013
             http://tomgillen.blogspot.de/2010/07/gbuffer-layout.html
             https://urho3d.github.io/documentation/HEAD/_rendering_modes.html
             siehe: intBitsToFloat und floatBitsToInt!
             http://stefan-s.net/?p=66 - gBuffer Layout in Unity 5
             https://software.intel.com/sites/default/files/m/d/4/1/d/8/lauritzen_deferred_shading_siggraph_2010.pdf - Tiled und Quad-culled deferred
-            http://learnopengl.com/#!Advanced-Lighting/Deferred-Shading
 
             GBufferLayouts & normal encodings:#
             http://answers.unity3d.com/questions/1219627/modify-gbuffer-layout-add-rendertarget.html
@@ -321,9 +358,6 @@ High-Level:
             http://sebh-blog.blogspot.de/2010/08/cryteks-best-fit-normals.html
             http://www.gamedev.net/topic/645046-cryengine-gbuffer-normal-storing-technique/
             http://khayyam.kaplinski.com/2011/07/encoding-normals-for-gbuffer.html
-
-            http://ogldev.atspace.co.uk/www/tutorial35/tutorial35.html
-            http://learnopengl.com/#!Advanced-Lighting/Deferred-Shading
 
             https://mynameismjp.wordpress.com/2009/03/10/reconstructing-position-from-depth/
             https://www.opengl.org/discussion_boards/showthread.php/179823-Help-reconstructing-pixel-position-from-depth

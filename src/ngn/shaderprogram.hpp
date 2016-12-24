@@ -133,8 +133,6 @@ namespace ngn {
         void setUniform(const std::string& name, const Texture& tex) const {
             UniformLocation loc = getUniformLocation(name);
             if(loc != -1) setUniform(loc, tex);
-            UniformLocation sizeLoc = getUniformLocation(name + "Size");
-            if(sizeLoc != -1) setUniform(sizeLoc, glm::vec2(tex.getWidth(), tex.getHeight()));
         }
 
         void setUniform(UniformLocation loc, int value) const {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <glm/glm.hpp>
 
 namespace ngn {
     float srgbToLinear(float val);

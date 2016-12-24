@@ -78,7 +78,7 @@ namespace ngn {
             printf("Image could not be loaded from memory.");
             return false;
         }
-        loadFromMemory(buf, w*h*c*sizeof(unsigned char), w, h, c);
+        loadFromMemory(buf, w, h, c, genMipmaps);
         delete[] buf;
         return true;
     }

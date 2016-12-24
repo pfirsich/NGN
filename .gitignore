@@ -5,3 +5,4 @@ depfiles/*
 gitignored/*
 *.cap
 *.sublime-workspace
+*.dll
