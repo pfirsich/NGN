@@ -22,14 +22,14 @@ struct InputState {
 
     InputState() : numKeys(0), key(nullptr) {
 		key = SDL_GetKeyboardState(&numKeys);
-	}	
+	}
 
     void update() {
 		if(mouse.lastX < 0 && mouse.lastY < 0)
             SDL_GetMouseState(&mouse.lastX, &mouse.lastY);
         mouse.buttons = SDL_GetMouseState(&mouse.x, &mouse.y);
         mouse.deltaX = mouse.x - mouse.lastX; mouse.deltaY = mouse.y - mouse.lastY;
-        mouse.lastX = mouse.x; mouse.lastY = mouse.y;   
+        mouse.lastX = mouse.x; mouse.lastY = mouse.y;
     }
 } inputState;
 
@@ -148,7 +148,7 @@ int main(int argc, char** args) {
 
     ngn::Light dirLight;
     dirLight.addLightData(ngn::LightData::LightType::DIRECTIONAL);
-    dirLight.getLightData()->setColor(1.0f * glm::vec3(1.0f, 1.0f, 1.0f));
+    dirLight.getLightData()->setColor(0.5f * glm::vec3(1.0f, 1.0f, 1.0f));
     dirLight.getLightData()->addShadow(4096, 4096, 4);
     dirLight.lookAt(glm::vec3(-0.4f, -1.0f, -0.4f));
     //dirLight.getLightData()->getShadow()->getCamera()->addDebugMesh();
@@ -174,7 +174,7 @@ int main(int argc, char** args) {
     pointLight.setMaterial(new ngn::Material(*baseMaterial.getResource()));
     pointLight.getMaterial()->setVector4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pointLight.getMaterial()->setVector3("emissive", col);
-    pointLight.getMaterial()->removePass(ngn::Renderer::FORWARD_LIGHT_PASS);
+    pointLight.getMaterial()->removePass(ngn::Renderer::LIGHT_PASS);
     //scene.add(pointLight);
 
     //camera.addDebugMesh(); scene.add(camera); // so it shows up in shadow maps

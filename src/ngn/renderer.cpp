@@ -7,7 +7,7 @@ namespace ngn {
     // These values represent the OpenGL default values
     glm::vec4 Renderer::currentClearColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
     float Renderer::currentClearDepth = 1.0f;
-    GLint Renderer::currentClearStencil = 0.0f;
+    GLint Renderer::currentClearStencil = 0;
     // In fact these are not the default values for glViewport and glScissor,
     // but no one will ever want to render something with these values, so
     // I just force a first set with them
