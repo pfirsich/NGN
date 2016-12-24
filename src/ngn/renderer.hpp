@@ -12,6 +12,7 @@
 #include "camera.hpp"
 #include "uniformblock.hpp"
 #include "rendererdata.hpp"
+#include "window.hpp"
 
 namespace ngn {
     // ForwardRenderer, DeferredRenderer
@@ -53,8 +54,18 @@ namespace ngn {
     private:
         int mRendererIndex;
 
+        Rendertarget mGBuffer;
+        Texture mGBufferTextures[3];
+        ResourceHandle<FragmentShader> mDeferredFragmentShader;
+        ShaderProgram *mDeferredAmbientShaderProgram, *mDeferredLightShaderProgram;
+
+        void updateShaders();
+
         static bool staticInitialized;
         static void staticInitialize();
+
+        static Mesh* fullScreenMesh;
+        static VertexShader* deferredVertexShader;
 
     public:
         // Variables that store the current GL state
@@ -69,9 +80,12 @@ namespace ngn {
 
         // If other renderers start defining these, they have to take care of not clashing with others themselves
         // Also it helps if their values are consecutive, so the staticInitialize-method can also easily implement a renderer query define
-        static const int AMBIENT_PASS;
-        static const int LIGHT_PASS;
+        static const int FORWARD_AMBIENT_PASS;
+        static const int FORWARD_LIGHT_PASS;
         static const int SHADOWMAP_PASS;
+        static const int GBUFFER_PASS;
+        static const int DEFERRED_AMBIENT_PASS;
+        static const int DEFERRED_LIGHT_PASS;
 
         bool autoClear, autoClearColor, autoClearDepth, autoClearStencil;
 
@@ -85,14 +99,7 @@ namespace ngn {
         glm::ivec4 viewport;
         glm::ivec4 scissor;
 
-        Renderer() : autoClear(true), autoClearColor(true), autoClearDepth(true), autoClearStencil(false),
-                clearColor(currentClearColor), clearDepth(currentClearDepth), clearStencil(currentClearStencil), scissorTest(currentScissorTest),
-                viewport(currentViewport), scissor(currentScissor) {
-            if(!staticInitialized) staticInitialize();
-            mRendererIndex = nextRendererIndex++;
-            if(mRendererIndex >= SceneNode::MAX_RENDERDATA_COUNT)
-                LOG_CRITICAL("More than SceneNode::MAX_RENDERDATA_COUNT(%d) renderers!", SceneNode::MAX_RENDERDATA_COUNT);
-        }
+        Renderer();
         ~Renderer() {}
 
         // implement: single color, trilight (ground, sky, equator), cubemap
@@ -102,6 +109,6 @@ namespace ngn {
         //setRenderTarget
         void clear(bool color, bool depth, bool stencil) const;
         void clear() const {clear(autoClearColor, autoClearDepth, autoClearStencil);}
-        virtual void render(SceneNode& root, Camera& camera, bool regenerateQueue = true, bool renderQueue = true);
+        virtual void render(SceneNode& root, Camera& camera);
     };
 }

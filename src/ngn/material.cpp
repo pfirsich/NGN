@@ -14,11 +14,11 @@ namespace ngn {
         Shader(); // force static initialization of Shader to make sure fallbacks are initialized :/
         Material::fallback = new Material(FragmentShader::fallback, VertexShader::fallback);
         // Our unset ResourceHandles will automatically fall back to the shader fallbacks
-        Material::fallback->addPass(Renderer::AMBIENT_PASS);
+        Material::fallback->addPass(Renderer::FORWARD_AMBIENT_PASS);
     }
 
     void Material::validate() const {
-        if((mBlendMode == BlendMode::MODULATE || mBlendMode == BlendMode::SCREEN) && (hasPass(Renderer::LIGHT_PASS)))
+        if((mBlendMode == BlendMode::MODULATE || mBlendMode == BlendMode::SCREEN) && (hasPass(Renderer::FORWARD_LIGHT_PASS)))
             LOG_WARNING("Blend mode MODULATE and SCREEN don't work properly with lit materials!");
     }
 
@@ -274,8 +274,10 @@ namespace ngn {
 
                 if(material["passes"]) {
                     std::unordered_map<std::string, int> passIndices = {
-                        {"ambient", Renderer::AMBIENT_PASS},
-                        {"light", Renderer::LIGHT_PASS}
+                        {"ambient", Renderer::FORWARD_AMBIENT_PASS},
+                        {"light", Renderer::FORWARD_LIGHT_PASS},
+                        {"gbuffer", Renderer::GBUFFER_PASS},
+                        {"shadowmap", Renderer::SHADOWMAP_PASS}
                     };
 
                     auto passNameOptions = getKeys(passIndices);

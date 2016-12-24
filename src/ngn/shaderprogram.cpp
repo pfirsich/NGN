@@ -76,7 +76,7 @@ namespace ngn {
         }
 
         GLuint shader = glCreateShader(GLtype);
-        //LOG_DEBUG(source);
+        LOG_DEBUG(source);
         glShaderSource(shader, 1, &source, nullptr);
 
         GLint compileStatus;

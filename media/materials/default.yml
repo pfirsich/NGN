@@ -28,3 +28,4 @@ material:
         #         depthwrite:
         ambient: {}
         light: {}
+        #gbuffer: {}

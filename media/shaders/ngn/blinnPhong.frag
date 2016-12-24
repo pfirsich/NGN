@@ -2,19 +2,33 @@
 // Their order though will make huge difference!
 #pragma ngn include media/shaders/ngn/gammaHelpers.glsl
 
-in VSOUT {
-    vec2 texCoord;
-    vec3 normal;
-    vec3 worldPos;
-    vec3 worldNormal;
-    vec3 eye; // view space, inverse of position
-} vsOut;
+#if NGN_PASS == NGN_PASS_DEFERRED_AMBIENT || NGN_PASS == NGN_PASS_DEFERRED_LIGHT
+    in vec2 ngn_texCoord;
+#else
+    in VSOUT {
+        vec2 texCoord;
+        vec3 normal;
+        vec3 worldPos;
+        vec3 worldNormal;
+        vec3 eye; // view space, inverse of position
+    } vsOut;
+#endif
 
-uniform vec4 color;
-uniform sampler2D baseTex;
-uniform float shininess;
-uniform vec3 ambient;
-uniform vec3 emissive;
+#if NGN_PASS == NGN_PASS_DEFERRED_AMBIENT || NGN_PASS == NGN_PASS_DEFERRED_LIGHT
+    uniform sampler2D ngn_gBuffer_normal;
+    uniform sampler2D ngn_gBuffer_material;
+    uniform sampler2D ngn_gBuffer_depth;
+
+    #if NGN_PASS == NGN_PASS_DEFERRED_AMBIENT
+        uniform vec3 ambientColor = vec3(0.1);
+    #endif
+#else
+    uniform vec4 color;
+    uniform sampler2D baseTex;
+    uniform float shininess;
+    uniform vec3 ambient;
+    uniform vec3 emissive;
+#endif
 
 struct SurfaceProperties {
     vec3 albedo;
@@ -24,7 +38,12 @@ struct SurfaceProperties {
     float alpha;
 };
 
-out vec4 ngn_fragColor;
+#if NGN_PASS == NGN_PASS_DEFERRED_GBUFFER
+    layout(location = 0) out vec4 ngn_gBuffer_normal;
+    layout(location = 1) out vec4 ngn_gBuffer_material;
+#else
+    out vec4 ngn_fragColor;
+#endif
 
 // This is the way to do it in case someone wants to overwrite a slot partially and still wishes to use e.g. blinn-phong partly
 vec4 blinnPhongLightingModel(in SurfaceProperties surface, in vec3 eyeDir, in vec3 lightDir, in float lightAtten) {
@@ -219,16 +238,30 @@ void getLightDirAndAtten(out vec3 lightDir, out float lightAtten) {
     }
 }
 
+#if NGN_PASS == NGN_PASS_DEFERRED_AMBIENT || NGN_PASS == NGN_PASS_DEFERRED_LIGHT
+#pragma ngn slot
+SurfaceProperties unpackGBuffer() {
+    SurfaceProperties ret;
+    vec4 mat = texture(ngn_gBuffer_material, ngn_texCoord);
+    ret.albedo = mat.rgb;
+    ret.specularPower = mat.a;
+    vec4 normal = texture(ngn_gBuffer_normal, ngn_texCoord);
+    ret.normal = normal.xyz * 2.0 - 1.0;
+    ret.emission = vec3(0.0);
+    return ret;
+}
+#endif
+
 #pragma ngn slot
 void main() {
-    SurfaceProperties _surf = surface();
-    //Alpha test should be optional (different materials), so that it's occurence in the shader does not disable early-z
-    //if(_surf.alpha < 1.0/256.0) discard; // alpha-test
+    //Alpha test should be handled optionally (material property), so that it's occurence in the shader does not disable early-z
 
     #if NGN_PASS == NGN_PASS_FORWARD_AMBIENT
+        SurfaceProperties _surf = surface();
         ngn_fragColor = vec4(_surf.emission + _surf.albedo * ambient, _surf.alpha);
         //ngn_fragColor = vec4(0.0, 0.0, 0.1, 1.0);
     #elif NGN_PASS == NGN_PASS_FORWARD_LIGHT
+        SurfaceProperties _surf = surface();
         vec3 lightDir;
         float lightAtten;
         getLightDirAndAtten(lightDir, lightAtten); //return;
@@ -236,5 +269,17 @@ void main() {
         vec3 E = normalize(vsOut.eye);
         ngn_fragColor = lightingModel(_surf, E, lightDir, lightAtten);
         ngn_fragColor.rgb = ngn_fragColor.rgb * ngn_light.color;
+    #elif NGN_PASS == NGN_PASS_DEFERRED_GBUFFER
+        SurfaceProperties _surf = surface();
+        ngn_gBuffer_normal = vec4(_surf.normal * 0.5 + 0.5, 0.0);
+        ngn_gBuffer_material = vec4(_surf.albedo, _surf.specularPower * 4.0);
+    #elif NGN_PASS == NGN_PASS_DEFERRED_AMBIENT
+        SurfaceProperties _surf = unpackGBuffer();
+        float depth = texture(ngn_gBuffer_depth, ngn_texCoord).r;
+        if(depth >= 1.0) {
+            ngn_fragColor = vec4(_surf.albedo, 1.0);
+        } else {
+            ngn_fragColor = vec4(_surf.albedo * ambientColor, 1.0);
+        }
     #endif
 }
